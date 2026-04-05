@@ -37,4 +37,4 @@ Personlig receptsamlings-app for 2 anvandare. Next.js 15 (App Router) + PostgreS
 Se `.env.example` for alla nodvandiga variabler.
 
 ## Deploy
-GitHub Actions till Hetzner via SSH. Port 3456 bakom Nginx. Doman: reza.schiffer.se via Cloudflare.
+GitHub Actions till Hetzner via SSH. Port 3456 bakom Nginx. Doman: reza.agiletransition.se via Cloudflare.

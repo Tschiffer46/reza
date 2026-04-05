@@ -17,6 +17,7 @@ interface EntryFormProps {
     notes: string | null
   }
   onSaved?: () => void
+  imageFilenames?: string[]
 }
 
 interface Category {
@@ -25,7 +26,7 @@ interface Category {
   type: string
 }
 
-export function EntryForm({ initialData, onSaved }: EntryFormProps) {
+export function EntryForm({ initialData, onSaved, imageFilenames: initialImages }: EntryFormProps) {
   const router = useRouter()
   const [type, setType] = useState(initialData?.type || 'recipe')
   const [title, setTitle] = useState(initialData?.title || '')
@@ -61,6 +62,7 @@ export function EntryForm({ initialData, onSaved }: EntryFormProps) {
       source: source || null,
       url: url || null,
       notes: notes || null,
+      imageUrls: initialImages || [],
     }
 
     const isEdit = !!initialData?.id
