@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { searchEntries } from '@/lib/search'
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl
@@ -10,18 +11,16 @@ export async function GET(request: NextRequest) {
   const page = parseInt(searchParams.get('page') || '1', 10)
   const pageSize = 20
 
+  // Use full-text search when query is provided
+  if (q && q.trim()) {
+    const results = await searchEntries(q, type || undefined, category || undefined)
+    return NextResponse.json({ entries: results, total: results.length, page: 1, pageSize: 50 })
+  }
+
+  // Standard listing with filters
   const where: Record<string, unknown> = {}
   if (type) where.type = type
   if (category) where.category = category
-  if (q) {
-    where.OR = [
-      { title: { contains: q, mode: 'insensitive' } },
-      { instructions: { contains: q, mode: 'insensitive' } },
-      { content: { contains: q, mode: 'insensitive' } },
-      { notes: { contains: q, mode: 'insensitive' } },
-      { source: { contains: q, mode: 'insensitive' } },
-    ]
-  }
 
   const orderBy: Record<string, string> =
     sort === 'timesCooked'

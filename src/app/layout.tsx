@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from 'next'
+import { NavBar } from '@/components/NavBar'
+import { ServiceWorker } from '@/components/ServiceWorker'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -30,7 +32,9 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
       </head>
       <body className="min-h-full bg-amber-50 font-sans antialiased">
-        {children}
+        <div className="pb-16">{children}</div>
+        <NavBar />
+        <ServiceWorker />
       </body>
     </html>
   )
