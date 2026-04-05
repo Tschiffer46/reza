@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/db'
 import { EntryActions } from '@/components/EntryActions'
+import { FormattedText } from '@/components/FormattedText'
 
 export const dynamic = 'force-dynamic'
 
@@ -77,7 +78,7 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
             {entry.instructions && (
               <div>
                 <h2 className="text-lg font-semibold text-amber-800 mb-2">Instruktioner</h2>
-                <div className="text-gray-700 whitespace-pre-wrap">{entry.instructions}</div>
+                <FormattedText text={entry.instructions} className="text-gray-700" />
               </div>
             )}
           </>
@@ -87,7 +88,7 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
         {entry.type === 'tip' && entry.content && (
           <div>
             <h2 className="text-lg font-semibold text-amber-800 mb-2">Innehåll</h2>
-            <div className="text-gray-700 whitespace-pre-wrap">{entry.content}</div>
+            <FormattedText text={entry.content} className="text-gray-700" />
           </div>
         )}
 
