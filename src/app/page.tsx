@@ -24,6 +24,28 @@ export default async function HomePage() {
         </div>
       </header>
 
+      {/* Quick links */}
+      <div className="max-w-2xl mx-auto px-4 pt-4 flex gap-2">
+        <Link
+          href="/entry/new"
+          className="flex-1 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium text-center hover:bg-amber-700 transition-colors"
+        >
+          + Lägg till
+        </Link>
+        <Link
+          href="/import"
+          className="flex-1 py-2 bg-amber-100 text-amber-700 rounded-lg text-sm font-medium text-center hover:bg-amber-200 transition-colors"
+        >
+          Importera flera
+        </Link>
+        <Link
+          href="/categories"
+          className="flex-1 py-2 bg-amber-100 text-amber-700 rounded-lg text-sm font-medium text-center hover:bg-amber-200 transition-colors"
+        >
+          Kategorier
+        </Link>
+      </div>
+
       {/* Main content */}
       <main className="max-w-2xl mx-auto px-4 py-6">
         {total === 0 ? (
