@@ -1,0 +1,38 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Entry {
+  id           String    @id @default(cuid())
+  type         String    // "recipe" | "tip"
+  title        String
+  category     String
+  ingredients  String[]  // PostgreSQL native array, bara recept
+  instructions String?   // bara recept
+  content      String?   // bara tips
+  source       String?
+  url          String?
+  notes        String?
+  imageUrls    String[]  // filnamn i data/uploads/
+  timesCooked  Int       @default(0)
+  lastCooked   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([type])
+  @@index([category])
+  @@index([createdAt])
+}
+
+model Category {
+  id   String @id @default(cuid())
+  name String @unique
+  type String // "recipe" | "tip"
+
+  @@index([type])
+}
