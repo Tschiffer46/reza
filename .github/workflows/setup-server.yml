@@ -13,25 +13,17 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          script_stop: true
           command_timeout: 10m
           script: |
             set -e
             echo "=== Reza Server Setup ==="
 
-            # 1. Ensure PostgreSQL is running
-            echo "Starting PostgreSQL..."
-            sudo systemctl enable postgresql
-            sudo systemctl start postgresql
+            # 1. Verify PostgreSQL is reachable
+            echo "Checking PostgreSQL connection..."
+            psql "postgresql://reza:${{ secrets.DATABASE_PASSWORD }}@localhost:5432/reza" -c "SELECT 1;"
+            echo "PostgreSQL OK!"
 
-            # 2. Create database user and database (ignore if exists)
-            echo "Setting up database..."
-            sudo -u postgres psql -c "CREATE USER reza WITH PASSWORD '${{ secrets.DATABASE_PASSWORD }}';" 2>/dev/null || \
-              sudo -u postgres psql -c "ALTER USER reza WITH PASSWORD '${{ secrets.DATABASE_PASSWORD }}';"
-            sudo -u postgres psql -c "CREATE DATABASE reza OWNER reza;" 2>/dev/null || true
-            sudo -u postgres psql -c "ALTER USER reza CREATEDB;" 2>/dev/null || true
-
-            # 3. Clone or update repo
+            # 2. Clone or update repo
             echo "Setting up repository..."
             if [ -d ~/reza/.git ]; then
               cd ~/reza
@@ -42,57 +34,59 @@ jobs:
               cd ~/reza
             fi
 
-            # 4. Create upload directory
+            # 3. Create upload directory
             mkdir -p ~/reza/data/uploads
 
-            # 5. Create .env.production
+            # 4. Create .env.production
             echo "Creating .env.production..."
             cat > ~/reza/.env.production << ENVEOF
-            DATABASE_URL=postgresql://reza:${{ secrets.DATABASE_PASSWORD }}@localhost:5432/reza
-            REZA_PASSWORD=${{ secrets.REZA_PASSWORD }}
-            SESSION_SECRET=${{ secrets.SESSION_SECRET }}
-            ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
-            UPLOAD_DIR=/home/$USER/reza/data/uploads
-            HOSTNAME=0.0.0.0
-            PORT=3456
-            ENVEOF
-            # Remove leading whitespace from heredoc
-            sed -i 's/^            //' ~/reza/.env.production
+DATABASE_URL=postgresql://reza:${{ secrets.DATABASE_PASSWORD }}@localhost:5432/reza
+REZA_PASSWORD=${{ secrets.REZA_PASSWORD }}
+SESSION_SECRET=${{ secrets.SESSION_SECRET }}
+ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
+UPLOAD_DIR=/home/deploy/reza/data/uploads
+HOSTNAME=0.0.0.0
+PORT=3456
+ENVEOF
 
-            # 6. Source Node.js (try nvm, then system node)
+            # 5. Source Node.js
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" || true
             echo "Node version: $(node -v)"
             echo "npm version: $(npm -v)"
 
-            # 7. Install dependencies
+            # 6. Install dependencies
             echo "Installing dependencies..."
             cd ~/reza
             npm ci
 
-            # 8. Run migrations
+            # 7. Run migrations
             echo "Running database migrations..."
             set -a; source .env.production; set +a
             npx prisma migrate deploy
             npx prisma generate
 
-            # 9. Seed categories
+            # 8. Seed categories
             echo "Seeding categories..."
             npx prisma db seed || true
 
-            # 10. Build
+            # 9. Build
             echo "Building app..."
             npm run build
 
-            # 11. Copy static files to standalone
+            # 10. Copy static files to standalone
             cp -r public .next/standalone/public
             cp -r .next/static .next/standalone/.next/static
 
-            # 12. Install systemd service
-            echo "Setting up systemd service..."
-            sudo cp ~/reza/scripts/reza.service /etc/systemd/system/
-            sudo systemctl daemon-reload
-            sudo systemctl enable reza
+            # 11. Verify systemd service is installed
+            echo "Checking systemd service..."
+            if ! systemctl is-enabled reza 2>/dev/null; then
+              echo "ERROR: systemd service not installed."
+              echo "Ask root to run: cp ~/reza/scripts/reza.service /etc/systemd/system/ && systemctl daemon-reload && systemctl enable reza"
+              exit 1
+            fi
+
+            # 12. Restart via systemd (deploy user needs passwordless sudo for this)
             sudo systemctl restart reza
 
             # 13. Wait and verify
