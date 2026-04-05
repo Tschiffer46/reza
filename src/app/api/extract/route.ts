@@ -55,6 +55,7 @@ export async function POST(request: NextRequest) {
 
       const result = await extractFromText(plainText)
       result.source = result.source || new URL(url).hostname
+      result.url = result.url || url
       return NextResponse.json(result)
     }
 

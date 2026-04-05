@@ -27,7 +27,9 @@ export async function GET(request: NextRequest) {
       ? { timesCooked: 'desc' }
       : sort === 'lastCooked'
         ? { lastCooked: 'desc' }
-        : { createdAt: 'desc' }
+        : sort === 'title'
+          ? { title: 'asc' }
+          : { createdAt: 'desc' }
 
   const [entries, total] = await Promise.all([
     prisma.entry.findMany({

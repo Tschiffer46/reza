@@ -27,6 +27,7 @@ export function EntryList({ initialEntries, initialTotal, categories }: EntryLis
   const [type, setType] = useState('')
   const [category, setCategory] = useState('')
   const [search, setSearch] = useState('')
+  const [sort, setSort] = useState('createdAt')
   const [loading, setLoading] = useState(false)
 
   const fetchEntries = useCallback(async () => {
@@ -35,13 +36,14 @@ export function EntryList({ initialEntries, initialTotal, categories }: EntryLis
     if (type) params.set('type', type)
     if (category) params.set('category', category)
     if (search) params.set('q', search)
+    if (sort) params.set('sort', sort)
 
     const res = await fetch(`/api/entries?${params}`)
     const data = await res.json()
     setEntries(data.entries)
     setTotal(data.total)
     setLoading(false)
-  }, [type, category, search])
+  }, [type, category, search, sort])
 
   useEffect(() => {
     fetchEntries()
@@ -76,6 +78,21 @@ export function EntryList({ initialEntries, initialTotal, categories }: EntryLis
       </div>
 
       <CategoryFilter categories={categories} selected={category} onChange={setCategory} />
+
+      {/* Sort */}
+      <div className="flex items-center gap-2">
+        <label className="text-sm text-amber-700">Sortera:</label>
+        <select
+          value={sort}
+          onChange={(e) => setSort(e.target.value)}
+          className="text-sm px-2 py-1 rounded-lg border border-amber-200 bg-white text-amber-800 focus:outline-none focus:ring-2 focus:ring-amber-400"
+        >
+          <option value="createdAt">Senast inlagda</option>
+          <option value="timesCooked">Mest lagade</option>
+          <option value="lastCooked">Senast lagade</option>
+          <option value="title">Bokstavsordning</option>
+        </select>
+      </div>
 
       {/* Results */}
       {loading ? (

@@ -10,6 +10,7 @@ interface ExtractedData {
   instructions: string | null
   content: string | null
   source: string | null
+  url?: string | null
 }
 
 interface ExtractPreviewProps {
@@ -36,7 +37,7 @@ export function ExtractPreview({ data, imageFilenames, onCancel }: ExtractPrevie
           instructions: data.instructions,
           content: data.content,
           source: data.source,
-          url: null,
+          url: data.url || null,
           notes: null,
         }}
         imageFilenames={imageFilenames}

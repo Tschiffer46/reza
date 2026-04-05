@@ -10,6 +10,7 @@ export interface ExtractedEntry {
   instructions: string | null
   content: string | null
   source: string | null
+  url: string | null
 }
 
 const SYSTEM_PROMPT = `Du ar en receptextraherings-assistent. Analysera inmatningen och returnera strukturerad JSON.
@@ -22,7 +23,8 @@ Returnera EXAKT detta JSON-format, inget annat:
   "ingredients": ["array av ingredienser, bara for recept, tom array for tips"],
   "instructions": "instruktioner steg for steg, bara for recept, null for tips",
   "content": "innehall, bara for tips, null for recept",
-  "source": "kalla om den framgar, annars null"
+  "source": "kalla om den framgar, annars null",
+  "url": "URL om den syns i texten eller bilden, annars null"
 }
 
 Kategorier for recept: Huvudratt, Forratt, Efterratt, Bakning, Sallad, Soppa, Frukost, Snacks, Dryck
@@ -33,7 +35,8 @@ Regler:
 - Valj den mest passande kategorin
 - Om det ar ett recept, extrahera ingredienser och instruktioner
 - Om det ar ett tips/rad/information, anvand type "tip" och fyll i content
-- Skriv pa svenska`
+- Skriv pa svenska
+- Om det finns en URL synlig i texten eller bilden, inkludera den i url-faltet`
 
 function parseResponse(text: string): ExtractedEntry {
   // Strip markdown code fences if present
@@ -52,6 +55,7 @@ function parseResponse(text: string): ExtractedEntry {
     instructions: parsed.instructions || null,
     content: parsed.content || null,
     source: parsed.source || null,
+    url: parsed.url || null,
   }
 }
 

@@ -15,6 +15,7 @@ type ExtractedData = {
   instructions: string | null
   content: string | null
   source: string | null
+  url?: string | null
 }
 
 export default function NewEntryPage() {
