@@ -13,6 +13,19 @@ export async function POST(request: NextRequest) {
   if (!name || !type) {
     return NextResponse.json({ error: 'Namn och typ krävs' }, { status: 400 })
   }
+  const existing = await prisma.category.findUnique({ where: { name } })
+  if (existing) {
+    return NextResponse.json({ error: 'Kategorin finns redan' }, { status: 409 })
+  }
   const category = await prisma.category.create({ data: { name, type } })
   return NextResponse.json(category, { status: 201 })
+}
+
+export async function DELETE(request: NextRequest) {
+  const id = request.nextUrl.searchParams.get('id')
+  if (!id) {
+    return NextResponse.json({ error: 'ID krävs' }, { status: 400 })
+  }
+  await prisma.category.delete({ where: { id } })
+  return NextResponse.json({ ok: true })
 }

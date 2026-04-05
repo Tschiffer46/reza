@@ -9,7 +9,8 @@ interface ImageUploaderProps {
 export function ImageUploader({ onUploaded }: ImageUploaderProps) {
   const [uploading, setUploading] = useState(false)
   const [previews, setPreviews] = useState<string[]>([])
-  const fileInput = useRef<HTMLInputElement>(null)
+  const cameraInput = useRef<HTMLInputElement>(null)
+  const galleryInput = useRef<HTMLInputElement>(null)
 
   async function handleFiles(files: FileList | null) {
     if (!files || files.length === 0) return
@@ -54,19 +55,37 @@ export function ImageUploader({ onUploaded }: ImageUploaderProps) {
       <div className="flex gap-2">
         <button
           type="button"
-          onClick={() => fileInput.current?.click()}
+          onClick={() => cameraInput.current?.click()}
           disabled={uploading}
           className="flex-1 py-3 border-2 border-dashed border-amber-300 rounded-lg text-amber-700 font-medium hover:bg-amber-50 disabled:opacity-50 transition-colors"
         >
-          {uploading ? 'Laddar upp...' : '📷 Välj bild / Ta foto'}
+          {uploading ? 'Laddar upp...' : '📷 Ta foto'}
+        </button>
+        <button
+          type="button"
+          onClick={() => galleryInput.current?.click()}
+          disabled={uploading}
+          className="flex-1 py-3 border-2 border-dashed border-amber-300 rounded-lg text-amber-700 font-medium hover:bg-amber-50 disabled:opacity-50 transition-colors"
+        >
+          {uploading ? 'Laddar upp...' : '🖼️ Välj bild'}
         </button>
       </div>
 
+      {/* Camera input — opens camera on mobile */}
       <input
-        ref={fileInput}
+        ref={cameraInput}
         type="file"
         accept="image/*"
         capture="environment"
+        onChange={(e) => handleFiles(e.target.files)}
+        className="hidden"
+      />
+
+      {/* Gallery input — opens photo library / file picker */}
+      <input
+        ref={galleryInput}
+        type="file"
+        accept="image/*"
         multiple
         onChange={(e) => handleFiles(e.target.files)}
         className="hidden"
