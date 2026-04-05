@@ -1,0 +1,16 @@
+[Unit]
+Description=Reza Recipe App
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=deploy
+WorkingDirectory=/home/deploy/reza
+ExecStart=/usr/bin/node .next/standalone/server.js
+Restart=always
+RestartSec=5
+Environment=NODE_ENV=production
+EnvironmentFile=/home/deploy/reza/.env.production
+
+[Install]
+WantedBy=multi-user.target
