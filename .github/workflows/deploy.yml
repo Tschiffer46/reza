@@ -21,6 +21,7 @@ jobs:
             cd ~/reza
             git pull origin main
             npm ci
+            set -a; source .env.production; set +a
             npx prisma migrate deploy
             npx prisma generate
             npm run build
