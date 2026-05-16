@@ -36,6 +36,44 @@ export async function POST(request: NextRequest) {
 
     // URL extraction
     if (url) {
+      const hostname = new URL(url).hostname.toLowerCase()
+
+      // TikTok renders content client-side and blocks bots — use the oEmbed
+      // endpoint, which returns the video caption (where the recipe usually is)
+      if (hostname.endsWith('tiktok.com')) {
+        const oembedRes = await fetch(
+          `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`,
+          { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; RezaBot/1.0)' } }
+        )
+        if (!oembedRes.ok) {
+          return NextResponse.json(
+            { error: 'Kunde inte hämta TikTok-videon (oEmbed misslyckades)' },
+            { status: 400 }
+          )
+        }
+        const oembed = await oembedRes.json()
+        const caption: string = oembed.title || ''
+        const author: string = oembed.author_name || ''
+
+        if (!caption.trim()) {
+          return NextResponse.json(
+            {
+              error:
+                'TikTok-videon saknar beskrivning. Ta en skärmdump av videon och ladda upp den istället.',
+            },
+            { status: 400 }
+          )
+        }
+
+        const promptText = author
+          ? `TikTok-video av @${author}.\n\nBeskrivning:\n${caption}`
+          : caption
+        const result = await extractFromText(promptText)
+        result.source = result.source || (author ? `TikTok (@${author})` : 'TikTok')
+        result.url = result.url || url
+        return NextResponse.json(result)
+      }
+
       const response = await fetch(url, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (compatible; Reza/1.0)',
@@ -59,7 +97,7 @@ export async function POST(request: NextRequest) {
       // 2. Fallback: better HTML→text conversion, then AI extraction
       const plainText = htmlToStructuredText(html)
       const result = await extractFromText(plainText)
-      result.source = result.source || new URL(url).hostname
+      result.source = result.source || hostname
       result.url = result.url || url
       return NextResponse.json(result)
     }
