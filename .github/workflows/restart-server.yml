@@ -1,0 +1,83 @@
+name: Restart / Repair Server
+
+on:
+  workflow_dispatch:
+
+jobs:
+  restart:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Diagnose and restart Reza on Hetzner
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          command_timeout: 5m
+          script: |
+            set +e
+            echo "=== System status ==="
+            uptime
+            free -h
+            df -h /
+
+            echo ""
+            echo "=== Reza systemd status ==="
+            systemctl is-active reza && echo "reza: active" || echo "reza: NOT active"
+            sudo systemctl status reza --no-pager -l | head -30
+
+            echo ""
+            echo "=== Last 40 lines of Reza logs ==="
+            sudo journalctl -u reza -n 40 --no-pager
+
+            echo ""
+            echo "=== PostgreSQL status ==="
+            systemctl is-active postgresql && echo "postgresql: active" || echo "postgresql: NOT active"
+
+            echo ""
+            echo "=== Docker containers (Nginx Proxy Manager) ==="
+            sudo docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}' 2>/dev/null || echo "Docker not available or no containers"
+
+            echo ""
+            echo "=== iptables INPUT rules for port 3456 ==="
+            sudo iptables -L INPUT -n -v --line-numbers | grep -E "3456|Chain INPUT" || echo "No rule found for port 3456"
+
+            echo ""
+            echo "=== Repair steps ==="
+
+            # 1. Ensure Docker -> host iptables rule exists
+            if ! sudo iptables -C INPUT -s 172.18.0.0/16 -p tcp --dport 3456 -j ACCEPT 2>/dev/null; then
+              echo "Adding missing iptables rule (Docker -> host:3456)..."
+              sudo iptables -I INPUT -s 172.18.0.0/16 -p tcp --dport 3456 -j ACCEPT
+            else
+              echo "iptables rule already present."
+            fi
+
+            # 2. Ensure PostgreSQL is running
+            if ! systemctl is-active --quiet postgresql; then
+              echo "Starting PostgreSQL..."
+              sudo systemctl start postgresql
+            fi
+
+            # 3. Ensure Reza service is running (restart unconditionally to clear bad state)
+            echo "Restarting reza service..."
+            sudo systemctl restart reza
+            sleep 4
+
+            # 4. Verify localhost
+            echo ""
+            echo "=== Local health check (http://localhost:3456) ==="
+            code=$(curl -s -o /tmp/reza-resp -w "%{http_code}" http://localhost:3456/login || echo "no_response")
+            echo "HTTP status: $code"
+            head -c 400 /tmp/reza-resp 2>/dev/null; echo
+
+            # 5. If still failing, show fresh logs
+            if [ "$code" != "200" ] && [ "$code" != "307" ] && [ "$code" != "302" ]; then
+              echo ""
+              echo "=== App did not respond OK — fresh logs ==="
+              sudo journalctl -u reza -n 60 --no-pager
+              exit 1
+            fi
+
+            echo ""
+            echo "=== SUCCESS: Reza is responding locally ==="
