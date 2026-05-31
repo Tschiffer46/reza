@@ -105,6 +105,19 @@ PORT=3456            # Produktion
 - **DNS/CDN**: Cloudflare (SSL: Full) → reza.agiletransition.se
 - **CI/CD**: GitHub Actions (`.github/workflows/deploy.yml`) — auto-deploy vid push till `main`
 - **Nätverksregel**: `iptables -I INPUT -s 172.18.0.0/16 -p tcp --dport 3456 -j ACCEPT` (Docker→host)
+  - **MÅSTE göras beständig** — annars försvinner regeln vid varje reboot och Nginx
+    Proxy Manager kan inte nå appen → Cloudflare svarar **504 Gateway time-out**
+    (visas som tom/svart sida i webbläsaren). Gör beständig med:
+    ```bash
+    sudo apt-get install -y iptables-persistent
+    sudo netfilter-persistent save   # kör om efter varje ändring av regeln
+    ```
+  - **Felsökning av "tom/svart sida"**: testa lagren utifrån och in innan du rör koden.
+    `curl -I https://reza.agiletransition.se/login` (504 = proxy/host, inte appen) →
+    `ssh deploy@… 'curl -s -o /dev/null -w "%{http_code}" http://localhost:3456/login'`
+    (200 = appen är frisk, problemet ligger i iptables/NPM/Cloudflare, inte i bygget).
+    Verifiera regeln med `sudo iptables -C INPUT -s 172.18.0.0/16 -p tcp --dport 3456 -j ACCEPT`
+    (kräver `sudo` med fungerande tty, dvs `ssh -t`).
 - **Manuell deploy**:
   ```bash
   cd ~/reza && git pull origin main && export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && npm ci && npm run build && cp -r public .next/standalone/public && cp -r .next/static .next/standalone/.next/static && sudo systemctl restart reza
