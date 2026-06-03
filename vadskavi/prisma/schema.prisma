@@ -1,0 +1,136 @@
+// VadSkaVi — Prisma-schema (Sprint 1)
+// Datamodell enligt task-spec: Auth.js-tabeller + familj/recept-domän.
+
+generator client {
+  provider      = "prisma-client-js"
+  // linux-musl-target krävs för Prisma i node:20-alpine-containern (jfr stegvis-app)
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String       @id @default(cuid())
+  email         String       @unique
+  name          String?
+  avatar        String?
+  emailVerified DateTime?
+  createdAt     DateTime     @default(now())
+  memberships   Membership[]
+  recipes       Entry[]      @relation("Creator")
+  comments      Comment[]
+  changes       ChangeLog[]
+  accounts      Account[]
+  sessions      Session[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Family {
+  id          String       @id @default(cuid())
+  name        String
+  inviteCode  String       @unique
+  createdAt   DateTime     @default(now())
+  createdById String
+  members     Membership[]
+  entries     Entry[]
+  categories  Category[]
+}
+
+model Membership {
+  id       String   @id @default(cuid())
+  userId   String
+  familyId String
+  role     String   @default("member")
+  joinedAt DateTime @default(now())
+  user     User     @relation(fields: [userId], references: [id])
+  family   Family   @relation(fields: [familyId], references: [id])
+
+  @@unique([userId, familyId])
+}
+
+model Entry {
+  id           String      @id @default(cuid())
+  type         String
+  title        String
+  category     String
+  ingredients  String[]
+  instructions String?
+  content      String?
+  drinks       String?
+  source       String?
+  url          String?
+  timesCooked  Int         @default(0)
+  lastCooked   DateTime?
+  createdAt    DateTime    @default(now())
+  familyId     String
+  creatorId    String
+  family       Family      @relation(fields: [familyId], references: [id])
+  creator      User        @relation("Creator", fields: [creatorId], references: [id])
+  comments     Comment[]
+  changes      ChangeLog[]
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  text      String
+  createdAt DateTime @default(now())
+  entryId   String
+  authorId  String
+  entry     Entry    @relation(fields: [entryId], references: [id])
+  author    User     @relation(fields: [authorId], references: [id])
+}
+
+model ChangeLog {
+  id        String   @id @default(cuid())
+  action    String
+  field     String?
+  createdAt DateTime @default(now())
+  entryId   String
+  userId    String
+  entry     Entry    @relation(fields: [entryId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Category {
+  id       String @id @default(cuid())
+  name     String
+  type     String
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id])
+}
