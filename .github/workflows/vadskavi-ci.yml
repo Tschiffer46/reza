@@ -1,0 +1,41 @@
+# CI för VadSkaVi (undermapp i reza-repot). Path-filtrerad så att den bara körs
+# när vadskavi/ ändras.
+name: VadSkaVi CI
+
+on:
+  pull_request:
+    paths:
+      - 'vadskavi/**'
+      - '.github/workflows/vadskavi-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Typecheck & build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: vadskavi
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: vadskavi/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
+        env:
+          AUTH_SECRET: ci-dummy-secret-with-at-least-32-characters
+          DATABASE_URL: postgresql://user:pass@localhost:5432/db

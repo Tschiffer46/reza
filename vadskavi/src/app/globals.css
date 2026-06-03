@@ -1,0 +1,37 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   VadSkaVi-tema — portat från Reza, men i grön palett enligt designspec:
+   mörkgrön header #1C3A2B, ljusgrön accent #4CAF7D, Georgia-serif.
+--------------------------------------------------------------------------- */
+@theme {
+  --color-brand-header: #1C3A2B;
+  --color-brand-accent: #4CAF7D;
+  --color-brand-accent-dark: #3d9268;
+  --color-brand-bg: #f4f8f5;
+  --color-brand-surface: #ffffff;
+  --color-brand-ink: #1f2a24;
+  --color-brand-muted: #5b6b62;
+
+  --font-serif: Georgia, 'Times New Roman', serif;
+}
+
+body {
+  font-family: var(--font-serif);
+  background-color: var(--color-brand-bg);
+  color: var(--color-brand-ink);
+}
+
+/* Safe area padding for bottom nav on iOS */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Hide scrollbar on horizontal filters */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
