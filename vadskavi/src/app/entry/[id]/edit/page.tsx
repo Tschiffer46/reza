@@ -44,6 +44,7 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
             drinks: entry.drinks,
             source: entry.source,
             url: entry.url,
+            imageUrls: entry.imageUrls,
           }}
         />
       </main>

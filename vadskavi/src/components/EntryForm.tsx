@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { CategoryDTO } from '@/lib/types'
 import { Button } from '@/components/ui/button'
+import { PhotoUploader } from '@/components/PhotoUploader'
 
 export interface EntryFormData {
   id?: string
@@ -16,6 +17,7 @@ export interface EntryFormData {
   drinks: string | null
   source: string | null
   url: string | null
+  imageUrls: string[]
 }
 
 const inputClass =
@@ -32,6 +34,7 @@ export function EntryForm({ initialData }: { initialData?: Partial<EntryFormData
   const [drinks, setDrinks] = useState(initialData?.drinks || '')
   const [source, setSource] = useState(initialData?.source || '')
   const [url, setUrl] = useState(initialData?.url || '')
+  const [imageUrls, setImageUrls] = useState<string[]>(initialData?.imageUrls || [])
   const [categories, setCategories] = useState<CategoryDTO[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -58,6 +61,7 @@ export function EntryForm({ initialData }: { initialData?: Partial<EntryFormData
       drinks: drinks || null,
       source: source || null,
       url: url || null,
+      imageUrls,
     }
 
     const isEdit = !!initialData?.id
@@ -191,6 +195,11 @@ export function EntryForm({ initialData }: { initialData?: Partial<EntryFormData
           onChange={(e) => setUrl(e.target.value)}
           placeholder="https://…"
         />
+      </div>
+
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium text-brand-header">Bilder (valfritt)</label>
+        <PhotoUploader value={imageUrls} onChange={setImageUrls} />
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}

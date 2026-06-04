@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json()
-  const { type, title, category, ingredients, instructions, content, drinks, source, url } = body
+  const { type, title, category, ingredients, instructions, content, drinks, source, url, imageUrls } = body
 
   if (!title || !type || !category) {
     return NextResponse.json({ error: 'Titel, typ och kategori krävs' }, { status: 400 })
@@ -48,6 +48,7 @@ export async function POST(request: NextRequest) {
       drinks: drinks || null,
       source: source || null,
       url: url || null,
+      imageUrls: Array.isArray(imageUrls) ? imageUrls : [],
       familyId: ctx.familyId,
       creatorId: ctx.userId,
     },

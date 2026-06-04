@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireFamily } from '@/lib/family'
+import { deleteImage } from '@/lib/images'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -58,7 +59,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
     return NextResponse.json(entry)
   }
 
-  const { type, title, category, ingredients, instructions, content, drinks, source, url } = body
+  const { type, title, category, ingredients, instructions, content, drinks, source, url, imageUrls } = body
   const entry = await prisma.entry.update({
     where: { id },
     data: {
@@ -71,6 +72,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
       drinks: drinks ?? null,
       source: source ?? null,
       url: url ?? null,
+      imageUrls: Array.isArray(imageUrls) ? imageUrls : existing.imageUrls,
     },
   })
   await prisma.changeLog.create({
@@ -99,5 +101,7 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
     prisma.changeLog.deleteMany({ where: { entryId: id } }),
     prisma.entry.delete({ where: { id } }),
   ])
+  // Städa upp bildfiler
+  await Promise.all(existing.imageUrls.map((f) => deleteImage(f)))
   return NextResponse.json({ success: true })
 }

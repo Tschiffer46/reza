@@ -70,6 +70,20 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
           <EntryActions entryId={entry.id} />
         </div>
 
+        {entry.imageUrls.length > 0 && (
+          <div className="grid grid-cols-2 gap-2">
+            {entry.imageUrls.map((f) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                key={f}
+                src={`/api/images/${f}`}
+                alt=""
+                className="aspect-square w-full rounded-lg object-cover"
+              />
+            ))}
+          </div>
+        )}
+
         {entry.type === 'recipe' && entry.ingredients.length > 0 && (
           <section className="space-y-2">
             <h2 className="text-lg font-semibold text-brand-header">Ingredienser</h2>

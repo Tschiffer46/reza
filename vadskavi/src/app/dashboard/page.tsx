@@ -32,6 +32,7 @@ export default async function DashboardPage() {
     drinks: e.drinks,
     source: e.source,
     url: e.url,
+    imageUrls: e.imageUrls,
     timesCooked: e.timesCooked,
     lastCooked: e.lastCooked ? e.lastCooked.toISOString() : null,
     createdAt: e.createdAt.toISOString(),
