@@ -4,8 +4,8 @@ Steg-för-steg för att förbereda Hetzner-servern (89.167.90.112) och få upp V
 första gången. Allt körs i **Terminal på din Mac** via SSH som `deploy`. Efter detta
 sköts uppdateringar automatiskt av GitHub Actions.
 
-> **Förkrav:** du har SSH-åtkomst som `deploy`, och GitHub-secrets `SERVER_HOST`,
-> `SERVER_USER`, `SERVER_SSH_KEY` finns redan i reza-repot (används av övriga appar).
+> **Förkrav:** SSH-åtkomst som `deploy`, och GitHub-secrets `SERVER_HOST`, `SERVER_USER`,
+> `SERVER_SSH_KEY` finns redan i reza-repot (används av övriga appar).
 
 ```bash
 ssh deploy@89.167.90.112
@@ -15,137 +15,159 @@ ssh deploy@89.167.90.112
 
 ## 1. Frigör diskutrymme
 
-Bara ~8,8 GB ledigt — rensa oanvända Docker-images först.
-
 ```bash
 docker image prune -f
 df -h /
 ```
 
----
-
 ## 2. Skapa 2 GB swapfil
 
-Servern har 3,7 GB RAM och ingen swap. Lägg till 2 GB.
+Servern har 3,7 GB RAM och ingen swap.
 
 ```bash
-# Skapa och aktivera swap
 sudo fallocate -l 2G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=2048
 sudo chmod 600 /swapfile
 sudo mkswap /swapfile
 sudo swapon /swapfile
-
-# Gör permanent över omstart
 echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
-
-# Sänk swappiness (använd swap sparsamt)
 echo 'vm.swappiness=10' | sudo tee /etc/sysctl.d/99-swappiness.conf
 sudo sysctl -w vm.swappiness=10
-
-# Verifiera
-free -h
-swapon --show
+free -h && swapon --show
 ```
 
 ---
 
-## 3. Lägg till tjänster i docker-compose
+## 3. Skapa secrets-filen `.env.vadskavi`
 
-Öppna serverns compose-fil:
-
-```bash
-nano /home/deploy/hosting/docker-compose.yml
-```
-
-Klistra in `vadskavi`- och `vadskavi-db`-tjänsterna från
-[`deploy/docker-compose.snippet.yml`](../deploy/docker-compose.snippet.yml) under
-`services:`, lägg `vadskavi-db-data:` under `volumes:` och lägg till nätverken under
-`networks:`.
-
-**Verifiera nätverksnamnet** för Nginx Proxy Manager (snippet:en antar `hosting_web`):
+Servern använder en **per-app env-fil** (som `.env.stegvis`, `.env.forfor` …), inte inline
+secrets i compose. Skapa den med autogenererade lösenord:
 
 ```bash
-docker network ls
+DBPASS=$(openssl rand -hex 24)
+AUTHSECRET=$(openssl rand -base64 32)
+cat > /home/deploy/hosting/.env.vadskavi <<EOF
+NODE_ENV=production
+DATABASE_URL=postgresql://vadskavi:${DBPASS}@vadskavi-db:5432/vadskavi
+POSTGRES_PASSWORD=${DBPASS}
+AUTH_SECRET=${AUTHSECRET}
+AUTH_URL=https://vadskavi.nu
+AUTH_TRUST_HOST=true
+EMAIL_SERVER_HOST=mail.schiffer.se
+EMAIL_SERVER_PORT=587
+EMAIL_SERVER_USER=noreply@vadskavi.nu
+EMAIL_SERVER_PASSWORD=BYT_UT_MOT_SMTP_LOSENORD
+EMAIL_FROM=VadSkaVi <noreply@vadskavi.nu>
+ANTHROPIC_API_KEY=
+EOF
+chmod 600 /home/deploy/hosting/.env.vadskavi
 ```
 
-Justera namnet i compose-filen om NPM ligger på ett annat externt nätverk.
-
-### Lägg secrets i serverns `.env`
+Fyll sedan i SMTP-lösenordet (och ev. `ANTHROPIC_API_KEY` för AI-extraktion):
 
 ```bash
-nano /home/deploy/hosting/.env
+nano /home/deploy/hosting/.env.vadskavi   # ändra EMAIL_SERVER_PASSWORD-raden
 ```
 
-Lägg till (generera starka värden):
-
-```bash
-VADSKAVI_DB_PASSWORD=$(openssl rand -hex 24)
-VADSKAVI_AUTH_SECRET=$(openssl rand -base64 32)
-VADSKAVI_SMTP_PASSWORD=<SMTP-lösenordet för noreply@vadskavi.nu>
-VADSKAVI_ANTHROPIC_API_KEY=<din Anthropic-nyckel, valfri nu>
-```
-
-> Tips: kör `openssl rand ...`-kommandona i terminalen och klistra in resultaten som
-> statiska värden i `.env` (compose expanderar inte kommandon i filen).
+Se [`../deploy/.env.vadskavi.example`](../deploy/.env.vadskavi.example) för alla nycklar.
 
 ---
 
-## 4. Trigga första deployen
+## 4. Lägg till tjänsterna i docker-compose
 
-GitHub-secrets för SSH finns redan. Starta deployen så att imagen byggs och dras:
+Tjänsterna ligger på det interna `web`-nätet (samma som NPM och alla andra appar — Docker
+döper det `hosting_web` utåt). Säkerhetskopiera filen först:
 
-- **Antingen** pusha en ändring under `vadskavi/**` till `main`,
-- **eller** kör workflowen manuellt: GitHub → Actions → **Deploy VadSkaVi** → *Run workflow*.
+```bash
+cp /home/deploy/hosting/docker-compose.yml /home/deploy/hosting/docker-compose.yml.bak
+```
 
-Workflowen bygger imagen, pushar till GHCR, och kör på servern:
-`docker compose up -d vadskavi` + `prisma db push`.
+Klistra in `vadskavi`- och `vadskavi-db`-blocken från
+[`../deploy/docker-compose.snippet.yml`](../deploy/docker-compose.snippet.yml) under
+`services:`, och lägg `vadskavi_db_data:` under det översta `volumes:`-blocket.
 
-Kontrollera på servern:
+> Tips: blocket finns redan på servern via reza-deployen — visa det med
+> `cat ~/reza/vadskavi/deploy/docker-compose.snippet.yml`.
+
+Du behöver **inte** lägga till något under `networks:` — `web` finns redan.
+
+**Validera innan du startar något:**
 
 ```bash
 cd /home/deploy/hosting
-docker compose ps vadskavi vadskavi-db
-docker compose logs --tail=50 vadskavi
-curl -sf http://127.0.0.1:3457/ >/dev/null && echo "OK: vadskavi svarar"
+docker compose config >/dev/null && echo "compose OK"
 ```
 
-### (Valfritt) Seeda standardkategorier
+---
 
+## 5. Gör GHCR-paketet hämtbart
+
+Imagen `ghcr.io/tschiffer46/vadskavi` är privat som standard. Enklast: **gör paketet
+publikt** (imagen innehåller bara appkod, inga secrets):
+
+GitHub → din profil → **Packages** → **vadskavi** → **Package settings** → Danger Zone →
+**Change visibility** → **Public**.
+
+> Alternativ (behåll privat): logga in servern mot GHCR med en PAT (scope `read:packages`):
+> `echo DIN_TOKEN | docker login ghcr.io -u tschiffer46 --password-stdin`
+
+**Fallgrop:** om en tidigare workflow lämnat en **utgången** `ghcr.io`-inloggning i
+`~/.docker/config.json` får du `error from registry: denied` även för publika images. Kör
+då:
+
+```bash
+docker logout ghcr.io
+```
+
+---
+
+## 6. Starta tjänsterna
+
+```bash
+cd /home/deploy/hosting
+docker compose pull vadskavi vadskavi-db
+docker compose up -d vadskavi-db
+docker compose up -d vadskavi
+docker compose ps vadskavi vadskavi-db
+docker compose exec -T vadskavi node node_modules/prisma/build/index.js db push
+```
+
+✅ *Förväntat:* båda `Up ... (healthy)` och `db push` klart ("in sync with your Prisma
+schema"). Appen exponerar ingen host-port; healthchecken (i `docker compose ps`) visar att
+den svarar internt på `:3000`.
+
+(Valfritt) seeda standardkategorier för demo-familjen:
 ```bash
 docker compose exec -T vadskavi node node_modules/tsx/dist/cli.mjs prisma/seed.ts
 ```
 
 ---
 
-## 5. Skapa Proxy Host i Nginx Proxy Manager
+## 7. Proxy Host i Nginx Proxy Manager
 
-NPM-admin (port 81) är brandväggsblockerad — nå den via SSH-tunnel från din Mac:
+NPM-admin (port 81) nås via SSH-tunnel från din Mac:
 
 ```bash
 ssh -L 8081:localhost:81 deploy@89.167.90.112
-# öppna sedan http://localhost:8081 i webbläsaren
+# öppna http://localhost:8081
 ```
 
-I NPM-admin:
+**Hosts → Proxy Hosts → Add Proxy Host:**
+- Domain Names: `vadskavi.nu` (ev. även `www.vadskavi.nu`)
+- Scheme: `http`
+- Forward Hostname / IP: **`vadskavi`** (containernamnet — fungerar via `web`-nätet)
+- Forward Port: **`3000`**
+- ✅ Block Common Exploits, ✅ Websockets Support
+- **SSL-fliken:** Request a new SSL Certificate (Let's Encrypt), ✅ Force SSL, ✅ HTTP/2
 
-1. **Hosts → Proxy Hosts → Add Proxy Host**
-   - Domain Names: `vadskavi.nu` (och ev. `www.vadskavi.nu`)
-   - Scheme: `http`
-   - Forward Hostname / IP: `vadskavi` (containernamnet, samma nätverk)
-     - *Om NPM ligger på ett annat nätverk:* använd host-IP `172.18.0.1` och port `3457`.
-   - Forward Port: `3000` (eller `3457` om du går via host-IP)
-   - ✅ Block Common Exploits, ✅ Websockets Support
-2. **SSL-fliken**
-   - Request a new SSL Certificate (Let's Encrypt)
-   - ✅ Force SSL, ✅ HTTP/2, ange din e-post, godkänn villkoren
-3. **Save**
-
-Peka `vadskavi.nu` (DNS) mot serverns IP om det inte redan är gjort. Testa sedan
-`https://vadskavi.nu` — du ska mötas av inloggningssidan.
+Säkerställ att DNS för `vadskavi.nu` (A-record) pekar på `89.167.90.112`.
 
 ---
 
 ## Klart 🎉
 
+Öppna **https://vadskavi.nu** → inloggningssidan. Skriv din e-post → magic-link-mejlet
+testar SMTP-kedjan end-to-end.
+
 Framtida uppdateringar: pusha till `main` (ändringar under `vadskavi/**`) så bygger och
-deployar GitHub Actions automatiskt.
+deployar GitHub Actions automatiskt (workflowen loggar in mot GHCR, pull:ar och kör
+`db push`).

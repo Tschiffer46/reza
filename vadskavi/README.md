@@ -59,7 +59,12 @@ Deploy sker via GitHub Actions (`.github/workflows/vadskavi-deploy.yml`):
 2. Workflowen bygger Docker-imagen, pushar till `ghcr.io/tschiffer46/vadskavi:latest`,
    SSH:ar till servern, kör `docker compose up -d vadskavi` och `prisma db push`.
 
-**Första gången** måste servern förberedas manuellt (swapfil, compose-tjänster, NPM proxy
-host). Följ [`docs/SERVER-SETUP.md`](./docs/SERVER-SETUP.md).
+**Första gången** måste servern förberedas manuellt (swapfil, `.env.vadskavi`-secrets,
+compose-tjänster, GHCR-paketet publikt, NPM proxy host). Följ
+[`docs/SERVER-SETUP.md`](./docs/SERVER-SETUP.md).
+
+> På servern ligger secrets i `/home/deploy/hosting/.env.vadskavi` (per-app, som övriga
+> appar) — inte i container-`environment:`. GHCR-imagen måste vara **publik** (eller
+> servern inloggad mot ghcr.io) för att kunna hämtas.
 
 **Uppdatera** sedan genom att bara pusha till `main` — resten är automatiskt.
