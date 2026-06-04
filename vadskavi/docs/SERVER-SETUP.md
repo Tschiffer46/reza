@@ -171,3 +171,27 @@ testar SMTP-kedjan end-to-end.
 Framtida uppdateringar: pusha till `main` (ändringar under `vadskavi/**`) så bygger och
 deployar GitHub Actions automatiskt (workflowen loggar in mot GHCR, pull:ar och kör
 `db push`).
+
+---
+
+## Uppdatering (Sprint 3): receptfoton-volym
+
+Receptbilder sparas på disk i containern (`/app/data/uploads`) och måste ligga på en
+**Docker-volym** för att överleva omdeploy. Lägg till engångs på en redan körande server:
+
+1. Redigera `/home/deploy/hosting/docker-compose.yml` och lägg under `vadskavi`-tjänsten:
+   ```yaml
+       volumes:
+         - vadskavi-uploads:/app/data/uploads
+   ```
+   samt `vadskavi-uploads:` under det översta `volumes:`-blocket. Säkerställ att
+   `UPLOAD_DIR=/app/data/uploads` finns i `.env.vadskavi`.
+2. Validera och recreate:
+   ```bash
+   cd /home/deploy/hosting
+   docker compose config >/dev/null && echo "compose OK"
+   docker compose up -d vadskavi
+   ```
+
+> Görs detta inte försvinner uppladdade bilder vid nästa deploy (men recept-texten finns
+> kvar i databasen).

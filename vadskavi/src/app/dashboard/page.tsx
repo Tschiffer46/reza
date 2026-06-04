@@ -1,4 +1,6 @@
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
+import { Users } from 'lucide-react'
 import { auth, signOut } from '@/auth'
 import { prisma } from '@/lib/db'
 import { getActiveFamily } from '@/lib/family'
@@ -32,6 +34,7 @@ export default async function DashboardPage() {
     drinks: e.drinks,
     source: e.source,
     url: e.url,
+    imageUrls: e.imageUrls,
     timesCooked: e.timesCooked,
     lastCooked: e.lastCooked ? e.lastCooked.toISOString() : null,
     createdAt: e.createdAt.toISOString(),
@@ -50,6 +53,12 @@ export default async function DashboardPage() {
   return (
     <div className="min-h-screen pb-20">
       <Header>
+        <Link
+          href="/family"
+          className="flex items-center gap-1 rounded-lg border border-white/60 px-3 py-1.5 text-sm text-white hover:bg-white/10"
+        >
+          <Users className="h-4 w-4" /> Familj
+        </Link>
         <form action={logout}>
           <Button
             type="submit"

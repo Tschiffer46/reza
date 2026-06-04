@@ -9,6 +9,7 @@ export interface EntryDTO {
   drinks: string | null
   source: string | null
   url: string | null
+  imageUrls: string[]
   timesCooked: number
   lastCooked: string | null
   createdAt: string

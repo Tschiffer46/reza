@@ -95,6 +95,7 @@ model Entry {
   drinks       String?
   source       String?
   url          String?
+  imageUrls    String[]    @default([])
   timesCooked  Int         @default(0)
   lastCooked   DateTime?
   createdAt    DateTime    @default(now())
