@@ -1,14 +1,13 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Users } from 'lucide-react'
-import { auth, signOut } from '@/auth'
+import { UserCircle } from 'lucide-react'
+import { auth } from '@/auth'
 import { prisma } from '@/lib/db'
 import { getActiveFamily } from '@/lib/family'
 import { searchEntries } from '@/lib/search'
 import { Header } from '@/components/Header'
 import { NavBar } from '@/components/NavBar'
 import { EntryList } from '@/components/EntryList'
-import { Button } from '@/components/ui/button'
 import type { CategoryDTO, EntryDTO } from '@/lib/types'
 
 export default async function DashboardPage() {
@@ -45,30 +44,15 @@ export default async function DashboardPage() {
     type: c.type,
   }))
 
-  async function logout() {
-    'use server'
-    await signOut({ redirectTo: '/' })
-  }
-
   return (
     <div className="min-h-screen pb-20">
       <Header>
         <Link
-          href="/family"
+          href="/profile"
           className="flex items-center gap-1 rounded-lg border border-white/60 px-3 py-1.5 text-sm text-white hover:bg-white/10"
         >
-          <Users className="h-4 w-4" /> Familj
+          <UserCircle className="h-4 w-4" /> Konto
         </Link>
-        <form action={logout}>
-          <Button
-            type="submit"
-            variant="outline"
-            size="sm"
-            className="border-white/60 text-white hover:bg-white/10"
-          >
-            Logga ut
-          </Button>
-        </form>
       </Header>
       <main className="mx-auto max-w-2xl px-4 py-6">
         <EntryList initialEntries={entries} categories={categories} />
