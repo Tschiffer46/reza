@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireFamily } from '@/lib/family'
 import { extractFromText, extractFromImage } from '@/lib/ai'
+import { extractFromUrl } from '@/lib/url-extract'
 import { prepareForClaude } from '@/lib/images'
 
 export async function POST(request: NextRequest) {
@@ -29,13 +30,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(result)
     }
 
-    // Text-extraktion (JSON)
-    const { text } = await request.json()
-    if (!text || !text.trim()) {
-      return NextResponse.json({ error: 'Skicka text eller bild' }, { status: 400 })
+    // Text- eller URL-extraktion (JSON)
+    const body = await request.json()
+    if (body.url && body.url.trim()) {
+      const result = await extractFromUrl(body.url.trim())
+      return NextResponse.json(result)
     }
-    const result = await extractFromText(text)
-    return NextResponse.json(result)
+    if (body.text && body.text.trim()) {
+      const result = await extractFromText(body.text)
+      return NextResponse.json(result)
+    }
+    return NextResponse.json({ error: 'Skicka text, länk eller bild' }, { status: 400 })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Extraheringen misslyckades'
     return NextResponse.json({ error: message }, { status: 500 })

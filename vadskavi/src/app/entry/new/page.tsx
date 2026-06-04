@@ -2,18 +2,19 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { FileText, Camera, PencilLine } from 'lucide-react'
+import { FileText, Camera, PencilLine, Link2 } from 'lucide-react'
 import { Header } from '@/components/Header'
 import { NavBar } from '@/components/NavBar'
 import { EntryForm, type EntryFormData } from '@/components/EntryForm'
 import { ImageUploader } from '@/components/ImageUploader'
 import { Button } from '@/components/ui/button'
 
-type Mode = 'choose' | 'text' | 'image' | 'form'
+type Mode = 'choose' | 'text' | 'image' | 'url' | 'form'
 
 export default function NewEntryPage() {
   const [mode, setMode] = useState<Mode>('choose')
   const [text, setText] = useState('')
+  const [url, setUrl] = useState('')
   const [files, setFiles] = useState<File[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -53,6 +54,15 @@ export default function NewEntryPage() {
     return runExtract(() => fetch('/api/extract', { method: 'POST', body: fd }))
   }
 
+  const extractUrl = () =>
+    runExtract(() =>
+      fetch('/api/extract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      }),
+    )
+
   return (
     <div className="min-h-screen pb-20">
       <Header>
@@ -69,7 +79,11 @@ export default function NewEntryPage() {
             <h1 className="text-xl font-semibold text-brand-header">Lägg till recept eller tips</h1>
             <ChooseButton icon={FileText} title="Klistra in text" desc="AI extraherar receptet" onClick={() => setMode('text')} />
             <ChooseButton icon={Camera} title="Ta foto / välj bild" desc="AI läser av bilden" onClick={() => setMode('image')} />
+            <ChooseButton icon={Link2} title="Klistra in länk" desc="AI hämtar receptet från sidan" onClick={() => setMode('url')} />
             <ChooseButton icon={PencilLine} title="Fyll i manuellt" desc="Skriv in själv" onClick={() => { setExtracted(undefined); setMode('form') }} />
+            <Link href="/import" className="block text-center text-sm text-brand-accent-dark underline">
+              Importera flera recept på en gång
+            </Link>
           </div>
         )}
 
@@ -97,6 +111,24 @@ export default function NewEntryPage() {
             <div className="flex gap-2">
               <Button onClick={extractImage} disabled={loading || files.length === 0} className="flex-1">
                 {loading ? 'AI arbetar…' : 'Extrahera med AI'}
+              </Button>
+              <Button variant="ghost" onClick={() => setMode('choose')}>Avbryt</Button>
+            </div>
+          </div>
+        )}
+
+        {mode === 'url' && (
+          <div className="space-y-3">
+            <input
+              type="url"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://exempel.se/recept"
+              className="w-full rounded-lg border border-brand-accent/40 bg-white px-3 py-2 text-brand-ink focus:outline-none focus:ring-2 focus:ring-brand-accent"
+            />
+            <div className="flex gap-2">
+              <Button onClick={extractUrl} disabled={loading || !url.trim()} className="flex-1">
+                {loading ? 'Hämtar…' : 'Hämta recept'}
               </Button>
               <Button variant="ghost" onClick={() => setMode('choose')}>Avbryt</Button>
             </div>

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import { ServiceWorker } from '@/components/ServiceWorker'
 
 export const metadata: Metadata = {
   title: 'VadSkaVi — familjens receptbok',
@@ -23,7 +24,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="sv" className="h-full">
-      <body className="min-h-full antialiased">{children}</body>
+      <body className="min-h-full antialiased">
+        {children}
+        <ServiceWorker />
+      </body>
     </html>
   )
 }
