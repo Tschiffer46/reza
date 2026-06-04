@@ -70,24 +70,52 @@ export interface ExtractedEntry {
   url: string | null
 }
 
-/** Parsa Claudes JSON-svar (stripa ev. markdown-fence) till ett ExtractedEntry. */
-function parseResponse(text: string): ExtractedEntry {
+/** Strippa ev. markdown-fence från ett JSON-svar. */
+function stripFences(text: string): string {
   let cleaned = text.trim()
   if (cleaned.startsWith('```')) {
     cleaned = cleaned.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '')
   }
-  const parsed = JSON.parse(cleaned)
+  return cleaned
+}
+
+/** Normalisera ett parsat objekt till ett ExtractedEntry med fallback-värden. */
+export function normalizeEntry(parsed: Record<string, unknown>): ExtractedEntry {
   return {
     type: parsed.type === 'tip' ? 'tip' : 'recipe',
-    title: parsed.title || 'Utan titel',
-    category: parsed.category || 'Övrigt',
-    ingredients: Array.isArray(parsed.ingredients) ? parsed.ingredients : [],
-    instructions: parsed.instructions || null,
-    content: parsed.content || null,
-    drinks: parsed.drinks || null,
-    source: parsed.source || null,
-    url: parsed.url || null,
+    title: (parsed.title as string) || 'Utan titel',
+    category: (parsed.category as string) || 'Övrigt',
+    ingredients: Array.isArray(parsed.ingredients) ? (parsed.ingredients as string[]) : [],
+    instructions: (parsed.instructions as string) || null,
+    content: (parsed.content as string) || null,
+    drinks: (parsed.drinks as string) || null,
+    source: (parsed.source as string) || null,
+    url: (parsed.url as string) || null,
   }
+}
+
+/** Parsa Claudes JSON-svar till ett ExtractedEntry. */
+function parseResponse(text: string): ExtractedEntry {
+  return normalizeEntry(JSON.parse(stripFences(text)))
+}
+
+const BATCH_SYSTEM_PROMPT = `${AI_SYSTEM_PROMPT}
+
+Inmatningen kan innehålla FLERA recept eller tips. Returnera en JSON-ARRAY med ett objekt per recept/tips, i exakt samma objektformat som ovan. Svara BARA med JSON-arrayen.`
+
+/** Batch-extraktion — flera recept/tips ur en text (Haiku). */
+export async function extractBatchFromText(text: string): Promise<ExtractedEntry[]> {
+  const response = await getAnthropic().messages.create({
+    model: AI_MODELS.text,
+    max_tokens: 4000,
+    system: BATCH_SYSTEM_PROMPT,
+    messages: [{ role: 'user', content: text }],
+  })
+  const block = response.content[0]
+  if (block.type !== 'text') throw new Error('Oväntat svar från Claude')
+  const parsed = JSON.parse(stripFences(block.text))
+  const arr = Array.isArray(parsed) ? parsed : [parsed]
+  return arr.map(normalizeEntry)
 }
 
 /** Textextraktion — Haiku (snabb/billig). */
