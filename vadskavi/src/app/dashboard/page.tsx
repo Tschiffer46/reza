@@ -1,16 +1,46 @@
 import { redirect } from 'next/navigation'
 import { auth, signOut } from '@/auth'
+import { prisma } from '@/lib/db'
+import { getActiveFamily } from '@/lib/family'
+import { searchEntries } from '@/lib/search'
 import { Header } from '@/components/Header'
+import { NavBar } from '@/components/NavBar'
+import { EntryList } from '@/components/EntryList'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import type { CategoryDTO, EntryDTO } from '@/lib/types'
 
 export default async function DashboardPage() {
   const session = await auth()
-  if (!session?.user) {
+  if (!session?.user?.id) {
     redirect('/login')
   }
+  const familyId = await getActiveFamily(session.user.id)
 
-  const name = session.user.name ?? session.user.email ?? 'användare'
+  const [rawEntries, rawCategories] = await Promise.all([
+    searchEntries({ familyId }),
+    prisma.category.findMany({ where: { familyId }, orderBy: { name: 'asc' } }),
+  ])
+
+  const entries: EntryDTO[] = rawEntries.map((e) => ({
+    id: e.id,
+    type: e.type,
+    title: e.title,
+    category: e.category,
+    ingredients: e.ingredients,
+    instructions: e.instructions,
+    content: e.content,
+    drinks: e.drinks,
+    source: e.source,
+    url: e.url,
+    timesCooked: e.timesCooked,
+    lastCooked: e.lastCooked ? e.lastCooked.toISOString() : null,
+    createdAt: e.createdAt.toISOString(),
+  }))
+  const categories: CategoryDTO[] = rawCategories.map((c) => ({
+    id: c.id,
+    name: c.name,
+    type: c.type,
+  }))
 
   async function logout() {
     'use server'
@@ -18,7 +48,7 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen pb-20">
       <Header>
         <form action={logout}>
           <Button
@@ -31,20 +61,10 @@ export default async function DashboardPage() {
           </Button>
         </form>
       </Header>
-
-      <main className="max-w-2xl mx-auto px-4 py-10">
-        <Card>
-          <CardHeader>
-            <CardTitle>Hej, {name}!</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-brand-muted">
-            <p>Du är inloggad på VadSkaVi.</p>
-            <p className="text-sm">
-              Inloggad som <span className="text-brand-ink">{session.user.email}</span>
-            </p>
-          </CardContent>
-        </Card>
+      <main className="mx-auto max-w-2xl px-4 py-6">
+        <EntryList initialEntries={entries} categories={categories} />
       </main>
+      <NavBar />
     </div>
   )
 }
