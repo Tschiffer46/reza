@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
   // vadskavi ligger som undermapp i reza-repot; begränsa standalone-tracing till
   // denna mapp så att förälderns lockfile inte dras in i Docker-imagen.
   outputFileTracingRoot: __dirname,
+  serverExternalPackages: ['sharp'],
   images: {
     unoptimized: true,
   },

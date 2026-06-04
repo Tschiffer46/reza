@@ -57,3 +57,80 @@ export function getAnthropic(): Anthropic {
   }
   return client
 }
+
+export interface ExtractedEntry {
+  type: 'recipe' | 'tip'
+  title: string
+  category: string
+  ingredients: string[]
+  instructions: string | null
+  content: string | null
+  drinks: string | null
+  source: string | null
+  url: string | null
+}
+
+/** Parsa Claudes JSON-svar (stripa ev. markdown-fence) till ett ExtractedEntry. */
+function parseResponse(text: string): ExtractedEntry {
+  let cleaned = text.trim()
+  if (cleaned.startsWith('```')) {
+    cleaned = cleaned.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '')
+  }
+  const parsed = JSON.parse(cleaned)
+  return {
+    type: parsed.type === 'tip' ? 'tip' : 'recipe',
+    title: parsed.title || 'Utan titel',
+    category: parsed.category || 'Övrigt',
+    ingredients: Array.isArray(parsed.ingredients) ? parsed.ingredients : [],
+    instructions: parsed.instructions || null,
+    content: parsed.content || null,
+    drinks: parsed.drinks || null,
+    source: parsed.source || null,
+    url: parsed.url || null,
+  }
+}
+
+/** Textextraktion — Haiku (snabb/billig). */
+export async function extractFromText(text: string): Promise<ExtractedEntry> {
+  const response = await getAnthropic().messages.create({
+    model: AI_MODELS.text,
+    max_tokens: AI_MAX_TOKENS,
+    system: AI_SYSTEM_PROMPT,
+    messages: [{ role: 'user', content: text }],
+  })
+  const block = response.content[0]
+  if (block.type !== 'text') throw new Error('Oväntat svar från Claude')
+  return parseResponse(block.text)
+}
+
+/** Bildextraktion — Sonnet (bättre vision). Bilder som base64 (input-only). */
+export async function extractFromImage(
+  images: { base64: string; mediaType: string }[],
+): Promise<ExtractedEntry> {
+  const imageBlocks: Anthropic.ImageBlockParam[] = images.map((img) => ({
+    type: 'image',
+    source: {
+      type: 'base64',
+      media_type: img.mediaType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
+      data: img.base64,
+    },
+  }))
+
+  const response = await getAnthropic().messages.create({
+    model: AI_MODELS.image,
+    max_tokens: AI_MAX_TOKENS,
+    system: AI_SYSTEM_PROMPT,
+    messages: [
+      {
+        role: 'user',
+        content: [
+          ...imageBlocks,
+          { type: 'text', text: 'Extrahera receptet eller tipset från bilden/bilderna.' },
+        ],
+      },
+    ],
+  })
+  const block = response.content[0]
+  if (block.type !== 'text') throw new Error('Oväntat svar från Claude')
+  return parseResponse(block.text)
+}
