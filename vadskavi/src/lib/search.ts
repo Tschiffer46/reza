@@ -1,5 +1,6 @@
 import type { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/db'
+import { ENTRY_META_INCLUDE } from '@/lib/laga'
 
 export interface EntryQuery {
   /** Familjer användaren tillhör (sökningen spänner över dessa). */
@@ -12,7 +13,6 @@ export interface EntryQuery {
   sort?: string | null
 }
 
-const entryInclude = { family: { select: { id: true, name: true } } } as const
 
 /**
  * Lista/sök recept tvärs över användarens familjer. Sökning sker med Prisma
@@ -39,11 +39,13 @@ export async function searchEntries({ familyIds, q, type, category, family, sort
   const orderBy: Prisma.EntryOrderByWithRelationInput =
     sort === 'timesCooked'
       ? { timesCooked: 'desc' }
-      : sort === 'lastCooked'
-        ? { lastCooked: 'desc' }
-        : sort === 'title'
-          ? { title: 'asc' }
-          : { createdAt: 'desc' }
+      : sort === 'popular'
+        ? { reactions: { _count: 'desc' } }
+        : sort === 'lastCooked'
+          ? { lastCooked: 'desc' }
+          : sort === 'title'
+            ? { title: 'asc' }
+            : { createdAt: 'desc' }
 
-  return prisma.entry.findMany({ where, orderBy, take: 100, include: entryInclude })
+  return prisma.entry.findMany({ where, orderBy, take: 100, include: ENTRY_META_INCLUDE })
 }

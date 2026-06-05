@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireUser, getDefaultFamily, userFamilyIds, assertMember } from '@/lib/family'
 import { searchEntries } from '@/lib/search'
+import { toEntryDTO } from '@/lib/laga'
 
 export async function GET(request: NextRequest) {
   let userId
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
 
   const sp = request.nextUrl.searchParams
   const familyIds = await userFamilyIds(userId)
-  const entries = await searchEntries({
+  const rows = await searchEntries({
     familyIds,
     q: sp.get('q'),
     type: sp.get('type'),
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
     family: sp.get('family'),
     sort: sp.get('sort'),
   })
-  return NextResponse.json({ entries })
+  return NextResponse.json({ entries: rows.map(toEntryDTO) })
 }
 
 export async function POST(request: NextRequest) {
