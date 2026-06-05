@@ -18,14 +18,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return NextResponse.json({ error: 'Du är inte medlem i den familjen' }, { status: 403 })
   }
 
-  const { name } = await request.json()
-  if (!name || !name.trim()) {
-    return NextResponse.json({ error: 'Ange ett namn' }, { status: 400 })
+  const body = await request.json()
+  const data: { name?: string; background?: string } = {}
+  if (typeof body.name === 'string' && body.name.trim()) data.name = body.name.trim()
+  if (typeof body.background === 'string') data.background = body.background
+  if (Object.keys(data).length === 0) {
+    return NextResponse.json({ error: 'Inget att uppdatera' }, { status: 400 })
   }
 
-  const family = await prisma.family.update({
-    where: { id },
-    data: { name: name.trim() },
-  })
-  return NextResponse.json({ id: family.id, name: family.name })
+  const family = await prisma.family.update({ where: { id }, data })
+  return NextResponse.json({ id: family.id, name: family.name, background: family.background })
 }

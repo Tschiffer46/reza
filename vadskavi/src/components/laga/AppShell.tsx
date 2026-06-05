@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Logo, Icon, AvatarStack, type Person } from '@/components/laga/ui'
+import { applyBackground } from '@/lib/backgrounds'
 
 const NAV = [
   { href: '/laga', key: 'home', icon: 'home', label: 'Hem' },
@@ -33,6 +34,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               name: m.name || (m.email ? m.email.split('@')[0] : 'Någon'),
             })),
           })
+          applyBackground(d.active.background)
         }
       })
       .catch(() => {})

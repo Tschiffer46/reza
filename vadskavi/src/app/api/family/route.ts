@@ -40,6 +40,8 @@ export async function GET() {
       id: active.id,
       name: active.name,
       inviteCode: active.inviteCode,
+      background: active.background,
+      coverImage: active.coverImage,
       members: active.members.map((m) => ({
         name: m.user.name,
         email: m.user.email,
