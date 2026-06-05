@@ -24,7 +24,7 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
   return (
     <div className="min-h-screen pb-20">
       <Header>
-        <Link href={`/entry/${entry.id}`}>
+        <Link href={`/laga/entry/${entry.id}`}>
           <Button variant="outline" size="sm" className="border-white/60 text-white hover:bg-white/10">
             Tillbaka
           </Button>

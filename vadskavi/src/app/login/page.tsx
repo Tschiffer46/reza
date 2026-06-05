@@ -15,7 +15,7 @@ export default async function LoginPage({
     'use server'
     const email = String(formData.get('email') ?? '').trim()
     if (!email) return
-    await signIn('nodemailer', { email, redirectTo: '/dashboard' })
+    await signIn('nodemailer', { email, redirectTo: '/laga' })
   }
 
   return (

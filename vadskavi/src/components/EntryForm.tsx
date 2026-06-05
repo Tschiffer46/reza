@@ -73,7 +73,7 @@ export function EntryForm({ initialData }: { initialData?: Partial<EntryFormData
 
     if (res.ok) {
       const entry = await res.json()
-      router.push(`/entry/${entry.id}`)
+      router.push(`/laga/entry/${entry.id}`)
       router.refresh()
     } else {
       const err = await res.json().catch(() => ({}))

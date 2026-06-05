@@ -48,7 +48,7 @@ export default async function DashboardPage() {
     <div className="min-h-screen pb-20">
       <Header>
         <Link
-          href="/profile"
+          href="/laga/profile"
           className="flex items-center gap-1 rounded-lg border border-white/60 px-3 py-1.5 text-sm text-white hover:bg-white/10"
         >
           <UserCircle className="h-4 w-4" /> Konto

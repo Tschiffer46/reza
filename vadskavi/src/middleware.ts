@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 // Publika sökvägar som inte kräver inloggning.
-const PUBLIC_PATHS = ['/', '/login', '/api/auth']
+const PUBLIC_PATHS = ['/', '/login', '/register', '/api/auth']
 
 /**
  * Lättviktig auth-grind: kontrollerar att en Auth.js-sessionscookie finns.

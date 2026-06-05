@@ -60,14 +60,14 @@ export default function ImportPage() {
         body: JSON.stringify({ ...e, imageUrls: [] }),
       })
     }
-    router.push('/dashboard')
+    router.push('/laga')
     router.refresh()
   }
 
   return (
     <div className="min-h-screen pb-20">
       <Header>
-        <Link href="/dashboard">
+        <Link href="/laga">
           <Button variant="outline" size="sm" className="border-white/60 text-white hover:bg-white/10">
             Tillbaka
           </Button>

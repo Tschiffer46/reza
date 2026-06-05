@@ -26,7 +26,7 @@ export default async function ProfilePage() {
   return (
     <div className="min-h-screen pb-20">
       <Header>
-        <Link href="/dashboard">
+        <Link href="/laga">
           <Button variant="outline" size="sm" className="border-white/60 text-white hover:bg-white/10">
             Tillbaka
           </Button>
@@ -42,13 +42,13 @@ export default async function ProfilePage() {
 
         <div className="space-y-2">
           <Link
-            href="/family"
+            href="/laga/family"
             className="flex items-center gap-3 rounded-xl border border-brand-accent/20 bg-white p-4 hover:shadow-md"
           >
             <Users className="h-5 w-5 text-brand-accent-dark" /> Familj
           </Link>
           <Link
-            href="/categories"
+            href="/laga/categories"
             className="flex items-center gap-3 rounded-xl border border-brand-accent/20 bg-white p-4 hover:shadow-md"
           >
             <Tags className="h-5 w-5 text-brand-accent-dark" /> Kategorier

@@ -66,7 +66,7 @@ export default function NewEntryPage() {
   return (
     <div className="min-h-screen pb-20">
       <Header>
-        <Link href="/dashboard">
+        <Link href="/laga">
           <Button variant="outline" size="sm" className="border-white/60 text-white hover:bg-white/10">
             Tillbaka
           </Button>
@@ -81,7 +81,7 @@ export default function NewEntryPage() {
             <ChooseButton icon={Camera} title="Ta foto / välj bild" desc="AI läser av bilden" onClick={() => setMode('image')} />
             <ChooseButton icon={Link2} title="Klistra in länk" desc="AI hämtar receptet från sidan" onClick={() => setMode('url')} />
             <ChooseButton icon={PencilLine} title="Fyll i manuellt" desc="Skriv in själv" onClick={() => { setExtracted(undefined); setMode('form') }} />
-            <Link href="/import" className="block text-center text-sm text-brand-accent-dark underline">
+            <Link href="/laga/import" className="block text-center text-sm text-brand-accent-dark underline">
               Importera flera recept på en gång
             </Link>
           </div>
