@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json()
-  const { type, title, category, ingredients, instructions, content, drinks, source, url, imageUrls } = body
+  const { type, title, category, blurb, time, servings, ingredients, instructions, content, drinks, source, url, imageUrls } = body
 
   if (!title || !type || !category) {
     return NextResponse.json({ error: 'Titel, typ och kategori krävs' }, { status: 400 })
@@ -57,6 +57,9 @@ export async function POST(request: NextRequest) {
       type,
       title,
       category,
+      blurb: blurb || null,
+      time: time || null,
+      servings: typeof servings === 'number' ? servings : null,
       ingredients: Array.isArray(ingredients) ? ingredients : [],
       instructions: instructions || null,
       content: content || null,

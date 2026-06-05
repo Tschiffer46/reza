@@ -76,13 +76,16 @@ export async function PUT(request: NextRequest, { params }: Params) {
     }
   }
 
-  const { type, title, category, ingredients, instructions, content, drinks, source, url, imageUrls } = body
+  const { type, title, category, blurb, time, servings, ingredients, instructions, content, drinks, source, url, imageUrls } = body
   const entry = await prisma.entry.update({
     where: { id },
     data: {
       type,
       title,
       category,
+      blurb: blurb ?? null,
+      time: time ?? null,
+      servings: typeof servings === 'number' ? servings : null,
       ingredients: Array.isArray(ingredients) ? ingredients : [],
       instructions: instructions ?? null,
       content: content ?? null,

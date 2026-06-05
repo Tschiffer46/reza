@@ -11,6 +11,9 @@ export interface EntryFormData {
   type: string
   title: string
   category: string
+  blurb?: string | null
+  time?: string | null
+  servings?: number | null
   ingredients: string[]
   instructions: string | null
   content: string | null
@@ -29,6 +32,9 @@ export function EntryForm({ initialData }: { initialData?: Partial<EntryFormData
   const [type, setType] = useState(initialData?.type || 'recipe')
   const [title, setTitle] = useState(initialData?.title || '')
   const [category, setCategory] = useState(initialData?.category || '')
+  const [blurb, setBlurb] = useState(initialData?.blurb || '')
+  const [time, setTime] = useState(initialData?.time || '')
+  const [servings, setServings] = useState(initialData?.servings ? String(initialData.servings) : '')
   const [ingredients, setIngredients] = useState((initialData?.ingredients || []).join('\n'))
   const [instructions, setInstructions] = useState(initialData?.instructions || '')
   const [content, setContent] = useState(initialData?.content || '')
@@ -69,6 +75,9 @@ export function EntryForm({ initialData }: { initialData?: Partial<EntryFormData
       type,
       title,
       category,
+      blurb: blurb || null,
+      time: type === 'recipe' ? time || null : null,
+      servings: type === 'recipe' && servings ? parseInt(servings, 10) || null : null,
       ingredients:
         type === 'recipe' ? ingredients.split('\n').map((s) => s.trim()).filter(Boolean) : [],
       instructions: type === 'recipe' ? instructions || null : null,
@@ -163,8 +172,28 @@ export function EntryForm({ initialData }: { initialData?: Partial<EntryFormData
         </select>
       </div>
 
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium text-brand-header">Kort beskrivning (valfritt)</label>
+        <input
+          className={inputClass}
+          value={blurb}
+          onChange={(e) => setBlurb(e.target.value)}
+          placeholder="En rad om rätten…"
+        />
+      </div>
+
       {type === 'recipe' && (
         <>
+          <div className="flex gap-3">
+            <div className="flex-1 space-y-1.5">
+              <label className="text-sm font-medium text-brand-header">Tid (valfritt)</label>
+              <input className={inputClass} value={time} onChange={(e) => setTime(e.target.value)} placeholder="t.ex. 45 min" />
+            </div>
+            <div className="w-32 space-y-1.5">
+              <label className="text-sm font-medium text-brand-header">Portioner</label>
+              <input className={inputClass} type="number" min={1} value={servings} onChange={(e) => setServings(e.target.value)} placeholder="4" />
+            </div>
+          </div>
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-brand-header">Ingredienser (en per rad)</label>
             <textarea
