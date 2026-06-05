@@ -3,10 +3,8 @@ import Link from 'next/link'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db'
 import { userFamilyIds } from '@/lib/family'
-import { Header } from '@/components/Header'
-import { NavBar } from '@/components/NavBar'
+import { AppShell } from '@/components/laga/AppShell'
 import { EntryForm } from '@/components/EntryForm'
-import { Button } from '@/components/ui/button'
 
 export default async function EditEntryPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
@@ -22,15 +20,11 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
   }
 
   return (
-    <div className="min-h-screen pb-20">
-      <Header>
-        <Link href={`/laga/entry/${entry.id}`}>
-          <Button variant="outline" size="sm" className="border-white/60 text-white hover:bg-white/10">
-            Tillbaka
-          </Button>
+    <AppShell>
+      <div className="mx-auto max-w-2xl">
+        <Link href={`/laga/entry/${entry.id}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--muted)', fontSize: 14, fontWeight: 600, marginBottom: 16 }}>
+          ← Tillbaka
         </Link>
-      </Header>
-      <main className="mx-auto max-w-2xl px-4 py-6">
         <h1 className="mb-4 text-xl font-semibold text-brand-header">Redigera</h1>
         <EntryForm
           initialData={{
@@ -38,6 +32,9 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
             type: entry.type,
             title: entry.title,
             category: entry.category,
+            blurb: entry.blurb,
+            time: entry.time,
+            servings: entry.servings,
             ingredients: entry.ingredients,
             instructions: entry.instructions,
             content: entry.content,
@@ -48,8 +45,7 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
             familyId: entry.familyId,
           }}
         />
-      </main>
-      <NavBar />
-    </div>
+      </div>
+    </AppShell>
   )
 }

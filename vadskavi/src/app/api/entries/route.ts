@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireUser, getDefaultFamily, userFamilyIds, assertMember } from '@/lib/family'
 import { searchEntries } from '@/lib/search'
+import { toEntryDTO } from '@/lib/laga'
 
 export async function GET(request: NextRequest) {
   let userId
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
 
   const sp = request.nextUrl.searchParams
   const familyIds = await userFamilyIds(userId)
-  const entries = await searchEntries({
+  const rows = await searchEntries({
     familyIds,
     q: sp.get('q'),
     type: sp.get('type'),
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
     family: sp.get('family'),
     sort: sp.get('sort'),
   })
-  return NextResponse.json({ entries })
+  return NextResponse.json({ entries: rows.map(toEntryDTO) })
 }
 
 export async function POST(request: NextRequest) {
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json()
-  const { type, title, category, ingredients, instructions, content, drinks, source, url, imageUrls } = body
+  const { type, title, category, blurb, time, servings, ingredients, instructions, content, drinks, source, url, imageUrls } = body
 
   if (!title || !type || !category) {
     return NextResponse.json({ error: 'Titel, typ och kategori krävs' }, { status: 400 })
@@ -56,6 +57,9 @@ export async function POST(request: NextRequest) {
       type,
       title,
       category,
+      blurb: blurb || null,
+      time: time || null,
+      servings: typeof servings === 'number' ? servings : null,
       ingredients: Array.isArray(ingredients) ? ingredients : [],
       instructions: instructions || null,
       content: content || null,

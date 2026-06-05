@@ -23,6 +23,8 @@ model User {
   memberships   Membership[]
   recipes       Entry[]      @relation("Creator")
   comments      Comment[]
+  notes         Note[]
+  reactions     Reaction[]
   changes       ChangeLog[]
   accounts      Account[]
   sessions      Session[]
@@ -66,6 +68,8 @@ model Family {
   id          String       @id @default(cuid())
   name        String
   inviteCode  String       @unique
+  background  String?
+  coverImage  String?
   createdAt   DateTime     @default(now())
   createdById String
   members     Membership[]
@@ -90,6 +94,9 @@ model Entry {
   type         String
   title        String
   category     String
+  blurb        String?
+  time         String?
+  servings     Int?
   ingredients  String[]
   instructions String?
   content      String?
@@ -105,7 +112,29 @@ model Entry {
   family       Family      @relation(fields: [familyId], references: [id])
   creator      User        @relation("Creator", fields: [creatorId], references: [id])
   comments     Comment[]
+  notes        Note[]
+  reactions    Reaction[]
   changes      ChangeLog[]
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  text      String
+  createdAt DateTime @default(now())
+  entryId   String
+  authorId  String
+  entry     Entry    @relation(fields: [entryId], references: [id])
+  author    User     @relation(fields: [authorId], references: [id])
+}
+
+model Reaction {
+  id      String @id @default(cuid())
+  entryId String
+  userId  String
+  entry   Entry  @relation(fields: [entryId], references: [id])
+  user    User   @relation(fields: [userId], references: [id])
+
+  @@unique([entryId, userId])
 }
 
 model Comment {

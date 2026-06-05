@@ -3,6 +3,9 @@ export interface EntryDTO {
   type: string
   title: string
   category: string
+  blurb?: string | null
+  time?: string | null
+  servings?: number | null
   ingredients: string[]
   instructions: string | null
   content: string | null
@@ -14,6 +17,9 @@ export interface EntryDTO {
   lastCooked: string | null
   createdAt: string
   family?: { id: string; name: string }
+  cookedBy?: { name: string; n: number }[]
+  heartCount?: number
+  commentCount?: number
 }
 
 export interface CommentDTO {

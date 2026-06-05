@@ -3,8 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { FileText, Camera, PencilLine, Link2 } from 'lucide-react'
-import { Header } from '@/components/Header'
-import { NavBar } from '@/components/NavBar'
+import { AppShell } from '@/components/laga/AppShell'
 import { EntryForm, type EntryFormData } from '@/components/EntryForm'
 import { ImageUploader } from '@/components/ImageUploader'
 import { Button } from '@/components/ui/button'
@@ -64,16 +63,8 @@ export default function NewEntryPage() {
     )
 
   return (
-    <div className="min-h-screen pb-20">
-      <Header>
-        <Link href="/laga">
-          <Button variant="outline" size="sm" className="border-white/60 text-white hover:bg-white/10">
-            Tillbaka
-          </Button>
-        </Link>
-      </Header>
-
-      <main className="mx-auto max-w-2xl space-y-4 px-4 py-6">
+    <AppShell>
+      <div className="mx-auto max-w-2xl space-y-4">
         {mode === 'choose' && (
           <div className="space-y-3">
             <h1 className="text-xl font-semibold text-brand-header">Lägg till recept eller tips</h1>
@@ -147,10 +138,8 @@ export default function NewEntryPage() {
         )}
 
         {error && <p className="text-sm text-red-600">{error}</p>}
-      </main>
-
-      <NavBar />
-    </div>
+      </div>
+    </AppShell>
   )
 }
 
