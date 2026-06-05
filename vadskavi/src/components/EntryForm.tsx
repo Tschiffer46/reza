@@ -18,6 +18,7 @@ export interface EntryFormData {
   source: string | null
   url: string | null
   imageUrls: string[]
+  familyId?: string
 }
 
 const inputClass =
@@ -35,16 +36,30 @@ export function EntryForm({ initialData }: { initialData?: Partial<EntryFormData
   const [source, setSource] = useState(initialData?.source || '')
   const [url, setUrl] = useState(initialData?.url || '')
   const [imageUrls, setImageUrls] = useState<string[]>(initialData?.imageUrls || [])
+  const [familyId, setFamilyId] = useState(initialData?.familyId || '')
+  const [families, setFamilies] = useState<{ id: string; name: string }[]>([])
   const [categories, setCategories] = useState<CategoryDTO[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
+  // Hämta familjer och förvald standardfamilj
   useEffect(() => {
-    fetch(`/api/categories?type=${type}`)
+    fetch('/api/family')
+      .then((r) => r.json())
+      .then((d) => {
+        setFamilies(d.families || [])
+        if (!initialData?.familyId && d.activeId) setFamilyId(d.activeId)
+      })
+      .catch(() => {})
+  }, [initialData?.familyId])
+
+  useEffect(() => {
+    const fam = familyId ? `&family=${familyId}` : ''
+    fetch(`/api/categories?type=${type}${fam}`)
       .then((r) => r.json())
       .then((d) => setCategories(Array.isArray(d) ? d : []))
       .catch(() => setCategories([]))
-  }, [type])
+  }, [type, familyId])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -62,6 +77,7 @@ export function EntryForm({ initialData }: { initialData?: Partial<EntryFormData
       source: source || null,
       url: url || null,
       imageUrls,
+      familyId: familyId || undefined,
     }
 
     const isEdit = !!initialData?.id
@@ -101,6 +117,23 @@ export function EntryForm({ initialData }: { initialData?: Partial<EntryFormData
           </button>
         ))}
       </div>
+
+      {families.length > 1 && (
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-brand-header">Familj</label>
+          <select
+            className={inputClass}
+            value={familyId}
+            onChange={(e) => setFamilyId(e.target.value)}
+          >
+            {families.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="space-y-1.5">
         <label className="text-sm font-medium text-brand-header">Titel</label>

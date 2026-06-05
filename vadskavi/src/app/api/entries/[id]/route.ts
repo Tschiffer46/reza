@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { requireFamily } from '@/lib/family'
+import { requireUser, userFamilyIds, assertMember } from '@/lib/family'
 import { deleteImage } from '@/lib/images'
 
 type Params = { params: Promise<{ id: string }> }
 
 export async function GET(_request: NextRequest, { params }: Params) {
-  let ctx
+  let userId
   try {
-    ctx = await requireFamily()
+    userId = await requireUser()
   } catch {
     return NextResponse.json({ error: 'Ej inloggad' }, { status: 401 })
   }
@@ -17,31 +17,39 @@ export async function GET(_request: NextRequest, { params }: Params) {
   const entry = await prisma.entry.findUnique({
     where: { id },
     include: {
+      family: { select: { id: true, name: true } },
       creator: { select: { name: true, email: true } },
       comments: {
         include: { author: { select: { name: true, email: true } } },
         orderBy: { createdAt: 'asc' },
       },
+      changes: {
+        include: { user: { select: { name: true, email: true } } },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+      },
     },
   })
 
-  if (!entry || entry.familyId !== ctx.familyId) {
+  const familyIds = await userFamilyIds(userId)
+  if (!entry || !familyIds.includes(entry.familyId)) {
     return NextResponse.json({ error: 'Hittades inte' }, { status: 404 })
   }
   return NextResponse.json(entry)
 }
 
 export async function PUT(request: NextRequest, { params }: Params) {
-  let ctx
+  let userId
   try {
-    ctx = await requireFamily()
+    userId = await requireUser()
   } catch {
     return NextResponse.json({ error: 'Ej inloggad' }, { status: 401 })
   }
 
   const { id } = await params
   const existing = await prisma.entry.findUnique({ where: { id } })
-  if (!existing || existing.familyId !== ctx.familyId) {
+  const familyIds = await userFamilyIds(userId)
+  if (!existing || !familyIds.includes(existing.familyId)) {
     return NextResponse.json({ error: 'Hittades inte' }, { status: 404 })
   }
 
@@ -53,10 +61,19 @@ export async function PUT(request: NextRequest, { params }: Params) {
       where: { id },
       data: { timesCooked: { increment: 1 }, lastCooked: new Date() },
     })
-    await prisma.changeLog.create({
-      data: { action: 'cooked', entryId: id, userId: ctx.userId },
-    })
+    await prisma.changeLog.create({ data: { action: 'cooked', entryId: id, userId } })
     return NextResponse.json(entry)
+  }
+
+  // Flytta till annan familj (om angiven och medlem)
+  let familyId = existing.familyId
+  if (body.familyId && body.familyId !== existing.familyId) {
+    try {
+      await assertMember(userId, body.familyId)
+      familyId = body.familyId
+    } catch {
+      return NextResponse.json({ error: 'Du tillhör inte den familjen' }, { status: 403 })
+    }
   }
 
   const { type, title, category, ingredients, instructions, content, drinks, source, url, imageUrls } = body
@@ -73,35 +90,33 @@ export async function PUT(request: NextRequest, { params }: Params) {
       source: source ?? null,
       url: url ?? null,
       imageUrls: Array.isArray(imageUrls) ? imageUrls : existing.imageUrls,
+      familyId,
     },
   })
-  await prisma.changeLog.create({
-    data: { action: 'updated', entryId: id, userId: ctx.userId },
-  })
+  await prisma.changeLog.create({ data: { action: 'updated', entryId: id, userId } })
   return NextResponse.json(entry)
 }
 
 export async function DELETE(_request: NextRequest, { params }: Params) {
-  let ctx
+  let userId
   try {
-    ctx = await requireFamily()
+    userId = await requireUser()
   } catch {
     return NextResponse.json({ error: 'Ej inloggad' }, { status: 401 })
   }
 
   const { id } = await params
   const existing = await prisma.entry.findUnique({ where: { id } })
-  if (!existing || existing.familyId !== ctx.familyId) {
+  const familyIds = await userFamilyIds(userId)
+  if (!existing || !familyIds.includes(existing.familyId)) {
     return NextResponse.json({ error: 'Hittades inte' }, { status: 404 })
   }
 
-  // Ta bort barn-rader först (inga cascades i schemat).
   await prisma.$transaction([
     prisma.comment.deleteMany({ where: { entryId: id } }),
     prisma.changeLog.deleteMany({ where: { entryId: id } }),
     prisma.entry.delete({ where: { id } }),
   ])
-  // Städa upp bildfiler
   await Promise.all(existing.imageUrls.map((f) => deleteImage(f)))
   return NextResponse.json({ success: true })
 }

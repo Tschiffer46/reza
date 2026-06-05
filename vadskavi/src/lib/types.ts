@@ -13,6 +13,7 @@ export interface EntryDTO {
   timesCooked: number
   lastCooked: string | null
   createdAt: string
+  family?: { id: string; name: string }
 }
 
 export interface CommentDTO {

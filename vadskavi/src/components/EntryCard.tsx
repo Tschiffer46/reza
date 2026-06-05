@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import type { EntryDTO } from '@/lib/types'
 
-export function EntryCard({ entry }: { entry: EntryDTO }) {
+export function EntryCard({ entry, showFamily = false }: { entry: EntryDTO; showFamily?: boolean }) {
   return (
     <Link
       href={`/laga/entry/${entry.id}`}
@@ -14,6 +14,11 @@ export function EntryCard({ entry }: { entry: EntryDTO }) {
             {entry.category}
           </span>
           <span className="text-xs text-brand-muted">{entry.type === 'tip' ? 'Tips' : 'Recept'}</span>
+          {showFamily && entry.family && (
+            <span className="rounded-full bg-brand-header/10 px-2 py-0.5 text-xs text-brand-header">
+              {entry.family.name}
+            </span>
+          )}
           {entry.timesCooked > 0 && (
             <span className="text-xs text-brand-muted">· Lagad {entry.timesCooked}×</span>
           )}

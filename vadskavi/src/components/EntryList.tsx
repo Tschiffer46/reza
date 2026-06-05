@@ -22,20 +22,22 @@ const SORTS = [
 export function EntryList({
   initialEntries,
   categories,
+  families = [],
 }: {
   initialEntries: EntryDTO[]
   categories: CategoryDTO[]
+  families?: { id: string; name: string }[]
 }) {
   const [entries, setEntries] = useState(initialEntries)
   const [searchInput, setSearchInput] = useState('')
   const [q, setQ] = useState('')
   const [type, setType] = useState('')
   const [category, setCategory] = useState('')
+  const [family, setFamily] = useState('')
   const [sort, setSort] = useState('createdAt')
   const [loading, setLoading] = useState(false)
   const firstRender = useRef(true)
 
-  // Debounce sökfältet
   useEffect(() => {
     const t = setTimeout(() => setQ(searchInput), 300)
     return () => clearTimeout(t)
@@ -47,14 +49,14 @@ export function EntryList({
     if (q) params.set('q', q)
     if (type) params.set('type', type)
     if (category) params.set('category', category)
+    if (family) params.set('family', family)
     if (sort) params.set('sort', sort)
     const res = await fetch(`/api/entries?${params.toString()}`)
     const data = await res.json()
     setEntries(data.entries || [])
     setLoading(false)
-  }, [q, type, category, sort])
+  }, [q, type, category, family, sort])
 
-  // Hoppa över första renderingen (vi har redan initialEntries från servern)
   useEffect(() => {
     if (firstRender.current) {
       firstRender.current = false
@@ -64,10 +66,24 @@ export function EntryList({
   }, [fetchEntries])
 
   const visibleCategories = categories.filter((c) => !type || c.type === type)
+  const showFamilyBadge = families.length > 1
 
   return (
     <div className="space-y-3">
       <SearchBar value={searchInput} onChange={setSearchInput} />
+
+      {families.length > 1 && (
+        <div className="scrollbar-hide flex gap-2 overflow-x-auto pb-1">
+          <FamilyChip active={!family} onClick={() => setFamily('')}>
+            Alla familjer
+          </FamilyChip>
+          {families.map((f) => (
+            <FamilyChip key={f.id} active={family === f.id} onClick={() => setFamily(f.id)}>
+              {f.name}
+            </FamilyChip>
+          ))}
+        </div>
+      )}
 
       <div className="flex items-center justify-between gap-2">
         <div className="flex gap-1 rounded-lg bg-brand-accent/10 p-1">
@@ -113,10 +129,32 @@ export function EntryList({
       ) : (
         <div className="space-y-2">
           {entries.map((entry) => (
-            <EntryCard key={entry.id} entry={entry} />
+            <EntryCard key={entry.id} entry={entry} showFamily={showFamilyBadge} />
           ))}
         </div>
       )}
     </div>
+  )
+}
+
+function FamilyChip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`whitespace-nowrap rounded-full px-3 py-1 text-sm transition-colors ${
+        active ? 'bg-brand-header text-white' : 'bg-brand-header/10 text-brand-header hover:bg-brand-header/20'
+      }`}
+    >
+      {children}
+    </button>
   )
 }

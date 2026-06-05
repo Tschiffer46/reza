@@ -2,7 +2,7 @@ import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db'
-import { getActiveFamily } from '@/lib/family'
+import { userFamilyIds } from '@/lib/family'
 import { Header } from '@/components/Header'
 import { NavBar } from '@/components/NavBar'
 import { EntryForm } from '@/components/EntryForm'
@@ -13,11 +13,11 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
   if (!session?.user?.id) {
     redirect('/login')
   }
-  const familyId = await getActiveFamily(session.user.id)
   const { id } = await params
 
   const entry = await prisma.entry.findUnique({ where: { id } })
-  if (!entry || entry.familyId !== familyId) {
+  const familyIds = await userFamilyIds(session.user.id)
+  if (!entry || !familyIds.includes(entry.familyId)) {
     notFound()
   }
 
@@ -45,6 +45,7 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
             source: entry.source,
             url: entry.url,
             imageUrls: entry.imageUrls,
+            familyId: entry.familyId,
           }}
         />
       </main>

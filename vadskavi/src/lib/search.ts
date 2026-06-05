@@ -2,21 +2,26 @@ import type { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/db'
 
 export interface EntryQuery {
-  familyId: string
+  /** Familjer användaren tillhör (sökningen spänner över dessa). */
+  familyIds: string[]
   q?: string | null
   type?: string | null
   category?: string | null
+  /** Valfritt: begränsa till en specifik familj. */
+  family?: string | null
   sort?: string | null
 }
 
+const entryInclude = { family: { select: { id: true, name: true } } } as const
+
 /**
- * Lista/sök familjens entries. Sökning sker med Prisma (skiftlägesokänslig
- * delsträngsmatchning) över titel/instruktioner/innehåll/källa, samt exakt
- * matchning mot ingrediens-arrayen. (Postgres tsvector kan bli en framtida
- * uppgradering — men ILIKE fungerar robust med `prisma db push`.)
+ * Lista/sök recept tvärs över användarens familjer. Sökning sker med Prisma
+ * (skiftlägesokänslig delsträngsmatchning); kan begränsas till en familj.
  */
-export async function searchEntries({ familyId, q, type, category, sort }: EntryQuery) {
-  const where: Prisma.EntryWhereInput = { familyId }
+export async function searchEntries({ familyIds, q, type, category, family, sort }: EntryQuery) {
+  const scopeIds = family && familyIds.includes(family) ? [family] : familyIds
+
+  const where: Prisma.EntryWhereInput = { familyId: { in: scopeIds } }
   if (type) where.type = type
   if (category) where.category = category
 
@@ -40,5 +45,5 @@ export async function searchEntries({ familyId, q, type, category, sort }: Entry
           ? { title: 'asc' }
           : { createdAt: 'desc' }
 
-  return prisma.entry.findMany({ where, orderBy, take: 100 })
+  return prisma.entry.findMany({ where, orderBy, take: 100, include: entryInclude })
 }
