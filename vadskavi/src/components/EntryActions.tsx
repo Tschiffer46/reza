@@ -14,7 +14,7 @@ export function EntryActions({ entryId }: { entryId: string }) {
     setDeleting(true)
     const res = await fetch(`/api/entries/${entryId}`, { method: 'DELETE' })
     if (res.ok) {
-      router.push('/dashboard')
+      router.push('/laga')
       router.refresh()
     } else {
       setDeleting(false)
@@ -24,7 +24,7 @@ export function EntryActions({ entryId }: { entryId: string }) {
   return (
     <div className="flex items-center gap-3">
       <Link
-        href={`/entry/${entryId}/edit`}
+        href={`/laga/entry/${entryId}/edit`}
         className="flex items-center gap-1 text-sm text-brand-accent-dark hover:underline"
       >
         <Pencil className="h-4 w-4" /> Redigera

@@ -17,6 +17,7 @@ model User {
   email         String       @unique
   name          String?
   avatar        String?
+  password      String?
   emailVerified DateTime?
   createdAt     DateTime     @default(now())
   memberships   Membership[]

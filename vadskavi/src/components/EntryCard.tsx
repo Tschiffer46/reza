@@ -4,7 +4,7 @@ import type { EntryDTO } from '@/lib/types'
 export function EntryCard({ entry }: { entry: EntryDTO }) {
   return (
     <Link
-      href={`/entry/${entry.id}`}
+      href={`/laga/entry/${entry.id}`}
       className="flex items-start gap-3 rounded-xl border border-brand-accent/20 bg-white p-4 transition-shadow hover:shadow-md"
     >
       <div className="min-w-0 flex-1">

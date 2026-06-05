@@ -1,13 +1,15 @@
 import NextAuth from 'next-auth'
 import { PrismaAdapter } from '@auth/prisma-adapter'
 import Nodemailer from 'next-auth/providers/nodemailer'
+import Credentials from 'next-auth/providers/credentials'
+import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/db'
 import { sendVerificationRequest } from '@/lib/auth-email'
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
-  // Databassessioner — kräver Session/Account/VerificationToken-tabellerna i schemat.
-  session: { strategy: 'database' },
+  // JWT-sessioner krävs för Credentials-providern (magic link fungerar ändå via adaptern).
+  session: { strategy: 'jwt' },
   // Appen körs bakom Nginx Proxy Manager; lita på proxy-host-headern.
   trustHost: true,
   pages: {
@@ -25,16 +27,35 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         },
       },
       from: process.env.EMAIL_FROM,
-      // 24 timmar
       maxAge: 24 * 60 * 60,
       sendVerificationRequest,
     }),
+    Credentials({
+      name: 'credentials',
+      credentials: {
+        email: { label: 'E-post', type: 'email' },
+        password: { label: 'Lösenord', type: 'password' },
+      },
+      async authorize(creds) {
+        const email = String(creds?.email ?? '').toLowerCase().trim()
+        const password = String(creds?.password ?? '')
+        if (!email || !password) return null
+        const user = await prisma.user.findUnique({ where: { email } })
+        if (!user || !user.password) return null
+        const ok = await bcrypt.compare(password, user.password)
+        if (!ok) return null
+        return { id: user.id, email: user.email, name: user.name }
+      },
+    }),
   ],
   callbacks: {
-    // Exponera användar-id i sessionen (databassessioner ger `user` här).
-    session({ session, user }) {
-      if (session.user) {
-        session.user.id = user.id
+    jwt({ token, user }) {
+      if (user?.id) token.id = user.id
+      return token
+    },
+    session({ session, token }) {
+      if (session.user && token.id) {
+        session.user.id = token.id as string
       }
       return session
     },

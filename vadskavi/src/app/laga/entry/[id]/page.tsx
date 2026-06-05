@@ -43,7 +43,7 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
   return (
     <div className="min-h-screen pb-20">
       <Header>
-        <Link href="/dashboard">
+        <Link href="/laga">
           <Button variant="outline" size="sm" className="border-white/60 text-white hover:bg-white/10">
             Tillbaka
           </Button>

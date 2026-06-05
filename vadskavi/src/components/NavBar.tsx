@@ -5,8 +5,8 @@ import { usePathname } from 'next/navigation'
 import { Home, Plus } from 'lucide-react'
 
 const items = [
-  { href: '/dashboard', label: 'Hem', icon: Home },
-  { href: '/entry/new', label: 'Lägg till', icon: Plus },
+  { href: '/laga', label: 'Hem', icon: Home },
+  { href: '/laga/entry/new', label: 'Lägg till', icon: Plus },
 ]
 
 export function NavBar() {
