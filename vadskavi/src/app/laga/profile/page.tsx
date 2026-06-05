@@ -6,6 +6,7 @@ import { prisma } from '@/lib/db'
 import { Header } from '@/components/Header'
 import { NavBar } from '@/components/NavBar'
 import { ProfileForm } from '@/components/ProfileForm'
+import { PasswordForm } from '@/components/PasswordForm'
 import { Button } from '@/components/ui/button'
 
 export default async function ProfilePage() {
@@ -39,6 +40,8 @@ export default async function ProfilePage() {
         </div>
 
         <ProfileForm initialName={user?.name || ''} />
+
+        <PasswordForm />
 
         <div className="space-y-2">
           <Link

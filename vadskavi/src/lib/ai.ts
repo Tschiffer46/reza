@@ -29,7 +29,7 @@ Returnera EXAKT detta JSON-format, inget annat:
   "title": "kort titel",
   "category": "en av kategorierna nedan",
   "ingredients": ["array av ingredienser, bara för recept, tom array för tips"],
-  "instructions": "instruktioner steg för steg, bara för recept, null för tips",
+  "instructions": "instruktioner steg för steg med VARJE steg på egen rad (radbrytning \\n mellan stegen), bara för recept, null för tips",
   "content": "innehåll, bara för tips, null för recept",
   "drinks": "förslag på dryck som passar, annars null",
   "source": "källa om den framgår, annars null",
@@ -70,6 +70,19 @@ export interface ExtractedEntry {
   url: string | null
 }
 
+/**
+ * Säkerställ radbrytning mellan instruktionssteg. Källor som Instagram ger ofta
+ * instruktioner på en enda rad ("1. … 2. … 3. …"); lägg då radbrytning före varje
+ * numrerat steg så de renderas styckevis.
+ */
+function formatInstructions(value: unknown): string | null {
+  if (typeof value !== 'string') return null
+  const text = value.trim()
+  if (!text) return null
+  if (text.includes('\n')) return text
+  return text.replace(/\s+(?=\d{1,2}[.)]\s)/g, '\n').trim()
+}
+
 /** Strippa ev. markdown-fence från ett JSON-svar. */
 function stripFences(text: string): string {
   let cleaned = text.trim()
@@ -86,7 +99,7 @@ export function normalizeEntry(parsed: Record<string, unknown>): ExtractedEntry 
     title: (parsed.title as string) || 'Utan titel',
     category: (parsed.category as string) || 'Övrigt',
     ingredients: Array.isArray(parsed.ingredients) ? (parsed.ingredients as string[]) : [],
-    instructions: (parsed.instructions as string) || null,
+    instructions: formatInstructions(parsed.instructions),
     content: (parsed.content as string) || null,
     drinks: (parsed.drinks as string) || null,
     source: (parsed.source as string) || null,
