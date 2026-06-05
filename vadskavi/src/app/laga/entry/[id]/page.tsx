@@ -1,168 +1,73 @@
 import { notFound, redirect } from 'next/navigation'
-import Link from 'next/link'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db'
 import { userFamilyIds } from '@/lib/family'
-import { Header } from '@/components/Header'
-import { NavBar } from '@/components/NavBar'
-import { CookButton } from '@/components/CookButton'
-import { EntryActions } from '@/components/EntryActions'
-import { CommentSection } from '@/components/CommentSection'
-import { Button } from '@/components/ui/button'
-import type { CommentDTO } from '@/lib/types'
+import { aggregateCooked, displayName } from '@/lib/laga'
+import { AppShell } from '@/components/laga/AppShell'
+import { RecipeView, type RecipeDTO } from '@/components/laga/RecipeView'
+
+function relativeDate(d: Date): string {
+  const diff = Date.now() - d.getTime()
+  const day = 24 * 60 * 60 * 1000
+  if (diff < day) return 'idag'
+  if (diff < 2 * day) return 'igår'
+  if (diff < 7 * day) return `för ${Math.floor(diff / day)} dagar sedan`
+  return d.toLocaleDateString('sv-SE')
+}
 
 export default async function EntryPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
   if (!session?.user?.id) {
     redirect('/login')
   }
+  const userId = session.user.id
   const { id } = await params
 
   const entry = await prisma.entry.findUnique({
     where: { id },
     include: {
       family: { select: { id: true, name: true } },
-      creator: { select: { name: true, email: true } },
-      comments: {
-        include: { author: { select: { name: true, email: true } } },
-        orderBy: { createdAt: 'asc' },
-      },
-      changes: {
-        include: { user: { select: { name: true, email: true } } },
-        orderBy: { createdAt: 'desc' },
-        take: 20,
-      },
+      comments: { include: { author: { select: { name: true, email: true } } }, orderBy: { createdAt: 'asc' } },
+      notes: { include: { author: { select: { name: true, email: true } } }, orderBy: { createdAt: 'asc' } },
+      changes: { where: { action: 'cooked' }, select: { action: true, user: { select: { name: true, email: true } } } },
+      reactions: { select: { userId: true } },
     },
   })
-  const familyIds = await userFamilyIds(session.user.id)
-  if (!entry || !familyIds.includes(entry.familyId)) {
+
+  const ids = await userFamilyIds(userId)
+  if (!entry || !ids.includes(entry.familyId)) {
     notFound()
   }
 
-  const ACTION_LABELS: Record<string, string> = {
-    created: 'Skapade',
-    updated: 'Ändrade',
-    cooked: 'Lagade',
+  const me = await prisma.user.findUnique({ where: { id: userId }, select: { name: true, email: true } })
+  const meName = displayName(me)
+
+  const stepsSource = entry.type === 'tip' ? entry.content : entry.instructions
+  const recipe: RecipeDTO = {
+    id: entry.id,
+    type: entry.type,
+    title: entry.title,
+    category: entry.category,
+    blurb: entry.blurb,
+    time: entry.time,
+    servings: entry.servings,
+    ingredients: entry.type === 'tip' ? [] : entry.ingredients,
+    steps: (stepsSource || '').split('\n').map((s) => s.trim()).filter(Boolean),
+    drinks: entry.drinks,
+    source: entry.source,
+    url: entry.url,
+    imageUrls: entry.imageUrls,
+    family: entry.family ? { id: entry.family.id, name: entry.family.name } : undefined,
+    cookedBy: aggregateCooked(entry.changes),
+    hearted: entry.reactions.some((r) => r.userId === userId),
+    heartCount: entry.reactions.length,
+    notes: entry.notes.map((n) => ({ id: n.id, text: n.text, author: displayName(n.author), date: relativeDate(n.createdAt) })),
+    comments: entry.comments.map((c) => ({ id: c.id, text: c.text, author: displayName(c.author), date: relativeDate(c.createdAt) })),
   }
 
-  const comments: CommentDTO[] = entry.comments.map((c) => ({
-    id: c.id,
-    text: c.text,
-    createdAt: c.createdAt.toISOString(),
-    author: c.author,
-  }))
-
   return (
-    <div className="min-h-screen pb-20">
-      <Header>
-        <Link href="/laga">
-          <Button variant="outline" size="sm" className="border-white/60 text-white hover:bg-white/10">
-            Tillbaka
-          </Button>
-        </Link>
-      </Header>
-
-      <main className="mx-auto max-w-2xl space-y-6 px-4 py-6">
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-brand-accent/15 px-2 py-0.5 text-xs text-brand-accent-dark">
-              {entry.category}
-            </span>
-            <span className="text-xs text-brand-muted">{entry.type === 'tip' ? 'Tips' : 'Recept'}</span>
-            {entry.family && (
-              <span className="rounded-full bg-brand-header/10 px-2 py-0.5 text-xs text-brand-header">
-                {entry.family.name}
-              </span>
-            )}
-          </div>
-          <h1 className="text-2xl font-bold text-brand-header">{entry.title}</h1>
-          <p className="text-sm text-brand-muted">
-            Tillagad {entry.timesCooked} {entry.timesCooked === 1 ? 'gång' : 'gånger'}
-            {entry.lastCooked && ` · senast ${entry.lastCooked.toLocaleDateString('sv-SE')}`}
-          </p>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <CookButton entryId={entry.id} />
-          <EntryActions entryId={entry.id} />
-        </div>
-
-        {entry.imageUrls.length > 0 && (
-          <div className="grid grid-cols-2 gap-2">
-            {entry.imageUrls.map((f) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                key={f}
-                src={`/api/images/${f}`}
-                alt=""
-                className="aspect-square w-full rounded-lg object-cover"
-              />
-            ))}
-          </div>
-        )}
-
-        {entry.type === 'recipe' && entry.ingredients.length > 0 && (
-          <section className="space-y-2">
-            <h2 className="text-lg font-semibold text-brand-header">Ingredienser</h2>
-            <ul className="list-inside list-disc space-y-1 text-brand-ink">
-              {entry.ingredients.map((ing, i) => (
-                <li key={i}>{ing}</li>
-              ))}
-            </ul>
-          </section>
-        )}
-
-        {entry.instructions && (
-          <section className="space-y-2">
-            <h2 className="text-lg font-semibold text-brand-header">Instruktioner</h2>
-            <p className="whitespace-pre-wrap text-brand-ink">{entry.instructions}</p>
-          </section>
-        )}
-
-        {entry.content && (
-          <section className="space-y-2">
-            <p className="whitespace-pre-wrap text-brand-ink">{entry.content}</p>
-          </section>
-        )}
-
-        {entry.drinks && (
-          <section className="space-y-1">
-            <h2 className="text-lg font-semibold text-brand-header">Dryck</h2>
-            <p className="text-brand-ink">{entry.drinks}</p>
-          </section>
-        )}
-
-        {(entry.source || entry.url) && (
-          <section className="space-y-1 text-sm text-brand-muted">
-            {entry.source && <p>Källa: {entry.source}</p>}
-            {entry.url && (
-              <p>
-                <a href={entry.url} target="_blank" rel="noopener noreferrer" className="text-brand-accent-dark underline">
-                  {entry.url}
-                </a>
-              </p>
-            )}
-          </section>
-        )}
-
-        <CommentSection entryId={entry.id} initialComments={comments} />
-
-        {entry.changes.length > 0 && (
-          <section className="space-y-2">
-            <h2 className="text-lg font-semibold text-brand-header">Historik</h2>
-            <ul className="space-y-1 text-sm text-brand-muted">
-              {entry.changes.map((c) => (
-                <li key={c.id}>
-                  {c.user.name || c.user.email} · {ACTION_LABELS[c.action] || c.action} ·{' '}
-                  {c.createdAt.toLocaleDateString('sv-SE')}
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-      </main>
-
-      <NavBar />
-    </div>
+    <AppShell>
+      <RecipeView recipe={recipe} meName={meName} />
+    </AppShell>
   )
 }
