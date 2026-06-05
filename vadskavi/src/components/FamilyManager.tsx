@@ -65,11 +65,14 @@ export function FamilyManager() {
 
   return (
     <div className="space-y-6">
-      {/* Aktiv familj */}
+      {/* Standardfamilj */}
       <section className="space-y-3 rounded-xl border border-brand-accent/20 bg-white p-4">
         <h2 className="flex items-center gap-2 text-lg font-semibold text-brand-header">
-          <Users className="h-5 w-5" /> Aktiv familj
+          <Users className="h-5 w-5" /> Standardfamilj
         </h2>
+        <p className="text-sm text-brand-muted">
+          Nya recept hamnar här. Du ser och söker recept i alla dina familjer oavsett vald standard.
+        </p>
 
         <div className="flex gap-2">
           <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} />
@@ -123,7 +126,7 @@ export function FamilyManager() {
             <div key={f.id} className="flex items-center justify-between">
               <span className="text-brand-ink">{f.name}</span>
               {f.id === data.activeId ? (
-                <span className="text-xs text-brand-accent-dark">Aktiv</span>
+                <span className="text-xs text-brand-accent-dark">Standard</span>
               ) : (
                 <Button
                   variant="outline"
@@ -131,7 +134,7 @@ export function FamilyManager() {
                   disabled={busy}
                   onClick={() => call('/api/family/switch', { familyId: f.id })}
                 >
-                  Byt till
+                  Sätt som standard
                 </Button>
               )}
             </div>

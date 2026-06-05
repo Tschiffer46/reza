@@ -2,7 +2,7 @@ import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db'
-import { getActiveFamily } from '@/lib/family'
+import { userFamilyIds } from '@/lib/family'
 import { Header } from '@/components/Header'
 import { NavBar } from '@/components/NavBar'
 import { CookButton } from '@/components/CookButton'
@@ -16,21 +16,33 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
   if (!session?.user?.id) {
     redirect('/login')
   }
-  const familyId = await getActiveFamily(session.user.id)
   const { id } = await params
 
   const entry = await prisma.entry.findUnique({
     where: { id },
     include: {
+      family: { select: { id: true, name: true } },
       creator: { select: { name: true, email: true } },
       comments: {
         include: { author: { select: { name: true, email: true } } },
         orderBy: { createdAt: 'asc' },
       },
+      changes: {
+        include: { user: { select: { name: true, email: true } } },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+      },
     },
   })
-  if (!entry || entry.familyId !== familyId) {
+  const familyIds = await userFamilyIds(session.user.id)
+  if (!entry || !familyIds.includes(entry.familyId)) {
     notFound()
+  }
+
+  const ACTION_LABELS: Record<string, string> = {
+    created: 'Skapade',
+    updated: 'Ändrade',
+    cooked: 'Lagade',
   }
 
   const comments: CommentDTO[] = entry.comments.map((c) => ({
@@ -57,6 +69,11 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
               {entry.category}
             </span>
             <span className="text-xs text-brand-muted">{entry.type === 'tip' ? 'Tips' : 'Recept'}</span>
+            {entry.family && (
+              <span className="rounded-full bg-brand-header/10 px-2 py-0.5 text-xs text-brand-header">
+                {entry.family.name}
+              </span>
+            )}
           </div>
           <h1 className="text-2xl font-bold text-brand-header">{entry.title}</h1>
           <p className="text-sm text-brand-muted">
@@ -129,6 +146,20 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
         )}
 
         <CommentSection entryId={entry.id} initialComments={comments} />
+
+        {entry.changes.length > 0 && (
+          <section className="space-y-2">
+            <h2 className="text-lg font-semibold text-brand-header">Historik</h2>
+            <ul className="space-y-1 text-sm text-brand-muted">
+              {entry.changes.map((c) => (
+                <li key={c.id}>
+                  {c.user.name || c.user.email} · {ACTION_LABELS[c.action] || c.action} ·{' '}
+                  {c.createdAt.toLocaleDateString('sv-SE')}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
       </main>
 
       <NavBar />

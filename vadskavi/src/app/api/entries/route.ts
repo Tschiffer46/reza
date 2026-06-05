@@ -1,31 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { requireFamily } from '@/lib/family'
+import { requireUser, getDefaultFamily, userFamilyIds, assertMember } from '@/lib/family'
 import { searchEntries } from '@/lib/search'
 
 export async function GET(request: NextRequest) {
-  let ctx
+  let userId
   try {
-    ctx = await requireFamily()
+    userId = await requireUser()
   } catch {
     return NextResponse.json({ error: 'Ej inloggad' }, { status: 401 })
   }
 
   const sp = request.nextUrl.searchParams
+  const familyIds = await userFamilyIds(userId)
   const entries = await searchEntries({
-    familyId: ctx.familyId,
+    familyIds,
     q: sp.get('q'),
     type: sp.get('type'),
     category: sp.get('category'),
+    family: sp.get('family'),
     sort: sp.get('sort'),
   })
   return NextResponse.json({ entries })
 }
 
 export async function POST(request: NextRequest) {
-  let ctx
+  let userId
   try {
-    ctx = await requireFamily()
+    userId = await requireUser()
   } catch {
     return NextResponse.json({ error: 'Ej inloggad' }, { status: 401 })
   }
@@ -35,6 +37,18 @@ export async function POST(request: NextRequest) {
 
   if (!title || !type || !category) {
     return NextResponse.json({ error: 'Titel, typ och kategori krävs' }, { status: 400 })
+  }
+
+  // Målfamilj från body (validera medlemskap), annars standardfamiljen.
+  let familyId = body.familyId as string | undefined
+  if (familyId) {
+    try {
+      await assertMember(userId, familyId)
+    } catch {
+      return NextResponse.json({ error: 'Du tillhör inte den familjen' }, { status: 403 })
+    }
+  } else {
+    familyId = await getDefaultFamily(userId)
   }
 
   const entry = await prisma.entry.create({
@@ -49,13 +63,13 @@ export async function POST(request: NextRequest) {
       source: source || null,
       url: url || null,
       imageUrls: Array.isArray(imageUrls) ? imageUrls : [],
-      familyId: ctx.familyId,
-      creatorId: ctx.userId,
+      familyId,
+      creatorId: userId,
     },
   })
 
   await prisma.changeLog.create({
-    data: { action: 'created', entryId: entry.id, userId: ctx.userId },
+    data: { action: 'created', entryId: entry.id, userId },
   })
 
   return NextResponse.json(entry, { status: 201 })

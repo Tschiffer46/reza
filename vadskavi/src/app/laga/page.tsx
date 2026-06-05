@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { UserCircle } from 'lucide-react'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db'
-import { getActiveFamily } from '@/lib/family'
+import { getUserFamilies, userFamilyIds } from '@/lib/family'
 import { searchEntries } from '@/lib/search'
 import { Header } from '@/components/Header'
 import { NavBar } from '@/components/NavBar'
@@ -15,11 +15,13 @@ export default async function DashboardPage() {
   if (!session?.user?.id) {
     redirect('/login')
   }
-  const familyId = await getActiveFamily(session.user.id)
+  const userId = session.user.id
+  const families = await getUserFamilies(userId)
+  const familyIds = await userFamilyIds(userId)
 
   const [rawEntries, rawCategories] = await Promise.all([
-    searchEntries({ familyId }),
-    prisma.category.findMany({ where: { familyId }, orderBy: { name: 'asc' } }),
+    searchEntries({ familyIds }),
+    prisma.category.findMany({ where: { familyId: { in: familyIds } }, orderBy: { name: 'asc' } }),
   ])
 
   const entries: EntryDTO[] = rawEntries.map((e) => ({
@@ -37,12 +39,19 @@ export default async function DashboardPage() {
     timesCooked: e.timesCooked,
     lastCooked: e.lastCooked ? e.lastCooked.toISOString() : null,
     createdAt: e.createdAt.toISOString(),
+    family: e.family ? { id: e.family.id, name: e.family.name } : undefined,
   }))
-  const categories: CategoryDTO[] = rawCategories.map((c) => ({
-    id: c.id,
-    name: c.name,
-    type: c.type,
-  }))
+
+  // Union av kategorinamn över familjerna
+  const seen = new Set<string>()
+  const categories: CategoryDTO[] = rawCategories
+    .filter((c) => {
+      const key = `${c.type}:${c.name.toLowerCase()}`
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+    .map((c) => ({ id: c.id, name: c.name, type: c.type }))
 
   return (
     <div className="min-h-screen pb-20">
@@ -55,7 +64,7 @@ export default async function DashboardPage() {
         </Link>
       </Header>
       <main className="mx-auto max-w-2xl px-4 py-6">
-        <EntryList initialEntries={entries} categories={categories} />
+        <EntryList initialEntries={entries} categories={categories} families={families} />
       </main>
       <NavBar />
     </div>
