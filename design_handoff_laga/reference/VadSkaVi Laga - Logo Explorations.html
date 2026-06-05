@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laga — Logotyp</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:ital,wght@0,400..800;1,400..600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#f6f5f1;--ink:#1a1a18;--muted:#8a857c;--accent:#c75b39;--accent2:#3f7d63;--line:rgba(20,18,14,.1);--card:#fff}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:'Schibsted Grotesk',system-ui,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 28px}
+  .kicker{font-size:13px;letter-spacing:.13em;text-transform:uppercase;color:var(--accent);font-weight:700}
+  header{padding:70px 0 40px}
+  h1{font-weight:700;font-size:clamp(34px,6vw,56px);letter-spacing:-.03em;line-height:1.02;margin-top:14px}
+  .lede{font-size:18px;color:#555049;max-width:54ch;margin-top:18px}
+  section{padding:18px 0 60px}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  @media(max-width:760px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden;display:flex;flex-direction:column}
+  .card.rec{outline:2px solid var(--accent);outline-offset:-2px}
+  .badge{position:absolute;top:14px;right:14px;background:var(--accent);color:#fff;font-size:11.5px;font-weight:700;letter-spacing:.04em;padding:5px 11px;border-radius:999px}
+  .tile{position:relative;height:200px;display:flex;align-items:center;justify-content:center}
+  .tile svg{width:104px;height:104px}
+  .body{padding:22px 24px 24px;border-top:1px solid var(--line)}
+  .cnum{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .cname{font-weight:700;font-size:23px;letter-spacing:-.02em;margin:5px 0 2px}
+  .csv{font-size:14px;color:var(--accent);font-style:italic;margin-bottom:12px}
+  .cdesc{font-size:14.5px;color:#555049}
+
+  /* lockups */
+  .lockups{display:flex;align-items:center;gap:26px;flex-wrap:wrap;margin-top:20px;padding-top:18px;border-top:1px solid var(--line)}
+  .lock{display:flex;align-items:center;gap:11px}
+  .lock svg{width:38px;height:38px}
+  .lock .wm{font-weight:700;font-size:26px;letter-spacing:-.02em;line-height:1}
+  .lock .wm small{display:block;font-size:9px;font-weight:600;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-top:2px}
+  .fav{display:flex;align-items:center;gap:10px}
+  .fav .chip{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center}
+  .fav .chip svg{width:20px;height:20px}
+  .fav .chip.lg{width:46px;height:46px;border-radius:12px}
+  .fav .chip.lg svg{width:30px;height:30px}
+  .favlabel{font-size:12px;color:var(--muted)}
+
+  .note{background:#1f2421;color:#e9ece8;border-radius:18px;padding:30px 32px;margin-top:14px}
+  .note h2{font-size:22px;font-weight:700;color:#fff;margin-bottom:8px}
+  .note p{color:#b9bfb6;font-size:15px;max-width:64ch}
+  footer{padding:30px 0 70px;color:var(--muted);font-size:13px;text-align:center}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <span class="kicker">VadSkaVi · Laga</span>
+    <h1>En logotyp man minns.</h1>
+    <p class="lede">Pot-symbolen funkar, men är lite generisk. Här är fyra mer ägbara riktningar — alla på köks- och familjetemat, alla skalbara ner till en favicon. Min favorit ligger först: den bär hela "Vad ska vi laga?" i en enda bild.</p>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <div class="grid">
+
+      <!-- C1 Steam ? -->
+      <div class="card rec">
+        <div class="tile" style="background:linear-gradient(135deg,#d8apx,#c75b39);background:linear-gradient(140deg,#d6724f,#bd4f2f)">
+          <span class="badge">Rekommenderas</span>
+          <svg viewBox="0 0 64 64" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">
+            <!-- steam question mark -->
+            <path d="M26 17 C26 10.5 38.5 10.5 38 17.5 C37.6 22.5 32 22 32 26.5"/>
+            <circle cx="32" cy="31.5" r="0.4" fill="#fff" stroke="#fff" stroke-width="3.2"/>
+            <!-- pot -->
+            <path d="M17 39 h30 l-2.6 13.5 a3 3 0 0 1 -3 2.5 H22.6 a3 3 0 0 1 -3 -2.5 Z"/>
+            <path d="M13 39 h38"/>
+            <path d="M13 39 l-3 -1.5 M51 39 l3 -1.5"/>
+          </svg>
+        </div>
+        <div class="body">
+          <div class="cnum">Koncept 01</div>
+          <div class="cname">Frågan ur grytan</div>
+          <div class="csv">Steam-frågetecknet</div>
+          <p class="cdesc">Ångan som stiger ur grytan formar ett frågetecken — "Vad ska vi laga?" blir bokstavligen bilden. Varmt, lekfullt och helt eget. Frågetecknet ensamt blir en perfekt favicon.</p>
+          <div class="lockups">
+            <div class="lock">
+              <svg viewBox="0 0 64 64" fill="none" stroke="var(--accent)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M26 17 C26 10.5 38.5 10.5 38 17.5 C37.6 22.5 32 22 32 26.5"/><circle cx="32" cy="31.5" r="0.4" fill="var(--accent)" stroke="var(--accent)" stroke-width="3.2"/><path d="M17 39 h30 l-2.6 13.5 a3 3 0 0 1 -3 2.5 H22.6 a3 3 0 0 1 -3 -2.5 Z"/><path d="M13 39 h38"/><path d="M13 39 l-3 -1.5 M51 39 l3 -1.5"/></svg>
+              <div class="wm">Laga<small>vadskavi.nu</small></div>
+            </div>
+            <div class="fav">
+              <span class="favlabel">Favicon</span>
+              <span class="chip" style="background:var(--accent)"><svg viewBox="0 0 28 34" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11 C9 5.5 20 5.5 19.5 11.5 C19.2 15.5 14 15 14 19"/><circle cx="14" cy="23.5" r="0.4" fill="#fff" stroke="#fff" stroke-width="3.4"/></svg></span>
+              <span class="chip lg" style="background:var(--accent)"><svg viewBox="0 0 64 64" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M26 17 C26 10.5 38.5 10.5 38 17.5 C37.6 22.5 32 22 32 26.5"/><circle cx="32" cy="31.5" r="0.4" fill="#fff" stroke="#fff" stroke-width="3.2"/><path d="M17 39 h30 l-2.6 13.5 a3 3 0 0 1 -3 2.5 H22.6 a3 3 0 0 1 -3 -2.5 Z"/><path d="M13 39 h38"/></svg></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- C2 speech bubble pot -->
+      <div class="card">
+        <div class="tile" style="background:linear-gradient(140deg,#56987b,#37755c)">
+          <svg viewBox="0 0 64 64" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="12" y="16" width="40" height="30" rx="13"/>
+            <path d="M24 46 c0 6 -1 8 -4 11 c7 -1 11 -4 13 -11"/>
+            <path d="M27 13 q5 -5 10 0"/>
+            <path d="M25 30 h14 M25 36 h9"/>
+          </svg>
+        </div>
+        <div class="body">
+          <div class="cnum">Koncept 02</div>
+          <div class="cname">Köksbubblan</div>
+          <div class="csv">Grytan som pratbubbla</div>
+          <p class="cdesc">En gryta med lock som samtidigt är en pratbubbla. Säger "vi lagar OCH pratar mat tillsammans" — själva poängen med appen. Social i sitt DNA.</p>
+          <div class="lockups">
+            <div class="lock">
+              <svg viewBox="0 0 64 64" fill="none" stroke="var(--accent2)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><rect x="12" y="16" width="40" height="30" rx="13"/><path d="M24 46 c0 6 -1 8 -4 11 c7 -1 11 -4 13 -11"/><path d="M27 13 q5 -5 10 0"/><path d="M25 30 h14 M25 36 h9"/></svg>
+              <div class="wm">Laga<small>vadskavi.nu</small></div>
+            </div>
+            <div class="fav">
+              <span class="favlabel">App-ikon</span>
+              <span class="chip lg" style="background:var(--accent2)"><svg viewBox="0 0 64 64" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><rect x="12" y="16" width="40" height="30" rx="13"/><path d="M24 46 c0 6 -1 8 -4 11 c7 -1 11 -4 13 -11"/><path d="M27 13 q5 -5 10 0"/><path d="M25 30 h14 M25 36 h9"/></svg></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- C3 ladle L -->
+      <div class="card">
+        <div class="tile" style="background:linear-gradient(140deg,#3c3a36,#1f1d1a)">
+          <svg viewBox="0 0 64 64" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M26 12 V34"/>
+            <path d="M15 34 a11 11 0 0 0 22 0 Z"/>
+          </svg>
+        </div>
+        <div class="body">
+          <div class="cnum">Koncept 03</div>
+          <div class="cname">Sleven</div>
+          <div class="csv">Slev som blir ett L</div>
+          <p class="cdesc">En slev böjd till bokstaven L (Laga). Stram, monogram-aktig och tidlös — funkar lika bra präglad i metall som i en app. Den mest "varumärkes-säkra".</p>
+          <div class="lockups">
+            <div class="lock">
+              <svg viewBox="0 0 64 64" fill="none" stroke="var(--ink)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M26 12 V34"/><path d="M15 34 a11 11 0 0 0 22 0 Z"/></svg>
+              <div class="wm">Laga<small>vadskavi.nu</small></div>
+            </div>
+            <div class="fav">
+              <span class="favlabel">Favicon</span>
+              <span class="chip lg" style="background:var(--ink)"><svg viewBox="0 0 64 64" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M26 12 V34"/><path d="M15 34 a11 11 0 0 0 22 0 Z"/></svg></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- C4 lid roundel -->
+      <div class="card">
+        <div class="tile" style="background:linear-gradient(140deg,#d9a23f,#bd842a)">
+          <svg viewBox="0 0 64 64" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="32" cy="38" r="17"/>
+            <circle cx="32" cy="38" r="3.4" fill="#fff" stroke="none"/>
+            <path d="M28 13 c-3 3 3 4 0 8 M36 11 c-3 3 3 4 0 8"/>
+          </svg>
+        </div>
+        <div class="body">
+          <div class="cnum">Koncept 04</div>
+          <div class="cname">Locket</div>
+          <div class="csv">Grytlocket uppifrån</div>
+          <p class="cdesc">Locket sett ovanifrån med två ångpuffar. Geometriskt, modernt och otroligt skalbart — en cirkel med en prick läser perfekt även som 16px favicon.</p>
+          <div class="lockups">
+            <div class="lock">
+              <svg viewBox="0 0 64 64" fill="none" stroke="#bd842a" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="32" cy="38" r="17"/><circle cx="32" cy="38" r="3.4" fill="#bd842a" stroke="none"/><path d="M28 13 c-3 3 3 4 0 8 M36 11 c-3 3 3 4 0 8"/></svg>
+              <div class="wm">Laga<small>vadskavi.nu</small></div>
+            </div>
+            <div class="fav">
+              <span class="favlabel">Favicon</span>
+              <span class="chip lg" style="background:#bd842a"><svg viewBox="0 0 64 64" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="32" cy="38" r="17"/><circle cx="32" cy="38" r="3.4" fill="#fff" stroke="none"/><path d="M28 13 c-3 3 3 4 0 8 M36 11 c-3 3 3 4 0 8"/></svg></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="note">
+      <h2>Vilken känns rätt?</h2>
+      <p>Säg ett nummer (01–04) så förfinar jag det till en riktig, exporterbar logotyp — favicon, app-ikon och wordmark — och byter ut pot-symbolen i prototypen. Vi kan också blanda: t.ex. Sleven (03) som mark men med Köksbubblans (02) sociala värme i appen.</p>
+    </div>
+  </div>
+</section>
+<footer>VadSkaVi · Laga — logotyputforskning</footer>
+</body>
+</html>

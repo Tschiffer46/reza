@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laga — Designriktningar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:ital,wght@0,400..700;1,400..600&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Schibsted+Grotesk:ital,wght@0,400..700;1,400..600&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f3f1ea;
+    --ink:#1f2421;
+    --muted:#6f7670;
+    --line:rgba(31,36,33,.12);
+    --card:#ffffff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Familjen Grotesk',system-ui,sans-serif;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1120px;margin:0 auto;padding:0 28px}
+  .kicker{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600}
+
+  /* ---------- HERO ---------- */
+  header.hero{padding:84px 0 56px}
+  .hero-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:end}
+  @media(max-width:820px){.hero-grid{grid-template-columns:1fr;gap:32px}}
+  h1.title{font-family:'Newsreader',serif;font-weight:500;font-size:clamp(40px,7vw,76px);line-height:1.02;letter-spacing:-.02em;margin:18px 0 0}
+  h1.title em{font-style:italic;color:#2f6d4f}
+  .lede{font-size:18px;color:#454b46;max-width:46ch;margin-top:22px}
+  .domain-chip{display:inline-flex;align-items:baseline;gap:0;background:#fff;border:1px solid var(--line);border-radius:999px;padding:9px 16px;font-size:15px;font-weight:600;box-shadow:0 1px 0 rgba(0,0,0,.02)}
+  .domain-chip .dim{color:#9aa19a;font-weight:500}
+  .domain-chip .hot{color:#2f6d4f}
+  .read-card{background:#1f2421;color:#eef0ea;border-radius:18px;padding:30px 30px 28px}
+  .read-card .q{font-family:'Newsreader',serif;font-size:27px;font-style:italic;line-height:1.25}
+  .read-card .q b{font-style:normal;font-weight:600;color:#9fe0bb}
+  .read-card p{font-size:14.5px;color:#aeb4ac;margin-top:14px}
+
+  /* ---------- SECTION ---------- */
+  section{padding:54px 0;border-top:1px solid var(--line)}
+  .sec-head{display:flex;align-items:baseline;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:30px}
+  .sec-head h2{font-family:'Newsreader',serif;font-weight:500;font-size:clamp(26px,4vw,38px);letter-spacing:-.01em}
+  .sec-head p{color:var(--muted);font-size:15px;max-width:40ch}
+
+  /* ---------- LOGO CONCEPTS ---------- */
+  .logos{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  @media(max-width:820px){.logos{grid-template-columns:1fr}}
+  .logo-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px;display:flex;flex-direction:column;min-height:230px}
+  .logo-num{font-size:12px;font-weight:700;letter-spacing:.1em;color:#2f6d4f;text-transform:uppercase}
+  .logo-stage{flex:1;display:flex;align-items:center;justify-content:center;padding:26px 0}
+  .logo-note{font-size:13.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px}
+  .logo-note b{color:var(--ink);font-weight:600}
+
+  /* logo 1 - breadcrumb */
+  .lg-bc{font-family:'Schibsted Grotesk',sans-serif;font-weight:700;font-size:34px;letter-spacing:-.02em;display:flex;align-items:baseline}
+  .lg-bc .pre{font-weight:500;font-size:20px;color:#a7ada6}
+  .lg-bc .laga{color:#1f2421}
+  .lg-bc .laga b{color:#2f6d4f}
+  /* logo 2 - question */
+  .lg-q{font-family:'Newsreader',serif;font-style:italic;font-size:46px;font-weight:500;color:#1f2421;position:relative}
+  .lg-q .qm{color:#d98a2b;font-style:normal;font-weight:600}
+  /* logo 3 - mark */
+  .lg-mark{display:flex;align-items:center;gap:14px}
+  .lg-mark .glyph{width:54px;height:54px;border-radius:15px;background:#2f6d4f;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .lg-mark .glyph svg{width:30px;height:30px}
+  .lg-mark .name{font-family:'Familjen Grotesk',sans-serif;font-weight:700;font-size:32px;letter-spacing:-.02em}
+  .lg-mark .name span{display:block;font-size:11px;font-weight:600;letter-spacing:.12em;color:#a7ada6;text-transform:uppercase;margin-top:-2px}
+
+  /* ---------- DIRECTIONS ---------- */
+  .dir{display:grid;grid-template-columns:300px 1fr;gap:40px;align-items:start}
+  @media(max-width:880px){.dir{grid-template-columns:1fr;gap:26px}}
+  .dir + .dir{margin-top:46px;padding-top:46px;border-top:1px dashed var(--line)}
+  .dir-meta .tag{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .dir-meta h3{font-family:'Newsreader',serif;font-weight:500;font-size:30px;margin:8px 0 4px;letter-spacing:-.01em}
+  .dir-meta .sv{font-size:14px;color:var(--muted);font-style:italic}
+  .dir-meta .desc{font-size:14.5px;color:#454b46;margin-top:14px}
+  .swatches{display:flex;gap:8px;margin-top:20px}
+  .swatch{width:34px;height:34px;border-radius:9px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
+  .typenote{margin-top:18px;font-size:13px;color:var(--muted);line-height:1.7}
+  .typenote b{color:var(--ink)}
+
+  /* phone mock */
+  .mock{background:var(--mock-bg);border-radius:26px;overflow:hidden;border:1px solid rgba(0,0,0,.07);box-shadow:0 24px 60px -28px rgba(20,30,24,.4);max-width:380px}
+  .mock-top{background:var(--mock-top);color:var(--mock-top-fg);padding:16px 20px;display:flex;align-items:center;justify-content:space-between}
+  .mock-wordmark{font-family:var(--mock-wm-font);font-weight:var(--mock-wm-weight);font-size:23px;letter-spacing:-.01em}
+  .mock-acct{font-size:12px;border:1px solid var(--mock-acct-bd);border-radius:999px;padding:5px 12px;opacity:.9}
+  .mock-body{padding:18px}
+  .mock-search{background:var(--mock-field);border:1px solid var(--mock-field-bd);border-radius:var(--mock-radius);padding:12px 14px;font-size:14px;color:var(--mock-muted);display:flex;align-items:center;gap:9px}
+  .mock-chips{display:flex;gap:8px;margin:14px 0;flex-wrap:wrap}
+  .chip{font-size:12.5px;padding:6px 13px;border-radius:var(--mock-chip-radius);background:var(--mock-chip);color:var(--mock-chip-fg)}
+  .chip.on{background:var(--mock-accent);color:#fff}
+  .rcard{background:var(--mock-card);border:1px solid var(--mock-card-bd);border-radius:var(--mock-radius);padding:14px;margin-top:11px;display:flex;gap:13px;align-items:center}
+  .rthumb{width:58px;height:58px;border-radius:calc(var(--mock-radius) - 4px);flex-shrink:0;background:var(--mock-thumb);display:flex;align-items:center;justify-content:center;font-size:24px}
+  .rmeta{flex:1;min-width:0}
+  .rmeta .rt{font-family:var(--mock-rt-font);font-weight:var(--mock-rt-weight);font-size:17px;color:var(--mock-ink);letter-spacing:-.01em}
+  .rmeta .rs{font-size:12.5px;color:var(--mock-muted);margin-top:3px;display:flex;align-items:center;gap:6px}
+  .pill{font-size:11px;padding:2px 8px;border-radius:999px;background:var(--mock-chip);color:var(--mock-chip-fg)}
+  .cooked{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--mock-accent);font-weight:600}
+  .ava{width:17px;height:17px;border-radius:50%;background:var(--mock-accent);color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center;font-weight:700}
+
+  /* ---------- SOCIAL ---------- */
+  .feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  @media(max-width:820px){.feat-grid{grid-template-columns:1fr}}
+  .feat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px}
+  .feat .ic{width:38px;height:38px;border-radius:10px;background:#eaf3ee;display:flex;align-items:center;justify-content:center;margin-bottom:14px}
+  .feat .ic svg{width:20px;height:20px;stroke:#2f6d4f}
+  .feat h4{font-size:16px;font-weight:600;margin-bottom:6px}
+  .feat p{font-size:13.5px;color:var(--muted)}
+  .feat .ex{margin-top:12px;font-size:12.5px;font-style:italic;color:#2f6d4f;background:#eef5f0;border-radius:8px;padding:8px 11px}
+
+  /* ---------- NEXT ---------- */
+  .next{background:#1f2421;color:#eef0ea;border-radius:20px;padding:40px;margin-top:10px}
+  .next h2{font-family:'Newsreader',serif;font-weight:500;font-size:30px;color:#fff}
+  .next ol{margin:20px 0 0;padding-left:20px;color:#bfc5bd;font-size:15.5px;line-height:1.9;max-width:62ch}
+  .next ol b{color:#9fe0bb;font-weight:600}
+  .next .ask{margin-top:24px;font-size:15px;color:#eef0ea}
+  footer{padding:40px 0 70px;color:var(--muted);font-size:13px;text-align:center}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="kicker">VadSkaVi · Laga</span>
+      <h1 class="title">Familjens<br>receptbok,<br><em>äntligen samlad.</em></h1>
+      <p class="lede">Tre riktningar för hur appen kan se ut och kännas — från tryggt och nära dagens skisser, till varmt, lekfullt och inbjudande. Välj det du gillar, eller plocka russin ur alla tre.</p>
+      <div style="margin-top:26px"><span class="domain-chip"><span class="dim">vadskavi.nu/</span><span class="hot">laga</span></span></div>
+    </div>
+    <div class="read-card">
+      <div class="q">«&nbsp;<b>Vad ska vi</b> … <b>laga?</b>&nbsp;»</div>
+      <p>Domänen läser ut sig själv som en fråga. Appen på <b style="color:#cfd4cd;font-style:normal">/laga</b> blir helt enkelt <b style="color:#cfd4cd;font-style:normal">Laga</b> — en av flera systerappar under vadskavi.nu. Namnet är redan en inbjudan till köket.</p>
+    </div>
+  </div>
+</header>
+
+<!-- LOGO -->
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Logotyp &amp; namn</h2>
+      <p>Tre sätt att forma "Laga" till en egen identitet som ändå tillhör vadskavi.nu-familjen.</p>
+    </div>
+    <div class="logos">
+      <div class="logo-card">
+        <span class="logo-num">01 · Adressen</span>
+        <div class="logo-stage">
+          <div class="lg-bc"><span class="pre">vadskavi.nu/</span><span class="laga"><b>laga</b></span></div>
+        </div>
+        <div class="logo-note"><b>Systemet syns.</b> Wordmark byggd på sökvägen — perfekt när flera appar delar domän. Tydligt, modernt, skandinaviskt.</div>
+      </div>
+      <div class="logo-card">
+        <span class="logo-num">02 · Frågan</span>
+        <div class="logo-stage">
+          <div class="lg-q">laga<span class="qm">?</span></div>
+        </div>
+        <div class="logo-note"><b>Inbjudande.</b> Frågetecknet bär hela "Vad ska vi laga?". Lekfull, nyfiken — fungerar fint som favicon (bara&nbsp;<b>?</b>).</div>
+      </div>
+      <div class="logo-card">
+        <span class="logo-num">03 · Märket</span>
+        <div class="logo-stage">
+          <div class="lg-mark">
+            <div class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13h14l-1.2 6.2a1.5 1.5 0 0 1-1.5 1.2H7.7a1.5 1.5 0 0 1-1.5-1.2L5 13Z"/><path d="M4 13h16"/><path d="M9 13c0-3 1-5 3-5s3 2 3 5"/><path d="M12 5.5V4"/></svg></div>
+            <div class="name">Laga<span>vadskavi.nu</span></div>
+          </div>
+        </div>
+        <div class="logo-note"><b>App-redo.</b> En enkel gryta/symbol + wordmark. Skalar ner till en ikon på hemskärmen utan att tappa karaktär.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DIRECTIONS -->
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Tre visuella riktningar</h2>
+      <p>Samma app, tre temperaturer. Tryggt → minimalt → varmt &amp; lekfullt.</p>
+    </div>
+
+    <!-- A -->
+    <div class="dir">
+      <div class="dir-meta">
+        <span class="tag">Riktning A</span>
+        <h3>Köksbordet</h3>
+        <div class="sv">Förfinad kokbok</div>
+        <p class="desc">Nära dagens skisser men lyft: djupare grönt, varm gräddvit, generös serif. Känns som en vacker, väl använd kokbok i familjen.</p>
+        <div class="swatches"><span class="swatch" style="background:#1d3a2f"></span><span class="swatch" style="background:#2f6d4f"></span><span class="swatch" style="background:#e8f0e9"></span><span class="swatch" style="background:#f4f1e8"></span><span class="swatch" style="background:#c9603f"></span></div>
+        <div class="typenote"><b>Newsreader</b> rubriker · <b>Familjen Grotesk</b> i gränssnittet</div>
+      </div>
+      <div class="mock" style="
+        --mock-bg:#f4f1e8;--mock-top:#1d3a2f;--mock-top-fg:#f4f1e8;--mock-acct-bd:rgba(244,241,232,.35);
+        --mock-wm-font:'Newsreader',serif;--mock-wm-weight:600;
+        --mock-field:#fff;--mock-field-bd:rgba(0,0,0,.08);--mock-radius:14px;--mock-chip-radius:999px;
+        --mock-chip:#e8f0e9;--mock-chip-fg:#2f6d4f;--mock-accent:#2f6d4f;
+        --mock-card:#fff;--mock-card-bd:rgba(0,0,0,.06);--mock-thumb:#e8f0e9;
+        --mock-ink:#1d3a2f;--mock-muted:#7d8a80;--mock-rt-font:'Newsreader',serif;--mock-rt-weight:600;">
+        <div class="mock-top"><span class="mock-wordmark">Laga</span><span class="mock-acct">Konto</span></div>
+        <div class="mock-body">
+          <div class="mock-search">🔍 Sök recept &amp; tips…</div>
+          <div class="mock-chips"><span class="chip on">Alla</span><span class="chip">Bakning</span><span class="chip">Efterrätt</span><span class="chip">Förrätt</span></div>
+          <div class="rcard"><div class="rthumb">🍝</div><div class="rmeta"><div class="rt">Chef's Ragù Bolognese</div><div class="rs"><span class="pill">Huvudrätt</span><span class="cooked"><span class="ava">M</span>Mormor 3×</span></div></div></div>
+          <div class="rcard"><div class="rthumb">🍮</div><div class="rmeta"><div class="rt">Pavlova</div><div class="rs"><span class="pill">Efterrätt</span><span class="cooked"><span class="ava">E</span>Lagad 1×</span></div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- B -->
+    <div class="dir">
+      <div class="dir-meta">
+        <span class="tag">Riktning B</span>
+        <h3>Skandinaviskt kök</h3>
+        <div class="sv">Modernt &amp; minimalt</div>
+        <p class="desc">Mycket luft, krispigt off-white, en enda varm lerton som accent. Fotot får ta plats. Nordiskt, lugnt, väldigt lätt att läsa.</p>
+        <div class="swatches"><span class="swatch" style="background:#1a1a18"></span><span class="swatch" style="background:#c75b39"></span><span class="swatch" style="background:#f7f6f3"></span><span class="swatch" style="background:#ffffff"></span><span class="swatch" style="background:#e7e4dd"></span></div>
+        <div class="typenote"><b>Schibsted Grotesk</b> genomgående — en nordisk grotesk, rubrik som brödtext</div>
+      </div>
+      <div class="mock" style="
+        --mock-bg:#f7f6f3;--mock-top:#fff;--mock-top-fg:#1a1a18;--mock-acct-bd:rgba(0,0,0,.14);
+        --mock-wm-font:'Schibsted Grotesk',sans-serif;--mock-wm-weight:700;
+        --mock-field:#fff;--mock-field-bd:rgba(0,0,0,.1);--mock-radius:12px;--mock-chip-radius:8px;
+        --mock-chip:#efece6;--mock-chip-fg:#5a5650;--mock-accent:#c75b39;
+        --mock-card:#fff;--mock-card-bd:rgba(0,0,0,.07);--mock-thumb:#ece9e3;
+        --mock-ink:#1a1a18;--mock-muted:#8d8980;--mock-rt-font:'Schibsted Grotesk',sans-serif;--mock-rt-weight:600;">
+        <div class="mock-top" style="border-bottom:1px solid rgba(0,0,0,.06)"><span class="mock-wordmark">laga</span><span class="mock-acct">Konto</span></div>
+        <div class="mock-body">
+          <div class="mock-search">🔍 Sök recept &amp; tips…</div>
+          <div class="mock-chips"><span class="chip on">Alla</span><span class="chip">Bakning</span><span class="chip">Efterrätt</span><span class="chip">Förrätt</span></div>
+          <div class="rcard"><div class="rthumb" style="background:linear-gradient(135deg,#d98a6a,#c75b39)"></div><div class="rmeta"><div class="rt">Chef's Ragù Bolognese</div><div class="rs"><span class="pill">Huvudrätt</span><span class="cooked"><span class="ava">M</span>Mormor 3×</span></div></div></div>
+          <div class="rcard"><div class="rthumb" style="background:linear-gradient(135deg,#efe7d6,#d8cdb4)"></div><div class="rmeta"><div class="rt">Pavlova</div><div class="rs"><span class="pill">Efterrätt</span><span class="cooked"><span class="ava">E</span>Lagad 1×</span></div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- C -->
+    <div class="dir">
+      <div class="dir-meta">
+        <span class="tag">Riktning C</span>
+        <h3>Runt bordet</h3>
+        <div class="sv">Varmt &amp; lekfullt</div>
+        <p class="desc">Smörgult papper, tomatröd accent, rundade former och "klistermärkes"-taggar. Mest social av de tre — det handlar om vem som lagat och vad de tyckte.</p>
+        <div class="swatches"><span class="swatch" style="background:#2b2018"></span><span class="swatch" style="background:#e0533b"></span><span class="swatch" style="background:#e8a838"></span><span class="swatch" style="background:#fcf3e3"></span><span class="swatch" style="background:#3f7d63"></span></div>
+        <div class="typenote"><b>Bricolage Grotesque</b> rubriker · <b>Familjen Grotesk</b> i gränssnittet</div>
+      </div>
+      <div class="mock" style="
+        --mock-bg:#fcf3e3;--mock-top:#e0533b;--mock-top-fg:#fff5ec;--mock-acct-bd:rgba(255,245,236,.45);
+        --mock-wm-font:'Bricolage Grotesque',sans-serif;--mock-wm-weight:800;
+        --mock-field:#fff;--mock-field-bd:rgba(0,0,0,.06);--mock-radius:18px;--mock-chip-radius:999px;
+        --mock-chip:#fbe4c4;--mock-chip-fg:#9a5a14;--mock-accent:#e0533b;
+        --mock-card:#fff;--mock-card-bd:rgba(0,0,0,.05);--mock-thumb:#fbe4c4;
+        --mock-ink:#2b2018;--mock-muted:#9a8c78;--mock-rt-font:'Bricolage Grotesque',sans-serif;--mock-rt-weight:700;">
+        <div class="mock-top"><span class="mock-wordmark">laga</span><span class="mock-acct">Familjen</span></div>
+        <div class="mock-body">
+          <div class="mock-search">🔍 Vad ska vi laga idag?</div>
+          <div class="mock-chips"><span class="chip on">Alla</span><span class="chip">Bakning</span><span class="chip">Efterrätt</span><span class="chip">Förrätt</span></div>
+          <div class="rcard"><div class="rthumb">🍝</div><div class="rmeta"><div class="rt">Chef's Ragù Bolognese</div><div class="rs"><span class="pill">Huvudrätt</span><span class="cooked"><span class="ava">M</span>Mormor 3×</span></div></div></div>
+          <div class="rcard"><div class="rthumb">🍮</div><div class="rmeta"><div class="rt">Pavlova</div><div class="rs"><span class="pill">Efterrätt</span><span class="cooked">❤️ 4 · 💬 2</span></div></div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- SOCIAL -->
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Det som drar ihop familjen</h2>
+      <p>De sociala lagren du valde — vävs in i flödet och receptvyn, aldrig påklistrat.</p>
+    </div>
+    <div class="feat-grid">
+      <div class="feat">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg></div>
+        <h4>Vem lagade vad</h4>
+        <p>Varje recept räknar tillagningar och visar familjemedlemmarna bakom dem.</p>
+        <div class="ex">"Lagad av Mormor 3× · Pappa 1×"</div>
+      </div>
+      <div class="feat">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4V5Z"/></svg></div>
+        <h4>Familjens noteringar</h4>
+        <p>Små tweaks och tips fästs direkt på receptet — kunskapen stannar i familjen.</p>
+        <div class="ex">"Jag tog dubbel vitlök — mycket bättre! /Erik"</div>
+      </div>
+      <div class="feat">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9Z"/></svg></div>
+        <h4>Reaktioner &amp; prat</h4>
+        <p>Hjärtan och korta kommentarer gör boken levande, inte ett tyst arkiv.</p>
+        <div class="ex">❤️ 6 · "Detta blev söndagsmiddagen!"</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- NEXT -->
+<section style="border-top:none">
+  <div class="wrap">
+    <div class="next">
+      <h2>Nästa steg</h2>
+      <ol>
+        <li>Du väljer en <b>logotyp-riktning</b> och en <b>visuell riktning</b> (eller en mix).</li>
+        <li>Jag bygger en <b>klickbar prototyp</b> — responsiv för mobil och desktop — med <b>Startflöde, Receptvy</b> och <b>Familjevyn</b> (medlemmar, bjud in, vem lagade vad).</li>
+        <li>De visuella riktningarna läggs in som <b>Tweaks</b> så du kan växla mellan dem live på riktiga skärmar.</li>
+      </ol>
+      <p class="ask">Vilken logotyp (01/02/03) och vilken riktning (A/B/C) ska jag gå vidare med? Säg gärna "mixa B:s färger med C:s värme" — allt går att kombinera.</p>
+    </div>
+  </div>
+</section>
+
+<footer>VadSkaVi · Laga — designriktningar · v1</footer>
+
+</body>
+</html>

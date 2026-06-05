@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laga — vadskavi.nu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:ital,wght@0,400..800;1,400..600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f6f5f1;
+    --card:#ffffff;
+    --card-bd:rgba(20,18,14,.08);
+    --field-bd:rgba(20,18,14,.12);
+    --ink:#1a1a18;
+    --muted:#8a857c;
+    --chip:#edeae3;
+    --chip-fg:#5f5a51;
+    --accent:#c75b39;
+    --accent-soft:#f6e7e1;
+    --accent-shadow:rgba(199,91,57,.4);
+    --sage:#3f7d63;
+    --thumb-empty:#eceae4;
+    --radius:15px;
+    --sidebar-w:248px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--bg);color:var(--ink);
+    font-family:'Schibsted Grotesk',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;line-height:1.5;
+  }
+  button{font-family:inherit}
+  ::selection{background:var(--accent-soft)}
+  input::placeholder,textarea::placeholder{color:var(--muted)}
+
+  /* ===== Shell ===== */
+  .shell{min-height:100vh}
+  .sidebar{
+    position:fixed;top:0;left:0;width:var(--sidebar-w);height:100vh;
+    background:var(--card);border-right:1px solid var(--card-bd);
+    padding:26px 18px 22px;display:flex;flex-direction:column;z-index:20;
+  }
+  .topbar{display:none}
+  .bottomnav{display:none}
+  .main-scroll{margin-left:var(--sidebar-w);height:100vh;overflow-y:auto}
+  .main-inner{max-width:1080px;margin:0 auto;padding:34px 36px 80px}
+  .screen-pad{width:100%}
+
+  /* sidebar nav */
+  .nav-item{
+    display:flex;align-items:center;gap:13px;width:100%;text-align:left;
+    background:transparent;border:none;cursor:pointer;padding:11px 13px;border-radius:11px;
+    color:var(--muted);font-size:15.5px;font-weight:600;letter-spacing:-.01em;transition:background .15s,color .15s;
+  }
+  .nav-item:hover{background:var(--chip);color:var(--ink)}
+  .nav-item.active{background:var(--accent-soft);color:var(--accent)}
+  .side-family{
+    display:flex;align-items:center;gap:11px;width:100%;text-align:left;cursor:pointer;
+    background:var(--bg);border:1px solid var(--card-bd);border-radius:13px;padding:11px 12px;
+    transition:border-color .15s;
+  }
+  .side-family:hover{border-color:var(--accent)}
+
+  /* ===== Cards ===== */
+  .recipe-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:16px}
+  .laga-card:hover{transform:translateY(-3px);box-shadow:0 16px 34px -22px rgba(20,30,24,.5);border-color:var(--card-bd)}
+  .laga-card:active{transform:translateY(-1px)}
+  .laga-card--min:hover{border-color:var(--accent)}
+
+  /* chip row scrollbar */
+  .chip-row::-webkit-scrollbar{height:0}
+  .main-scroll::-webkit-scrollbar{width:10px}
+  .main-scroll::-webkit-scrollbar-thumb{background:rgba(0,0,0,.12);border-radius:8px;border:3px solid var(--bg)}
+
+  /* ===== Recipe detail ===== */
+  .recipe-detail{width:100%}
+  .recipe-hero{position:relative;height:300px;border-radius:var(--radius);overflow:hidden;margin-bottom:24px}
+  .recipe-hero--min{height:120px}
+  .hero-back{position:absolute;top:16px;left:16px;width:42px;height:42px;border-radius:50%;
+    background:rgba(255,255,255,.92);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;
+    box-shadow:0 4px 12px -4px rgba(0,0,0,.3);backdrop-filter:blur(4px)}
+  .recipe-body{}
+  .recipe-actions{margin:22px 0 30px;padding:20px 0;border-top:1px solid var(--card-bd);border-bottom:1px solid var(--card-bd)}
+  .btn-cooked:active{transform:scale(.97)}
+  .recipe-cols{display:grid;grid-template-columns:1.5fr 1fr;gap:48px;align-items:start}
+  .step-btn{width:26px;height:26px;border-radius:7px;border:1px solid var(--card-bd);background:var(--bg);
+    cursor:pointer;font-size:17px;color:var(--ink);line-height:1;display:flex;align-items:center;justify-content:center}
+  .step-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+  /* ===== Family ===== */
+  .family-cols{display:grid;grid-template-columns:1fr 1fr;gap:44px;align-items:start}
+
+  /* ===== Responsive: tablet/mobile ===== */
+  @media(max-width:880px){
+    .sidebar{display:none}
+    .main-scroll{margin-left:0;height:auto;min-height:100vh}
+    .main-inner{padding:0 0 96px}
+    .screen-pad{padding:20px 18px 0}
+    .topbar{
+      display:flex;align-items:center;justify-content:space-between;
+      position:sticky;top:0;z-index:30;background:var(--card);border-bottom:1px solid var(--card-bd);
+      padding:12px 16px;
+    }
+    .bottomnav{
+      display:grid;grid-template-columns:repeat(3,1fr);
+      position:fixed;bottom:0;left:0;right:0;z-index:30;background:var(--card);
+      border-top:1px solid var(--card-bd);padding:8px 0 max(8px,env(safe-area-inset-bottom));
+    }
+    .bn-item{display:flex;flex-direction:column;align-items:center;gap:3px;background:transparent;border:none;
+      cursor:pointer;color:var(--muted);font-size:11px;font-weight:600;padding:4px 0;transition:color .15s}
+    .bn-item.active{color:var(--accent)}
+    .recipe-hero{border-radius:0;height:230px;margin-bottom:18px}
+    .recipe-hero--min{height:88px}
+    .recipe-body{padding:0 18px}
+    .recipe-detail .hero-back{top:max(14px,env(safe-area-inset-top))}
+    .recipe-cols{grid-template-columns:1fr;gap:34px}
+    .family-cols{grid-template-columns:1fr;gap:34px}
+    .recipe-social{padding-top:30px;border-top:1px solid var(--card-bd)}
+  }
+  @media(min-width:881px){
+    .recipe-detail{max-width:none}
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="app/data.jsx"></script>
+<script type="text/babel" src="app/ui.jsx"></script>
+<script type="text/babel" src="app/feed.jsx"></script>
+<script type="text/babel" src="app/recipe.jsx"></script>
+<script type="text/babel" src="app/family.jsx"></script>
+<script type="text/babel" src="app/add.jsx"></script>
+<script type="text/babel" src="app/app.jsx"></script>
+</body>
+</html>
