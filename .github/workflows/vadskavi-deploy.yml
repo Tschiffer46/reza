@@ -54,4 +54,6 @@ jobs:
             docker compose up -d vadskavi
             # `npx` saknas i imagen; anropa Prisma-CLI direkt (full node_modules finns).
             docker compose exec -T vadskavi node node_modules/prisma/build/index.js db push
+            # Sätt upp svensk fulltext-sök (trigger + GIN-index + backfill, idempotent)
+            docker compose exec -T vadskavi node node_modules/tsx/dist/cli.mjs scripts/setup-search.ts
             docker image prune -f

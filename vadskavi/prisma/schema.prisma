@@ -104,6 +104,7 @@ model Entry {
   source       String?
   url          String?
   imageUrls    String[]    @default([])
+  searchVector Unsupported("tsvector")?
   timesCooked  Int         @default(0)
   lastCooked   DateTime?
   createdAt    DateTime    @default(now())
