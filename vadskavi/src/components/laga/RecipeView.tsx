@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Icon, Tag, Avatar, AvatarStack } from '@/components/laga/ui'
+import { FormattedText } from '@/components/laga/FormattedText'
 
 export interface RecipeDTO {
   id: string
@@ -15,6 +16,7 @@ export interface RecipeDTO {
   servings: number | null
   ingredients: string[]
   steps: string[]
+  content: string | null
   drinks: string | null
   source: string | null
   url: string | null
@@ -244,9 +246,14 @@ export function RecipeView({ recipe, meName }: { recipe: RecipeDTO; meName: stri
               </section>
             )}
 
-            {recipe.steps.length > 0 && (
+            {recipe.type === 'tip' && recipe.content ? (
               <section style={{ marginBottom: 10 }}>
-                <SectionTitle icon="chefhat">{recipe.type === 'tip' ? 'Så gör du' : 'Gör så här'}</SectionTitle>
+                <SectionTitle icon="chefhat">Så gör du</SectionTitle>
+                <FormattedText text={recipe.content} />
+              </section>
+            ) : recipe.steps.length > 0 ? (
+              <section style={{ marginBottom: 10 }}>
+                <SectionTitle icon="chefhat">Gör så här</SectionTitle>
                 <ol style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 16 }}>
                   {recipe.steps.map((s, i) => (
                     <li key={i} style={{ display: 'flex', gap: 14 }}>
@@ -256,7 +263,7 @@ export function RecipeView({ recipe, meName }: { recipe: RecipeDTO; meName: stri
                   ))}
                 </ol>
               </section>
-            )}
+            ) : null}
 
             {recipe.drinks && (
               <section style={{ marginTop: 24 }}>

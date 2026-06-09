@@ -34,6 +34,7 @@ COPY --from=builder /app/public ./public
 # Prisma-schema + fullständig node_modules så att `prisma db push` (körs vid
 # deploy) har hela sitt beroendeträd. Standalone-tracen utelämnar CLI-deps.
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/node_modules ./node_modules
 
 EXPOSE 3000

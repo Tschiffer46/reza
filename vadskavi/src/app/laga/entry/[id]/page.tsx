@@ -42,7 +42,6 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
   const me = await prisma.user.findUnique({ where: { id: userId }, select: { name: true, email: true } })
   const meName = displayName(me)
 
-  const stepsSource = entry.type === 'tip' ? entry.content : entry.instructions
   const recipe: RecipeDTO = {
     id: entry.id,
     type: entry.type,
@@ -52,7 +51,8 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
     time: entry.time,
     servings: entry.servings,
     ingredients: entry.type === 'tip' ? [] : entry.ingredients,
-    steps: (stepsSource || '').split('\n').map((s) => s.trim()).filter(Boolean),
+    steps: entry.type === 'tip' ? [] : (entry.instructions || '').split('\n').map((s) => s.trim()).filter(Boolean),
+    content: entry.type === 'tip' ? entry.content : null,
     drinks: entry.drinks,
     source: entry.source,
     url: entry.url,

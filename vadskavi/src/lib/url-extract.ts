@@ -1,8 +1,15 @@
 import { extractFromText, normalizeEntry, type ExtractedEntry } from '@/lib/ai'
 
-/** Hämta ett recept från en URL: försök JSON-LD Recipe, annars HTML→text→AI. */
+/** Hämta ett recept från en URL: TikTok-oEmbed / JSON-LD Recipe / og-taggar / HTML→text→AI. */
 export async function extractFromUrl(url: string): Promise<ExtractedEntry> {
   const hostname = new URL(url).hostname.toLowerCase()
+
+  // TikTok: caption finns inte i HTML (bot-vägg) men i oEmbed
+  if (hostname.endsWith('tiktok.com')) {
+    const tt = await tiktokOEmbed(url)
+    if (tt) return tt
+  }
+
   const response = await fetch(url, {
     headers: { 'User-Agent': 'Mozilla/5.0 (compatible; VadSkaVi/1.0)', Accept: 'text/html' },
   })
@@ -15,11 +22,47 @@ export async function extractFromUrl(url: string): Promise<ExtractedEntry> {
     return jsonLd
   }
 
+  // og-taggar bär ofta receptet/captionen (Instagram, sociala sidor)
+  const og = ogMeta(html)
   const plain = htmlToText(html)
-  const result = await extractFromText(plain)
+  const text = og ? `${og}\n\n${plain}` : plain
+  const result = await extractFromText(text)
   result.source = result.source || hostname
   result.url = result.url || url
   return result
+}
+
+async function tiktokOEmbed(url: string): Promise<ExtractedEntry | null> {
+  try {
+    const r = await fetch(`https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; VadSkaVi/1.0)' },
+    })
+    if (!r.ok) return null
+    const o = (await r.json()) as { title?: string; author_name?: string }
+    const text = [o.title, o.author_name].filter(Boolean).join('\n')
+    if (!text.trim()) return null
+    const result = await extractFromText(text)
+    result.source = result.source || (o.author_name ? `TikTok (@${o.author_name})` : 'TikTok')
+    result.url = result.url || url
+    return result
+  } catch {
+    return null
+  }
+}
+
+function ogMeta(html: string): string {
+  const get = (prop: string) => {
+    const m =
+      html.match(new RegExp(`<meta[^>]+(?:property|name)=["']${prop}["'][^>]+content=["']([^"']*)["']`, 'i')) ||
+      html.match(new RegExp(`<meta[^>]+content=["']([^"']*)["'][^>]+(?:property|name)=["']${prop}["']`, 'i'))
+    return m ? m[1] : ''
+  }
+  return [get('og:title'), get('og:description')]
+    .filter(Boolean)
+    .join('\n')
+    .replace(/&amp;/g, '&')
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&quot;/g, '"')
 }
 
 function extractJsonLdRecipe(html: string): ExtractedEntry | null {
