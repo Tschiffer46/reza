@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Icon, Avatar, AvatarStack } from '@/components/laga/ui'
@@ -46,7 +46,13 @@ export function FamilyView({ data }: { data: FamilyViewData }) {
   const [busy, setBusy] = useState(false)
   const [joinCode, setJoinCode] = useState('')
   const [newName, setNewName] = useState('')
+  const [origin, setOrigin] = useState('')
   const coverInput = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    setOrigin(window.location.origin)
+  }, [])
+  const inviteUrl = `${origin || 'https://vadskavi.nu'}/join/${data.inviteCode}`
 
   async function patch(body: object) {
     setBusy(true)
@@ -140,25 +146,28 @@ export function FamilyView({ data }: { data: FamilyViewData }) {
           <h2 style={h2}>Bjud in fler</h2>
         </div>
         <p style={{ fontSize: 14, color: 'var(--ink)', opacity: 0.8, marginBottom: 14, maxWidth: '46ch' }}>
-          Dela koden så kan mormor, kusiner och bonusfamiljen lägga till sina egna recept i samma bok (Konto → Familj → Gå med).
+          Sms:a eller dela länken — den som klickar hamnar direkt i er receptbok (efter inloggning eller nytt konto).
         </p>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <div style={{ flex: 1, minWidth: 200, display: 'flex', alignItems: 'center', gap: 9, background: 'var(--card)', border: '1px solid var(--card-bd)', borderRadius: 10, padding: '11px 14px' }}>
             <Icon name="link" size={16} color="var(--muted)" />
-            <span style={{ fontSize: 14, fontFamily: 'monospace', color: 'var(--ink)' }}>{data.inviteCode}</span>
+            <span style={{ fontSize: 13.5, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{inviteUrl}</span>
           </div>
           <button
             onClick={() => {
-              navigator.clipboard.writeText(data.inviteCode)
+              navigator.clipboard.writeText(inviteUrl)
               setCopied(true)
               setTimeout(() => setCopied(false), 1800)
             }}
             style={{ background: copied ? 'var(--sage)' : 'var(--accent)', color: '#fff', border: 'none', borderRadius: 10, padding: '11px 20px', cursor: 'pointer', fontSize: 14.5, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 7 }}
           >
             <Icon name={copied ? 'check' : 'link'} size={16} color="#fff" />
-            {copied ? 'Kopierad!' : 'Kopiera kod'}
+            {copied ? 'Kopierad!' : 'Kopiera länk'}
           </button>
         </div>
+        <p style={{ fontSize: 12.5, color: 'var(--ink)', opacity: 0.65, marginTop: 10 }}>
+          Koden funkar också att ange manuellt: <code style={{ fontFamily: 'monospace' }}>{data.inviteCode}</code>
+        </p>
       </div>
 
       {/* background chooser */}

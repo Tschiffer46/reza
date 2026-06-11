@@ -13,6 +13,9 @@ function LoginInner() {
   const router = useRouter()
   const params = useSearchParams()
   const skickat = params.get('skickat')
+  // Tillåt bara interna mål (skydd mot open redirect)
+  const rawNext = params.get('next') || ''
+  const next = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/laga'
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -29,7 +32,7 @@ function LoginInner() {
     if (res?.error) {
       setError('Fel e-post eller lösenord')
     } else {
-      router.push('/laga')
+      router.push(next)
       router.refresh()
     }
   }
@@ -37,7 +40,7 @@ function LoginInner() {
   async function sendMagicLink(e: React.FormEvent) {
     e.preventDefault()
     if (!magicEmail.trim()) return
-    await signIn('nodemailer', { email: magicEmail.trim(), callbackUrl: '/laga' })
+    await signIn('nodemailer', { email: magicEmail.trim(), callbackUrl: next })
   }
 
   return (
@@ -84,7 +87,7 @@ function LoginInner() {
                 </form>
                 <p className="mt-3 text-sm text-brand-muted">
                   Inget konto?{' '}
-                  <Link href="/register" className="text-brand-accent-dark underline">
+                  <Link href={`/register?next=${encodeURIComponent(next)}`} className="text-brand-accent-dark underline">
                     Skapa ett
                   </Link>
                 </p>
