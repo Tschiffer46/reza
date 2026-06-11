@@ -1,16 +1,21 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import { Header } from '@/components/Header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
-export default function RegisterPage() {
+function RegisterInner() {
   const router = useRouter()
+  const params = useSearchParams()
+  // Tillåt bara interna mål (skydd mot open redirect)
+  const rawNext = params.get('next') || ''
+  const next = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/laga'
+
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -36,9 +41,9 @@ export default function RegisterPage() {
     const login = await signIn('credentials', { email, password, redirect: false })
     setBusy(false)
     if (login?.error) {
-      router.push('/login')
+      router.push(`/login?next=${encodeURIComponent(next)}`)
     } else {
-      router.push('/laga')
+      router.push(next)
       router.refresh()
     }
   }
@@ -77,7 +82,7 @@ export default function RegisterPage() {
             </form>
             <p className="mt-3 text-sm text-brand-muted">
               Har du redan ett konto?{' '}
-              <Link href="/login" className="text-brand-accent-dark underline">
+              <Link href={`/login?next=${encodeURIComponent(next)}`} className="text-brand-accent-dark underline">
                 Logga in
               </Link>
             </p>
@@ -85,5 +90,13 @@ export default function RegisterPage() {
         </Card>
       </main>
     </div>
+  )
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense>
+      <RegisterInner />
+    </Suspense>
   )
 }

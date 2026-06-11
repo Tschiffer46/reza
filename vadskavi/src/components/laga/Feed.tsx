@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import type { CategoryDTO, EntryDTO } from '@/lib/types'
-import { Icon, Tag, CookedBy, AvatarStack } from '@/components/laga/ui'
+import { Icon, Tag, CookedBy } from '@/components/laga/ui'
 
 const TYPES = [
   { value: '', label: 'Alla' },
@@ -33,14 +33,26 @@ function RecipeCard({ entry }: { entry: EntryDTO }) {
       style={{
         border: '1px solid var(--card-bd)',
         background: 'var(--card)',
-        borderRadius: 'var(--radius)',
-        overflow: 'hidden',
+        borderRadius: 13,
         display: 'flex',
-        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 13,
+        padding: '10px 12px',
         color: 'inherit',
       }}
     >
-      <div style={{ position: 'relative', aspectRatio: '16/10', background: 'var(--thumb-empty)' }}>
+      {/* liten tumnagel */}
+      <div
+        style={{
+          position: 'relative',
+          width: 64,
+          height: 64,
+          borderRadius: 10,
+          overflow: 'hidden',
+          background: 'var(--thumb-empty)',
+          flexShrink: 0,
+        }}
+      >
         {img ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -50,53 +62,56 @@ function RecipeCard({ entry }: { entry: EntryDTO }) {
           />
         ) : (
           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Icon name="chefhat" size={28} stroke={1.4} color="var(--muted)" />
-          </div>
-        )}
-        <div style={{ position: 'absolute', top: 10, left: 10 }}>
-          <span
-            style={{
-              fontSize: 11.5,
-              fontWeight: 600,
-              padding: '4px 9px',
-              borderRadius: 7,
-              background: 'rgba(255,255,255,.92)',
-              color: 'var(--ink)',
-              backdropFilter: 'blur(4px)',
-            }}
-          >
-            {entry.category}
-          </span>
-        </div>
-        {entry.type === 'tip' && (
-          <div style={{ position: 'absolute', top: 10, right: 10 }}>
-            <span style={{ fontSize: 11.5, fontWeight: 600, padding: '4px 9px', borderRadius: 7, background: 'var(--accent)', color: '#fff' }}>
-              Tips
-            </span>
+            <Icon name="chefhat" size={22} stroke={1.5} color="var(--muted)" />
           </div>
         )}
       </div>
-      <div style={{ padding: '13px 14px 14px', display: 'flex', flexDirection: 'column', gap: 9, flex: 1 }}>
-        <div style={{ fontWeight: 600, fontSize: 17.5, letterSpacing: '-0.01em', color: 'var(--ink)', lineHeight: 1.2 }}>
+
+      {/* text + meta */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            fontWeight: 600,
+            fontSize: 16,
+            letterSpacing: '-0.01em',
+            color: 'var(--ink)',
+            lineHeight: 1.25,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
           {entry.title}
         </div>
-        <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-          <CookedBy cookedBy={entry.cookedBy || []} />
-          <div style={{ display: 'flex', alignItems: 'center', gap: 11, color: 'var(--muted)', flexShrink: 0 }}>
-            {!!entry.heartCount && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12.5, fontWeight: 600 }}>
-                <Icon name="heart" size={14} color="var(--accent)" fill="var(--accent)" stroke={0} />
-                {entry.heartCount}
-              </span>
-            )}
-            {!!entry.commentCount && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12.5, fontWeight: 600 }}>
-                <Icon name="chat" size={14} />
-                {entry.commentCount}
-              </span>
-            )}
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
+          <Tag>{entry.category}</Tag>
+          {entry.type === 'tip' && <Tag tone="accent">Tips</Tag>}
+          {entry.time && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12.5, color: 'var(--muted)' }}>
+              <Icon name="clock" size={13} />
+              {entry.time}
+            </span>
+          )}
         </div>
+        <div style={{ marginTop: 5 }}>
+          <CookedBy cookedBy={entry.cookedBy || []} size={16} />
+        </div>
+      </div>
+
+      {/* räknare till höger */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5, color: 'var(--muted)', flexShrink: 0 }}>
+        {!!entry.heartCount && (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12.5, fontWeight: 600 }}>
+            <Icon name="heart" size={14} color="var(--accent)" fill="var(--accent)" stroke={0} />
+            {entry.heartCount}
+          </span>
+        )}
+        {!!entry.commentCount && (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12.5, fontWeight: 600 }}>
+            <Icon name="chat" size={14} />
+            {entry.commentCount}
+          </span>
+        )}
       </div>
     </Link>
   )
@@ -312,7 +327,7 @@ export function Feed({
           <p style={{ marginTop: 12, fontSize: 15 }}>Inga träffar. Prova ett annat ord.</p>
         </div>
       ) : (
-        <div className="recipe-grid">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
           {entries.map((e) => (
             <RecipeCard key={e.id} entry={e} />
           ))}
