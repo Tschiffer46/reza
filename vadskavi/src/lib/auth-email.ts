@@ -1,6 +1,22 @@
 import type { EmailProviderSendVerificationRequestParams } from '@auth/core/providers/email'
 import { createTransport } from 'nodemailer'
 
+/** Publik bas-URL (faller tillbaka på vadskavi.nu om AUTH_URL saknas). */
+export const PUBLIC_BASE_URL = process.env.AUTH_URL || 'https://vadskavi.nu'
+
+/** Skriv om en URL så att protokoll+värd blir den publika adressen. */
+export function canonicalUrl(input: string): string {
+  try {
+    const u = new URL(input)
+    const base = new URL(PUBLIC_BASE_URL)
+    u.protocol = base.protocol
+    u.host = base.host
+    return u.toString()
+  } catch {
+    return input
+  }
+}
+
 /**
  * Svensk magic-link-mejl. Skickas av Auth.js Nodemailer-providern när en
  * användare begär inloggningslänk.
@@ -8,7 +24,10 @@ import { createTransport } from 'nodemailer'
 export async function sendVerificationRequest(
   params: EmailProviderSendVerificationRequestParams,
 ) {
-  const { identifier: email, url, provider } = params
+  const { identifier: email, provider } = params
+  // Auth.js kan gissa fel värd bakom proxy (t.ex. 0.0.0.0:3000). Tvinga den
+  // publika adressen så länken i mejlet alltid pekar på rätt domän.
+  const url = canonicalUrl(params.url)
   const { host } = new URL(url)
 
   const transport = createTransport(provider.server)
