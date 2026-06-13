@@ -4,7 +4,7 @@ import Nodemailer from 'next-auth/providers/nodemailer'
 import Credentials from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/db'
-import { sendVerificationRequest } from '@/lib/auth-email'
+import { sendVerificationRequest, PUBLIC_BASE_URL } from '@/lib/auth-email'
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -49,6 +49,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
+    // Tvinga omdirigeringar till den publika adressen (annars kan 0.0.0.0:3000
+    // läcka in bakom proxyn).
+    redirect({ url }) {
+      try {
+        if (url.startsWith('/')) return `${PUBLIC_BASE_URL}${url}`
+        const u = new URL(url)
+        const b = new URL(PUBLIC_BASE_URL)
+        if (u.host !== b.host) return `${PUBLIC_BASE_URL}${u.pathname}${u.search}${u.hash}`
+        return url
+      } catch {
+        return PUBLIC_BASE_URL
+      }
+    },
     jwt({ token, user }) {
       if (user?.id) token.id = user.id
       return token
