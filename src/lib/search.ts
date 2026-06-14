@@ -1,43 +1,62 @@
-import { prisma } from './db'
+import { Prisma } from '@prisma/client'
+import { prisma } from '@/lib/db'
+import { ENTRY_META_INCLUDE } from '@/lib/laga'
 
-interface SearchResult {
-  id: string
-  type: string
-  title: string
-  category: string
-  ingredients: string[]
-  instructions: string | null
-  content: string | null
-  source: string | null
-  url: string | null
-  notes: string | null
-  imageUrls: string[]
-  timesCooked: number
-  lastCooked: Date | null
-  createdAt: Date
-  updatedAt: Date
-  rank: number
+export interface EntryQuery {
+  /** Gemenskaper användaren tillhör (sökningen spänner över dessa). */
+  familyIds: string[]
+  q?: string | null
+  type?: string | null
+  category?: string | null
+  /** Valfritt: begränsa till en specifik gemenskap. */
+  family?: string | null
+  sort?: string | null
 }
 
-/** Full-text search using PostgreSQL Swedish configuration with ranking */
-export async function searchEntries(
-  query: string,
-  type?: string,
-  category?: string
-): Promise<SearchResult[]> {
-  const typeFilter = type ? `AND "type" = '${type}'` : ''
-  const categoryFilter = category ? `AND "category" = '${category}'` : ''
+/**
+ * Lista/sök recept tvärs över användarens gemenskaper. Med sökterm används svensk
+ * fulltext (tsvector + ts_rank); annars Prisma-listning med vald sortering.
+ */
+export async function searchEntries({ familyIds, q, type, category, family, sort }: EntryQuery) {
+  const scopeIds = family && familyIds.includes(family) ? [family] : familyIds
+  if (scopeIds.length === 0) return []
 
-  const results = await prisma.$queryRawUnsafe<SearchResult[]>(
-    `SELECT *, ts_rank(search_vector, plainto_tsquery('swedish', $1)) as rank
-     FROM "Entry"
-     WHERE search_vector @@ plainto_tsquery('swedish', $1)
-     ${typeFilter}
-     ${categoryFilter}
-     ORDER BY rank DESC
-     LIMIT 50`,
-    query
-  )
+  const term = q?.trim()
 
-  return results
+  if (term) {
+    // Rank-ordnade id:n via tsvector
+    const rows = await prisma.$queryRaw<{ id: string }[]>`
+      SELECT id FROM "Entry"
+      WHERE "familyId" IN (${Prisma.join(scopeIds)})
+        AND "searchVector" @@ plainto_tsquery('swedish', ${term})
+        ${type ? Prisma.sql`AND type = ${type}` : Prisma.empty}
+        ${category ? Prisma.sql`AND category = ${category}` : Prisma.empty}
+      ORDER BY ts_rank("searchVector", plainto_tsquery('swedish', ${term})) DESC
+      LIMIT 100
+    `
+    const ids = rows.map((r) => r.id)
+    if (ids.length === 0) return []
+    const found = await prisma.entry.findMany({ where: { id: { in: ids } }, include: ENTRY_META_INCLUDE })
+    const order = new Map(ids.map((id, i) => [id, i] as const))
+    return found.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0))
+  }
+
+  const where: Prisma.EntryWhereInput = { familyId: { in: scopeIds } }
+  if (type) where.type = type
+  if (category) where.category = category
+
+  const orderBy: Prisma.EntryOrderByWithRelationInput =
+    sort === 'timesCooked'
+      ? { timesCooked: 'desc' }
+      : sort === 'rating'
+        ? { ratingAvg: { sort: 'desc', nulls: 'last' } }
+        : sort === 'popular'
+          ? { reactions: { _count: 'desc' } }
+          : sort === 'lastCooked'
+          ? { lastCooked: 'desc' }
+          : sort === 'title'
+            ? { title: 'asc' }
+            : { createdAt: 'desc' }
+
+  return prisma.entry.findMany({ where, orderBy, take: 100, include: ENTRY_META_INCLUDE })
 }

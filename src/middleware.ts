@@ -1,24 +1,29 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { verifySessionValue } from '@/lib/auth'
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
-const PUBLIC_PATHS = ['/login', '/api/auth', '/manifest.json', '/sw.js']
+// Publika sökvägar som inte kräver inloggning.
+// /api/register + /api/auth nås av utloggade användare (kontoskapande/inloggning).
+const PUBLIC_PATHS = ['/', '/login', '/register', '/join', '/api/auth', '/api/register']
 
-export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl
+/**
+ * Lättviktig auth-grind: kontrollerar att en Auth.js-sessionscookie finns.
+ * Körs i Edge-runtime, så vi rör inte databasen här — den fullständiga
+ * sessionsvalideringen sker i server-komponenter via `auth()`.
+ */
+export function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl
 
-  // Allow public paths and static assets
-  if (
-    PUBLIC_PATHS.some((p) => pathname.startsWith(p)) ||
-    pathname.startsWith('/icons/') ||
-    pathname.startsWith('/_next/')
-  ) {
-    return NextResponse.next()
-  }
+  const isPublic = PUBLIC_PATHS.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`),
+  )
+  if (isPublic) return NextResponse.next()
 
-  // Check session cookie
-  const session = request.cookies.get('reza-session')
-  if (!session || !(await verifySessionValue(session.value))) {
-    const loginUrl = new URL('/login', request.url)
+  const hasSession =
+    req.cookies.has('authjs.session-token') ||
+    req.cookies.has('__Secure-authjs.session-token')
+
+  if (!hasSession) {
+    const loginUrl = new URL('/login', req.url)
     return NextResponse.redirect(loginUrl)
   }
 
@@ -26,5 +31,6 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  // Matcha allt utom statiska assets, bilder och PWA-filer.
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|manifest.json|icons|sw.js).*)'],
 }

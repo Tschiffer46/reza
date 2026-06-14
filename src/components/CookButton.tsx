@@ -2,10 +2,12 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { ChefHat } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
-export function CookButtonClient({ entryId }: { entryId: string }) {
-  const [loading, setLoading] = useState(false)
+export function CookButton({ entryId }: { entryId: string }) {
   const router = useRouter()
+  const [loading, setLoading] = useState(false)
 
   async function handleCook() {
     setLoading(true)
@@ -19,12 +21,9 @@ export function CookButtonClient({ entryId }: { entryId: string }) {
   }
 
   return (
-    <button
-      onClick={handleCook}
-      disabled={loading}
-      className="px-4 py-2 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 disabled:opacity-50 transition-colors text-sm"
-    >
-      {loading ? '...' : 'Lagad!'}
-    </button>
+    <Button onClick={handleCook} disabled={loading} className="gap-2">
+      <ChefHat className="h-4 w-4" />
+      {loading ? '…' : 'Lagad!'}
+    </Button>
   )
 }

@@ -1,13 +1,42 @@
-name: Deploy to Hetzner
+# Deploy VadSkaVi till Hetzner (Docker + GHCR), mönster från stegvis-app.
+#
+# Kräver GitHub-secrets:
+#   SERVER_HOST     - 89.167.90.112
+#   SERVER_USER     - deploy
+#   SERVER_SSH_KEY  - privat SSH-nyckel för deploy-användaren
+#
+# Förutsätter att `vadskavi` + `vadskavi-db` redan lagts till i
+# /home/deploy/hosting/docker-compose.yml (se docs/SERVER-SETUP.md).
+name: Deploy VadSkaVi
 
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/tschiffer46/vadskavi:latest
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         with:
@@ -15,27 +44,12 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            export NVM_DIR="$HOME/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-
-            cd ~/reza
-            git pull origin main
-            npm ci
-            set -a; source .env.production; set +a
-            npx prisma migrate deploy
-            npx prisma generate
-            npm run build
-
-            # Copy standalone + static + public
-            cp -r public .next/standalone/public
-            cp -r .next/static .next/standalone/.next/static
-
-            sudo systemctl restart reza
-            sleep 3
-            # Verify the app is responding
-            if curl -sf http://localhost:3456/login > /dev/null 2>&1; then
-              echo "Deploy complete! App is responding."
-            else
-              echo "WARNING: App may not be responding on port 3456"
-              sudo systemctl status reza --no-pager || true
-            fi
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+            cd /home/deploy/hosting
+            docker compose pull vadskavi
+            docker compose up -d vadskavi
+            # `npx` saknas i imagen; anropa Prisma-CLI direkt (full node_modules finns).
+            docker compose exec -T vadskavi node node_modules/prisma/build/index.js db push
+            # Sätt upp svensk fulltext-sök (trigger + GIN-index + backfill, idempotent)
+            docker compose exec -T vadskavi node node_modules/tsx/dist/cli.mjs scripts/setup-search.ts
+            docker image prune -f

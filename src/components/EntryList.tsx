@@ -1,123 +1,160 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { EntryCard } from './EntryCard'
-import { CategoryFilter } from './CategoryFilter'
-import { SearchBar } from './SearchBar'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import type { CategoryDTO, EntryDTO } from '@/lib/types'
+import { EntryCard } from '@/components/EntryCard'
+import { SearchBar } from '@/components/SearchBar'
+import { CategoryFilter } from '@/components/CategoryFilter'
 
-interface Entry {
-  id: string
-  type: string
-  title: string
-  category: string
-  timesCooked: number
-  imageUrls: string[]
-  createdAt: string
-}
+const TYPE_TABS = [
+  { value: '', label: 'Alla' },
+  { value: 'recipe', label: 'Recept' },
+  { value: 'tip', label: 'Tips' },
+]
 
-interface EntryListProps {
-  initialEntries: Entry[]
-  initialTotal: number
-  categories: string[]
-}
+const SORTS = [
+  { value: 'createdAt', label: 'Senaste' },
+  { value: 'timesCooked', label: 'Mest lagad' },
+  { value: 'lastCooked', label: 'Nyligen lagad' },
+  { value: 'title', label: 'Titel' },
+]
 
-export function EntryList({ initialEntries, initialTotal, categories }: EntryListProps) {
+export function EntryList({
+  initialEntries,
+  categories,
+  families = [],
+}: {
+  initialEntries: EntryDTO[]
+  categories: CategoryDTO[]
+  families?: { id: string; name: string }[]
+}) {
   const [entries, setEntries] = useState(initialEntries)
-  const [total, setTotal] = useState(initialTotal)
+  const [searchInput, setSearchInput] = useState('')
+  const [q, setQ] = useState('')
   const [type, setType] = useState('')
   const [category, setCategory] = useState('')
-  const [search, setSearch] = useState('')
+  const [family, setFamily] = useState('')
   const [sort, setSort] = useState('createdAt')
   const [loading, setLoading] = useState(false)
+  const firstRender = useRef(true)
+
+  useEffect(() => {
+    const t = setTimeout(() => setQ(searchInput), 300)
+    return () => clearTimeout(t)
+  }, [searchInput])
 
   const fetchEntries = useCallback(async () => {
     setLoading(true)
     const params = new URLSearchParams()
+    if (q) params.set('q', q)
     if (type) params.set('type', type)
     if (category) params.set('category', category)
-    if (search) params.set('q', search)
+    if (family) params.set('family', family)
     if (sort) params.set('sort', sort)
-
-    const res = await fetch(`/api/entries?${params}`)
+    const res = await fetch(`/api/entries?${params.toString()}`)
     const data = await res.json()
-    setEntries(data.entries)
-    setTotal(data.total)
+    setEntries(data.entries || [])
     setLoading(false)
-  }, [type, category, search, sort])
+  }, [q, type, category, family, sort])
 
   useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false
+      return
+    }
     fetchEntries()
   }, [fetchEntries])
 
-  // Debounce search
-  const [searchInput, setSearchInput] = useState('')
-  useEffect(() => {
-    const timer = setTimeout(() => setSearch(searchInput), 300)
-    return () => clearTimeout(timer)
-  }, [searchInput])
+  const visibleCategories = categories.filter((c) => !type || c.type === type)
+  const showFamilyBadge = families.length > 1
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <SearchBar value={searchInput} onChange={setSearchInput} />
 
-      {/* Type toggle */}
-      <div className="flex gap-2">
-        {['', 'recipe', 'tip'].map((t) => (
-          <button
-            key={t}
-            onClick={() => setType(t)}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-              type === t
-                ? 'bg-amber-600 text-white'
-                : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-            }`}
-          >
-            {t === '' ? 'Alla' : t === 'recipe' ? 'Recept' : 'Tips'}
-          </button>
-        ))}
-      </div>
+      {families.length > 1 && (
+        <div className="scrollbar-hide flex gap-2 overflow-x-auto pb-1">
+          <FamilyChip active={!family} onClick={() => setFamily('')}>
+            Alla gemenskaper
+          </FamilyChip>
+          {families.map((f) => (
+            <FamilyChip key={f.id} active={family === f.id} onClick={() => setFamily(f.id)}>
+              {f.name}
+            </FamilyChip>
+          ))}
+        </div>
+      )}
 
-      <CategoryFilter categories={categories} selected={category} onChange={setCategory} />
-
-      {/* Sort */}
-      <div className="flex items-center gap-2">
-        <label className="text-sm text-amber-700">Sortera:</label>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex gap-1 rounded-lg bg-brand-accent/10 p-1">
+          {TYPE_TABS.map((t) => (
+            <button
+              key={t.value}
+              type="button"
+              onClick={() => {
+                setType(t.value)
+                setCategory('')
+              }}
+              className={`rounded-md px-3 py-1 text-sm transition-colors ${
+                type === t.value ? 'bg-brand-accent text-white' : 'text-brand-accent-dark'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
         <select
           value={sort}
           onChange={(e) => setSort(e.target.value)}
-          className="text-sm px-2 py-1 rounded-lg border border-amber-200 bg-white text-amber-800 focus:outline-none focus:ring-2 focus:ring-amber-400"
+          className="rounded-lg border border-brand-accent/40 bg-white px-2 py-1.5 text-sm text-brand-ink focus:outline-none focus:ring-2 focus:ring-brand-accent"
         >
-          <option value="createdAt">Senast inlagda</option>
-          <option value="timesCooked">Mest lagade</option>
-          <option value="lastCooked">Senast lagade</option>
-          <option value="title">Bokstavsordning</option>
+          {SORTS.map((s) => (
+            <option key={s.value} value={s.value}>
+              {s.label}
+            </option>
+          ))}
         </select>
       </div>
 
-      {/* Results */}
+      {visibleCategories.length > 0 && (
+        <CategoryFilter categories={visibleCategories} selected={category} onChange={setCategory} />
+      )}
+
       {loading ? (
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-white rounded-lg border border-amber-100 p-4 animate-pulse">
-              <div className="h-5 bg-amber-100 rounded w-2/3 mb-2" />
-              <div className="h-3 bg-amber-50 rounded w-1/3" />
-            </div>
-          ))}
-        </div>
+        <p className="py-8 text-center text-brand-muted">Laddar…</p>
       ) : entries.length === 0 ? (
-        <p className="text-center text-amber-600 py-8">
-          {search ? 'Inga resultat hittades' : 'Inga poster ännu'}
+        <p className="py-8 text-center text-brand-muted">
+          Inga recept ännu. Tryck på <span className="font-semibold">Lägg till</span> för att börja!
         </p>
       ) : (
-        <>
-          <p className="text-sm text-amber-600">{total} {total === 1 ? 'resultat' : 'resultat'}</p>
-          <div className="space-y-3">
-            {entries.map((entry) => (
-              <EntryCard key={entry.id} entry={entry} />
-            ))}
-          </div>
-        </>
+        <div className="space-y-2">
+          {entries.map((entry) => (
+            <EntryCard key={entry.id} entry={entry} showFamily={showFamilyBadge} />
+          ))}
+        </div>
       )}
     </div>
+  )
+}
+
+function FamilyChip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`whitespace-nowrap rounded-full px-3 py-1 text-sm transition-colors ${
+        active ? 'bg-brand-header text-white' : 'bg-brand-header/10 text-brand-header hover:bg-brand-header/20'
+      }`}
+    >
+      {children}
+    </button>
   )
 }
