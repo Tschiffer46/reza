@@ -3,6 +3,17 @@ import Link from 'next/link'
 import { prisma } from '@/lib/db'
 import { requireAdmin } from '@/lib/family'
 import { AdminFamilies } from '@/components/laga/AdminFamilies'
+import { AdminUsers } from '@/components/laga/AdminUsers'
+import { AdminFeedback } from '@/components/laga/AdminFeedback'
+
+function relativeDate(d: Date): string {
+  const diff = Date.now() - d.getTime()
+  const day = 24 * 60 * 60 * 1000
+  if (diff < day) return 'idag'
+  if (diff < 2 * day) return 'igår'
+  if (diff < 7 * day) return `för ${Math.floor(diff / day)} dagar sedan`
+  return d.toLocaleDateString('sv-SE')
+}
 
 export default async function AdminPage() {
   try {
@@ -11,7 +22,7 @@ export default async function AdminPage() {
     notFound()
   }
 
-  const [users, families, entries, cooks, familyRows] = await Promise.all([
+  const [users, families, entries, cooks, familyRows, userRows, feedbackRows] = await Promise.all([
     prisma.user.count(),
     prisma.family.count(),
     prisma.entry.count(),
@@ -20,6 +31,12 @@ export default async function AdminPage() {
       include: { _count: { select: { members: true, entries: true } } },
       orderBy: { createdAt: 'desc' },
     }),
+    prisma.user.findMany({
+      select: { id: true, name: true, email: true, plan: true, isAdmin: true, _count: { select: { memberships: true } } },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    }),
+    prisma.feedback.findMany({ orderBy: { createdAt: 'desc' }, take: 100 }),
   ])
 
   const stats = [
@@ -56,6 +73,30 @@ export default async function AdminPage() {
           inviteCode: f.inviteCode,
           members: f._count.members,
           entries: f._count.entries,
+        }))}
+      />
+
+      <h2 style={{ fontWeight: 700, fontSize: 18, color: 'var(--ink)', margin: '28px 0 12px' }}>Användare</h2>
+      <AdminUsers
+        users={userRows.map((u) => ({
+          id: u.id,
+          name: u.name,
+          email: u.email,
+          plan: u.plan,
+          isAdmin: u.isAdmin,
+          families: u._count.memberships,
+        }))}
+      />
+
+      <h2 style={{ fontWeight: 700, fontSize: 18, color: 'var(--ink)', margin: '28px 0 12px' }}>Feedback</h2>
+      <AdminFeedback
+        items={feedbackRows.map((f) => ({
+          id: f.id,
+          type: f.type,
+          message: f.message,
+          status: f.status,
+          email: f.email,
+          date: relativeDate(f.createdAt),
         }))}
       />
     </div>

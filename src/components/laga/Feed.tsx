@@ -145,6 +145,9 @@ export function Feed({
   const currentFamilyName =
     family === '' ? 'Alla gemenskaper' : families.find((f) => f.id === family)?.name || familyName
 
+  // Tom-läget skiljer på "inga recept än" (framhäv Lägg till) och "inga sökträffar".
+  const hasActiveFilter = !!q || !!type || !!cat
+
   function selectFamily(id: string) {
     setFamily(id)
     setFamilyMenuOpen(false)
@@ -369,10 +372,35 @@ export function Feed({
       {loading ? (
         <p style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)' }}>Laddar…</p>
       ) : entries.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--muted)' }}>
-          <Icon name="search" size={34} color="var(--muted)" />
-          <p style={{ marginTop: 12, fontSize: 15 }}>Inga träffar. Prova ett annat ord.</p>
-        </div>
+        hasActiveFilter ? (
+          <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--muted)' }}>
+            <Icon name="search" size={34} color="var(--muted)" />
+            <p style={{ marginTop: 12, fontSize: 15 }}>Inga träffar. Prova ett annat ord.</p>
+          </div>
+        ) : (
+          <div style={{ textAlign: 'center', padding: '52px 22px' }}>
+            <span style={{ display: 'inline-flex', width: 64, height: 64, borderRadius: 18, background: 'var(--accent-soft)', alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name="chefhat" size={32} color="var(--accent)" />
+            </span>
+            <h2 style={{ fontWeight: 700, fontSize: 21, letterSpacing: '-0.02em', color: 'var(--ink)', margin: '16px 0 6px' }}>
+              Här var det tomt!
+            </h2>
+            <p style={{ fontSize: 15, color: 'var(--muted)', maxWidth: '34ch', margin: '0 auto 20px', lineHeight: 1.5 }}>
+              Börja med att lägga till ert första recept eller tips — klistra in text, en länk eller ett foto.
+            </p>
+            <Link
+              href="/laga/entry/new"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'var(--accent)', color: '#fff', borderRadius: 12, padding: '13px 22px', fontSize: 15.5, fontWeight: 600 }}
+            >
+              <Icon name="plus" size={19} color="#fff" /> Lägg till recept
+            </Link>
+            <div style={{ marginTop: 14 }}>
+              <Link href="/laga/family" style={{ fontSize: 14, fontWeight: 600, color: 'var(--accent)' }}>
+                Bjud in fler till gemenskapen →
+              </Link>
+            </div>
+          </div>
+        )
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
           {entries.map((e) => (

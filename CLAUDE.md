@@ -124,7 +124,12 @@ npx prisma studio     # databas-GUI
   denormaliseras till `Entry.ratingAvg/ratingCount` (uppdatera vid ny Rating).
 - **Byggmiljö (Claude-session):** ingen Docker-daemon → verifiera med `npx tsc --noEmit` +
   `npm run build`; faktiskt DB-/runtime-test sker först efter deploy mot live.
-- **Arbetssätt:** en branch + en draft-PR per uppgift; kör `tsc` + `build` före commit.
+- **Arbetssätt:** kör `tsc` + `build` före commit.
+- **Branch/PR-arbetssätt (VIKTIGT — undvik föräldralösa commits):** Skapa en **ny branch per
+  uppgift**, grenad från senaste `main` (eller aktuell integrationstipp om en oöppnad PR ännu
+  inte mergats), och öppna draft-PR:en direkt. **Återanvänd ALDRIG en branch vars PR redan
+  mergats** — då hamnar nya commits utan öppen PR. Ska du fortsätta efter en merge: gren om från
+  uppdaterad `main`. Verifiera att en öppen PR finns för branchen innan du pushar mer.
 - **Server-fällor:** GHCR-imagen måste vara **publik** (annars `docker login ghcr.io` på
   servern); en utgången ghcr-inloggning ger `denied` även för publika images → `docker
   logout ghcr.io`. Bilder kräver uploads-**volym** (annars försvinner de vid omdeploy).
