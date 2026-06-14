@@ -20,7 +20,7 @@ export const AI_MODELS = {
 
 export const AI_MAX_TOKENS = 800
 
-export const AI_SYSTEM_PROMPT = `Du är en receptextraherings-assistent för en svensk familjereceptbok.
+export const AI_SYSTEM_PROMPT = `Du är en receptextraherings-assistent för en svensk receptbok.
 Analysera inmatningen (text eller bild) och returnera strukturerad JSON.
 
 Returnera EXAKT detta JSON-format, inget annat:

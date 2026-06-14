@@ -48,7 +48,7 @@ export default async function ProfilePage() {
             href="/laga/family"
             className="flex items-center gap-3 rounded-xl border border-brand-accent/20 bg-white p-4 hover:shadow-md"
           >
-            <Users className="h-5 w-5 text-brand-accent-dark" /> Familj
+            <Users className="h-5 w-5 text-brand-accent-dark" /> Gemenskap
           </Link>
           <Link
             href="/laga/categories"

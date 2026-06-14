@@ -204,7 +204,7 @@ export function Feed({
             fontWeight: 600,
           }}
         >
-          Familjen
+          Gemenskapen
         </Link>
       </div>
 
@@ -272,10 +272,10 @@ export function Feed({
         </div>
       </div>
 
-      {/* familjefilter (om fler än en) */}
+      {/* gemenskapefilter (om fler än en) */}
       {families.length > 1 && (
         <div className="scrollbar-hide" style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, marginBottom: 10 }}>
-          {[{ id: '', name: 'Alla familjer' }, ...families].map((f) => (
+          {[{ id: '', name: 'Alla gemenskaper' }, ...families].map((f) => (
             <button
               key={f.id || 'all'}
               onClick={() => setFamily(f.id)}

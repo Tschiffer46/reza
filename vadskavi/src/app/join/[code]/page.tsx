@@ -28,7 +28,7 @@ export default async function JoinPage({ params }: { params: Promise<{ code: str
 
   const session = await auth()
   if (session?.user?.id && family) {
-    // Inloggad: gå med direkt (API:t sätter standardfamilj-cookien)
+    // Inloggad: gå med direkt (API:t sätter standardgemenskap-cookien)
     redirect(`/api/family/join-link?code=${encodeURIComponent(code)}`)
   }
 
@@ -80,7 +80,7 @@ export default async function JoinPage({ params }: { params: Promise<{ code: str
             </h1>
             <p style={{ fontSize: 14.5, color: 'var(--muted)', lineHeight: 1.5 }}>
               {family.members.length} {family.members.length === 1 ? 'medlem' : 'medlemmar'} · {family._count.entries} recept.
-              Logga in eller skapa ett konto så hamnar du direkt i familjens receptbok.
+              Logga in eller skapa ett konto så hamnar du direkt i gemenskapens receptbok.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 22 }}>
               <Link

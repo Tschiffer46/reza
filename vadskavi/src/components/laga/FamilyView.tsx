@@ -174,9 +174,9 @@ export function FamilyView({ data }: { data: FamilyViewData }) {
       <div style={card}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
           <Icon name="sliders" size={20} color="var(--accent)" />
-          <h2 style={h2}>Familjens bakgrund</h2>
+          <h2 style={h2}>Gemenskapens bakgrund</h2>
         </div>
-        <p style={{ fontSize: 14, color: 'var(--muted)', marginBottom: 14, maxWidth: '46ch' }}>Välj en känsla för er bok — alla i familjen ser samma.</p>
+        <p style={{ fontSize: 14, color: 'var(--muted)', marginBottom: 14, maxWidth: '46ch' }}>Välj en känsla för er bok — alla i gemenskapen ser samma.</p>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           {BACKGROUND_NAMES.map((n) => {
             const active = bg === n
@@ -252,7 +252,7 @@ export function FamilyView({ data }: { data: FamilyViewData }) {
 
       {/* family switcher */}
       <div style={{ ...card, marginTop: 28 }}>
-        <h2 style={{ ...h2, marginBottom: 12 }}>Dina familjer</h2>
+        <h2 style={{ ...h2, marginBottom: 12 }}>Dina gemenskaper</h2>
         {data.families.map((f) => (
           <div key={f.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0' }}>
             <span style={{ color: 'var(--ink)', fontWeight: 600 }}>{f.name}</span>
@@ -272,7 +272,7 @@ export function FamilyView({ data }: { data: FamilyViewData }) {
           </button>
         </div>
         <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
-          <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Skapa ny familj…" style={field} />
+          <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Skapa ny gemenskap…" style={field} />
           <button onClick={() => newName.trim() && call('/api/family', { name: newName }).then(() => setNewName(''))} disabled={busy || !newName.trim()} style={{ background: 'var(--card)', color: 'var(--accent)', border: '1px solid var(--accent)', borderRadius: 10, padding: '0 16px', cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
             Skapa
           </button>

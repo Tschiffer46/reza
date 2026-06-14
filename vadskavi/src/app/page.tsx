@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 // Sektioner på vadskavi.nu. Fler läggs till bredvid "Laga" framöver.
 const SECTIONS = [
-  { href: '/laga', title: 'Laga', desc: 'Familjens recept och mattips', icon: ChefHat },
+  { href: '/laga', title: 'Laga', desc: 'Gemenskapens recept och mattips', icon: ChefHat },
 ]
 
 export default async function HomePage() {
@@ -64,7 +64,7 @@ export default async function HomePage() {
             <CardTitle>Välkommen till VadSkaVi</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-brand-muted">
-            <p>Familjens egna sajt — börja med receptboken under «Laga».</p>
+            <p>Gemenskapens egna sajt — börja med receptboken under «Laga».</p>
             <Link href="/login" className="inline-block">
               <Button>Kom igång</Button>
             </Link>

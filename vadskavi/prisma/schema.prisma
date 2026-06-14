@@ -19,6 +19,7 @@ model User {
   avatar        String?
   password      String?
   emailVerified DateTime?
+  onboardedAt   DateTime?
   createdAt     DateTime     @default(now())
   memberships   Membership[]
   recipes       Entry[]      @relation("Creator")

@@ -60,7 +60,7 @@ function htmlBody({ url, host }: { url: string; host: string }) {
         <td style="padding:28px 24px;color:#1f2a24;">
           <h1 style="font-size:20px;margin:0 0 12px;">Logga in</h1>
           <p style="font-size:15px;line-height:1.5;margin:0 0 24px;color:#5b6b62;">
-            Klicka på knappen nedan för att logga in på familjens receptbok.
+            Klicka på knappen nedan för att logga in på gemenskapens receptbok.
           </p>
           <a href="${url}" style="display:inline-block;background:${accent};color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:15px;font-weight:bold;">
             Logga in

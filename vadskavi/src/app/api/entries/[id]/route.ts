@@ -65,14 +65,14 @@ export async function PUT(request: NextRequest, { params }: Params) {
     return NextResponse.json(entry)
   }
 
-  // Flytta till annan familj (om angiven och medlem)
+  // Flytta till annan gemenskap (om angiven och medlem)
   let familyId = existing.familyId
   if (body.familyId && body.familyId !== existing.familyId) {
     try {
       await assertMember(userId, body.familyId)
       familyId = body.familyId
     } catch {
-      return NextResponse.json({ error: 'Du tillhör inte den familjen' }, { status: 403 })
+      return NextResponse.json({ error: 'Du tillhör inte den gemenskapen' }, { status: 403 })
     }
   }
 

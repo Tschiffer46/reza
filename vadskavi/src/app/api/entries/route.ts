@@ -40,13 +40,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Titel, typ och kategori krävs' }, { status: 400 })
   }
 
-  // Målfamilj från body (validera medlemskap), annars standardfamiljen.
+  // Målgemenskap från body (validera medlemskap), annars standardgemenskapen.
   let familyId = body.familyId as string | undefined
   if (familyId) {
     try {
       await assertMember(userId, familyId)
     } catch {
-      return NextResponse.json({ error: 'Du tillhör inte den familjen' }, { status: 403 })
+      return NextResponse.json({ error: 'Du tillhör inte den gemenskapen' }, { status: 403 })
     }
   } else {
     familyId = await getDefaultFamily(userId)

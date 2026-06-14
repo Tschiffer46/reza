@@ -16,7 +16,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     where: { userId_familyId: { userId, familyId: id } },
   })
   if (!membership) {
-    return NextResponse.json({ error: 'Du är inte medlem i den familjen' }, { status: 403 })
+    return NextResponse.json({ error: 'Du är inte medlem i den gemenskapen' }, { status: 403 })
   }
 
   const form = await request.formData()

@@ -292,11 +292,11 @@ export function RecipeView({ recipe, meName }: { recipe: RecipeDTO; meName: stri
               <>
                 <AvatarStack people={cookedBy.map((c) => ({ name: c.name }))} size={26} max={5} />
                 <span style={{ fontSize: 13.5, color: 'var(--muted)' }}>
-                  Lagad <b style={{ color: 'var(--ink)' }}>{totalCooked}×</b> i familjen — {cookedBy.map((c) => c.name + (c.n > 1 ? ' ' + c.n + '×' : '')).join(', ')}
+                  Lagad <b style={{ color: 'var(--ink)' }}>{totalCooked}×</b> i gemenskapen — {cookedBy.map((c) => c.name + (c.n > 1 ? ' ' + c.n + '×' : '')).join(', ')}
                 </span>
               </>
             ) : (
-              <span style={{ fontSize: 13.5, color: 'var(--muted)' }}>Bli först i familjen att laga den.</span>
+              <span style={{ fontSize: 13.5, color: 'var(--muted)' }}>Bli först i gemenskapen att laga den.</span>
             )}
           </div>
         </div>
@@ -367,8 +367,8 @@ export function RecipeView({ recipe, meName }: { recipe: RecipeDTO; meName: stri
           {/* höger: noteringar + kommentarer */}
           <div className="recipe-social" style={{ minWidth: 0 }}>
             <section style={{ marginBottom: 30 }}>
-              <SectionTitle icon="edit">Familjens noteringar</SectionTitle>
-              <p style={{ fontSize: 13, color: 'var(--muted)', marginTop: -8, marginBottom: 14 }}>Små tweaks som stannar i familjen.</p>
+              <SectionTitle icon="edit">Gemenskapens noteringar</SectionTitle>
+              <p style={{ fontSize: 13, color: 'var(--muted)', marginTop: -8, marginBottom: 14 }}>Små tweaks som stannar i gemenskapen.</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
                 {notes.length === 0 && <div style={{ fontSize: 14, color: 'var(--muted)', fontStyle: 'italic' }}>Inga noteringar än — dela ditt knep!</div>}
                 {notes.map((n) => (

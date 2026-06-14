@@ -75,7 +75,7 @@ export function EntryList({
       {families.length > 1 && (
         <div className="scrollbar-hide flex gap-2 overflow-x-auto pb-1">
           <FamilyChip active={!family} onClick={() => setFamily('')}>
-            Alla familjer
+            Alla gemenskaper
           </FamilyChip>
           {families.map((f) => (
             <FamilyChip key={f.id} active={family === f.id} onClick={() => setFamily(f.id)}>

@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
   }
   const { name } = await request.json()
   if (!name || !name.trim()) {
-    return NextResponse.json({ error: 'Ange ett familjenamn' }, { status: 400 })
+    return NextResponse.json({ error: 'Ange ett gemenskapenamn' }, { status: 400 })
   }
   const familyId = await createFamilyForUser(userId, name)
   const res = NextResponse.json({ id: familyId }, { status: 201 })

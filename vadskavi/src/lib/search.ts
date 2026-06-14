@@ -3,18 +3,18 @@ import { prisma } from '@/lib/db'
 import { ENTRY_META_INCLUDE } from '@/lib/laga'
 
 export interface EntryQuery {
-  /** Familjer användaren tillhör (sökningen spänner över dessa). */
+  /** Gemenskaper användaren tillhör (sökningen spänner över dessa). */
   familyIds: string[]
   q?: string | null
   type?: string | null
   category?: string | null
-  /** Valfritt: begränsa till en specifik familj. */
+  /** Valfritt: begränsa till en specifik gemenskap. */
   family?: string | null
   sort?: string | null
 }
 
 /**
- * Lista/sök recept tvärs över användarens familjer. Med sökterm används svensk
+ * Lista/sök recept tvärs över användarens gemenskaper. Med sökterm används svensk
  * fulltext (tsvector + ts_rank); annars Prisma-listning med vald sortering.
  */
 export async function searchEntries({ familyIds, q, type, category, family, sort }: EntryQuery) {
