@@ -1,71 +1,130 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useState } from 'react'
+import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { signIn } from 'next-auth/react'
+import { Header } from '@/components/Header'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
-export default function LoginPage() {
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+function LoginInner() {
   const router = useRouter()
+  const params = useSearchParams()
+  const skickat = params.get('skickat')
+  // Tillåt bara interna mål (skydd mot open redirect)
+  const rawNext = params.get('next') || ''
+  const next = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/laga'
 
-  async function handleSubmit(e: React.FormEvent) {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [magicEmail, setMagicEmail] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+
+  async function loginPassword(e: React.FormEvent) {
     e.preventDefault()
+    setBusy(true)
     setError('')
-    setLoading(true)
-
-    const res = await fetch('/api/auth', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password }),
-    })
-
-    if (res.ok) {
-      router.push('/')
-      router.refresh()
+    const res = await signIn('credentials', { email, password, redirect: false })
+    setBusy(false)
+    if (res?.error) {
+      setError('Fel e-post eller lösenord')
     } else {
-      setError('Fel lösenord')
-      setLoading(false)
+      router.push(next)
+      router.refresh()
     }
   }
 
+  async function sendMagicLink(e: React.FormEvent) {
+    e.preventDefault()
+    if (!magicEmail.trim()) return
+    await signIn('nodemailer', { email: magicEmail.trim(), callbackUrl: next })
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-amber-50">
-      <div className="w-full max-w-sm p-8">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-amber-800 mb-2">Reza</h1>
-          <p className="text-amber-600">Recept & mattips</p>
-        </div>
+    <div className="min-h-screen">
+      <Header />
+      <main className="mx-auto max-w-md space-y-4 px-4 py-10">
+        {skickat ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Kolla din mejl 📧</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-brand-muted">
+              <p>Vi har skickat en inloggningslänk. Klicka på länken i mejlet (gäller 24 h).</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            <Card>
+              <CardHeader>
+                <CardTitle>Logga in</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={loginPassword} className="space-y-3">
+                  <Input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="du@exempel.se"
+                    autoComplete="email"
+                    required
+                  />
+                  <Input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Lösenord"
+                    autoComplete="current-password"
+                    required
+                  />
+                  {error && <p className="text-sm text-red-600">{error}</p>}
+                  <Button type="submit" className="w-full" disabled={busy}>
+                    {busy ? 'Loggar in…' : 'Logga in'}
+                  </Button>
+                </form>
+                <p className="mt-3 text-sm text-brand-muted">
+                  Inget konto?{' '}
+                  <Link href={`/register?next=${encodeURIComponent(next)}`} className="text-brand-accent-dark underline">
+                    Skapa ett
+                  </Link>
+                </p>
+              </CardContent>
+            </Card>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-amber-800 mb-1">
-              Lösenord
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border border-amber-200 bg-white focus:outline-none focus:ring-2 focus:ring-amber-400 text-gray-800"
-              placeholder="Ange lösenord"
-              autoFocus
-            />
-          </div>
-
-          {error && (
-            <p className="text-red-500 text-sm">{error}</p>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 bg-amber-600 text-white rounded-lg font-medium hover:bg-amber-700 disabled:opacity-50 transition-colors"
-          >
-            {loading ? 'Loggar in...' : 'Logga in'}
-          </button>
-        </form>
-      </div>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">…eller magisk länk</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={sendMagicLink} className="space-y-3">
+                  <Input
+                    type="email"
+                    value={magicEmail}
+                    onChange={(e) => setMagicEmail(e.target.value)}
+                    placeholder="du@exempel.se"
+                    autoComplete="email"
+                  />
+                  <Button type="submit" variant="outline" className="w-full">
+                    Skicka inloggningslänk
+                  </Button>
+                  <p className="text-xs text-brand-muted">Logga in utan lösenord — vi mejlar en länk.</p>
+                </form>
+              </CardContent>
+            </Card>
+          </>
+        )}
+      </main>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginInner />
+    </Suspense>
   )
 }

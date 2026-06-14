@@ -5,7 +5,7 @@ första gången. Allt körs i **Terminal på din Mac** via SSH som `deploy`. Eft
 sköts uppdateringar automatiskt av GitHub Actions.
 
 > **Förkrav:** SSH-åtkomst som `deploy`, och GitHub-secrets `SERVER_HOST`, `SERVER_USER`,
-> `SERVER_SSH_KEY` finns redan i reza-repot (används av övriga appar).
+> `SERVER_SSH_KEY` finns redan i repot (används av övriga appar).
 
 ```bash
 ssh deploy@89.167.90.112
@@ -85,8 +85,7 @@ Klistra in `vadskavi`- och `vadskavi-db`-blocken från
 [`../deploy/docker-compose.snippet.yml`](../deploy/docker-compose.snippet.yml) under
 `services:`, och lägg `vadskavi_db_data:` under det översta `volumes:`-blocket.
 
-> Tips: blocket finns redan på servern via reza-deployen — visa det med
-> `cat ~/reza/vadskavi/deploy/docker-compose.snippet.yml`.
+> Tips: snippet-blocket finns i repot under `deploy/docker-compose.snippet.yml`.
 
 Du behöver **inte** lägga till något under `networks:` — `web` finns redan.
 
@@ -168,9 +167,28 @@ Säkerställ att DNS för `vadskavi.nu` (A-record) pekar på `89.167.90.112`.
 Öppna **https://vadskavi.nu** → inloggningssidan. Skriv din e-post → magic-link-mejlet
 testar SMTP-kedjan end-to-end.
 
-Framtida uppdateringar: pusha till `main` (ändringar under `vadskavi/**`) så bygger och
-deployar GitHub Actions automatiskt (workflowen loggar in mot GHCR, pull:ar och kör
-`db push`).
+Framtida uppdateringar: pusha till `main` så bygger och deployar GitHub Actions
+automatiskt (workflowen loggar in mot GHCR, pull:ar och kör `db push` + `setup-search.ts`).
+
+---
+
+## Roller & plan (manuellt via SQL)
+
+Det finns ingen betalningsintegration än — `User.plan` (`free`/`paid`) och `User.isAdmin`
+sätts för hand mot databasen. Öppna en psql-shell och kör:
+
+```bash
+cd /home/deploy/hosting
+docker compose exec -T vadskavi-db psql -U vadskavi -d vadskavi
+```
+
+```sql
+UPDATE "User" SET plan = 'paid'    WHERE email = 'thomas@schiffer.se';
+UPDATE "User" SET "isAdmin" = true WHERE email = 'thomas@schiffer.se';
+```
+
+Admins når `/admin` i appen för statistik och för att stänga/öppna gemenskaper
+(`Family.status`). Gratisanvändare kan skapa max 3 recept/månad.
 
 ---
 

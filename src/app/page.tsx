@@ -1,78 +1,76 @@
 import Link from 'next/link'
-import { prisma } from '@/lib/db'
-import { LogoutButton } from '@/components/LogoutButton'
-import { EntryList } from '@/components/EntryList'
+import { ChefHat } from 'lucide-react'
+import { auth } from '@/auth'
+import { Header } from '@/components/Header'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
-export const dynamic = 'force-dynamic'
+// Sektioner på vadskavi.nu. Fler läggs till bredvid "Laga" framöver.
+const SECTIONS = [
+  { href: '/laga', title: 'Laga', desc: 'Gemenskapens recept och mattips', icon: ChefHat },
+]
 
 export default async function HomePage() {
-  const [entriesData, categories] = await Promise.all([
-    prisma.entry.findMany({ orderBy: { createdAt: 'desc' }, take: 20 }),
-    prisma.category.findMany({ orderBy: { name: 'asc' } }),
-  ])
+  const session = await auth()
 
-  const total = await prisma.entry.count()
-  const categoryNames = [...new Set(categories.map((c) => c.name))]
+  if (session?.user) {
+    return (
+      <div className="min-h-screen">
+        <Header>
+          <Link href="/laga/profile">
+            <Button variant="outline" size="sm" className="border-white/60 text-white hover:bg-white/10">
+              Konto
+            </Button>
+          </Link>
+        </Header>
+        <main className="mx-auto max-w-2xl px-4 py-10">
+          <h1 className="mb-4 text-xl font-semibold text-brand-header">
+            Hej{session.user.name ? ` ${session.user.name}` : ''}! Vad vill du göra?
+          </h1>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {SECTIONS.map(({ href, title, desc, icon: Icon }) => (
+              <Link
+                key={href}
+                href={href}
+                className="flex items-center gap-3 rounded-xl border border-brand-accent/20 bg-white p-5 hover:shadow-md"
+              >
+                <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-brand-accent/15 text-brand-accent-dark">
+                  <Icon className="h-6 w-6" />
+                </span>
+                <span>
+                  <span className="block font-semibold text-brand-header">{title}</span>
+                  <span className="block text-sm text-brand-muted">{desc}</span>
+                </span>
+              </Link>
+            ))}
+          </div>
+        </main>
+      </div>
+    )
+  }
 
   return (
-    <div className="min-h-screen bg-amber-50">
-      {/* Header */}
-      <header className="bg-white border-b border-amber-100 px-4 py-4">
-        <div className="max-w-2xl mx-auto flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-amber-800">Reza</h1>
-          <LogoutButton />
-        </div>
-      </header>
-
-      {/* Quick links */}
-      <div className="max-w-2xl mx-auto px-4 pt-4 flex gap-2">
-        <Link
-          href="/entry/new"
-          className="flex-1 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium text-center hover:bg-amber-700 transition-colors"
-        >
-          + Lägg till
+    <div className="min-h-screen">
+      <Header>
+        <Link href="/login">
+          <Button variant="outline" size="sm" className="border-white/60 text-white hover:bg-white/10">
+            Logga in
+          </Button>
         </Link>
-        <Link
-          href="/import"
-          className="flex-1 py-2 bg-amber-100 text-amber-700 rounded-lg text-sm font-medium text-center hover:bg-amber-200 transition-colors"
-        >
-          Importera flera
-        </Link>
-        <Link
-          href="/categories"
-          className="flex-1 py-2 bg-amber-100 text-amber-700 rounded-lg text-sm font-medium text-center hover:bg-amber-200 transition-colors"
-        >
-          Kategorier
-        </Link>
-      </div>
-
-      {/* Main content */}
-      <main className="max-w-2xl mx-auto px-4 py-6">
-        {total === 0 ? (
-          <div className="text-center py-16">
-            <div className="text-6xl mb-4">🍳</div>
-            <h2 className="text-xl font-semibold text-amber-800 mb-2">
-              Inga recept ännu
-            </h2>
-            <p className="text-amber-600 mb-6">
-              Börja samla dina favoritrecept och mattips!
-            </p>
-            <Link
-              href="/entry/new"
-              className="inline-flex items-center px-6 py-3 bg-amber-600 text-white rounded-lg font-medium hover:bg-amber-700 transition-colors"
-            >
-              + Lägg till ditt första recept
+      </Header>
+      <main className="mx-auto max-w-2xl px-4 py-10">
+        <Card>
+          <CardHeader>
+            <CardTitle>Välkommen till VadSkaVi</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 text-brand-muted">
+            <p>Gemenskapens egna sajt — börja med receptboken under «Laga».</p>
+            <Link href="/login" className="inline-block">
+              <Button>Kom igång</Button>
             </Link>
-          </div>
-        ) : (
-          <EntryList
-            initialEntries={JSON.parse(JSON.stringify(entriesData))}
-            initialTotal={total}
-            categories={categoryNames}
-          />
-        )}
+          </CardContent>
+        </Card>
       </main>
-
     </div>
   )
 }

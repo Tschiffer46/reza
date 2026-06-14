@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { requireFamily } from '@/lib/family'
 import { readImage } from '@/lib/images'
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: Promise<{ filename: string }> }
+  { params }: { params: Promise<{ filename: string }> },
 ) {
-  const { filename } = await params
+  try {
+    await requireFamily()
+  } catch {
+    return NextResponse.json({ error: 'Ej inloggad' }, { status: 401 })
+  }
 
-  // Only allow .webp files with UUID-like names
+  const { filename } = await params
   if (!filename.endsWith('.webp') || filename.includes('..') || filename.includes('/')) {
     return NextResponse.json({ error: 'Ogiltig fil' }, { status: 400 })
   }
@@ -20,7 +25,7 @@ export async function GET(
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
       'Content-Type': 'image/webp',
-      'Cache-Control': 'public, max-age=31536000, immutable',
+      'Cache-Control': 'private, max-age=31536000, immutable',
     },
   })
 }

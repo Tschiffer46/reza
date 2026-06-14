@@ -1,37 +1,50 @@
 'use client'
 
-interface CategoryFilterProps {
-  categories: string[]
-  selected: string
-  onChange: (category: string) => void
-}
+import type { CategoryDTO } from '@/lib/types'
 
-export function CategoryFilter({ categories, selected, onChange }: CategoryFilterProps) {
+export function CategoryFilter({
+  categories,
+  selected,
+  onChange,
+}: {
+  categories: CategoryDTO[]
+  selected: string
+  onChange: (value: string) => void
+}) {
   return (
-    <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
-      <button
-        onClick={() => onChange('')}
-        className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-          selected === ''
-            ? 'bg-amber-600 text-white'
-            : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-        }`}
-      >
+    <div className="scrollbar-hide flex gap-2 overflow-x-auto pb-1">
+      <Pill active={!selected} onClick={() => onChange('')}>
         Alla
-      </button>
-      {categories.map((cat) => (
-        <button
-          key={cat}
-          onClick={() => onChange(cat)}
-          className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-            selected === cat
-              ? 'bg-amber-600 text-white'
-              : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-          }`}
-        >
-          {cat}
-        </button>
+      </Pill>
+      {categories.map((c) => (
+        <Pill key={c.id} active={selected === c.name} onClick={() => onChange(c.name)}>
+          {c.name}
+        </Pill>
       ))}
     </div>
+  )
+}
+
+function Pill({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`whitespace-nowrap rounded-full px-3 py-1 text-sm transition-colors ${
+        active
+          ? 'bg-brand-accent text-white'
+          : 'bg-brand-accent/10 text-brand-accent-dark hover:bg-brand-accent/20'
+      }`}
+    >
+      {children}
+    </button>
   )
 }

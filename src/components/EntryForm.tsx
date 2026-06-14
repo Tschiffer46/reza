@@ -1,146 +1,166 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import type { CategoryDTO } from '@/lib/types'
+import { Button } from '@/components/ui/button'
+import { PhotoUploader } from '@/components/PhotoUploader'
 
-interface EntryFormProps {
-  initialData?: {
-    id?: string
-    type: string
-    title: string
-    category: string
-    ingredients: string[]
-    instructions: string | null
-    content: string | null
-    source: string | null
-    url: string | null
-    notes: string | null
-  }
-  onSaved?: () => void
-  imageFilenames?: string[]
-}
-
-interface Category {
-  id: string
-  name: string
+export interface EntryFormData {
+  id?: string
   type: string
+  title: string
+  category: string
+  blurb?: string | null
+  time?: string | null
+  servings?: number | null
+  ingredients: string[]
+  instructions: string | null
+  content: string | null
+  drinks: string | null
+  source: string | null
+  url: string | null
+  imageUrls: string[]
+  familyId?: string
 }
 
-export function EntryForm({ initialData, onSaved, imageFilenames: initialImages }: EntryFormProps) {
+const inputClass =
+  'w-full rounded-lg border border-brand-accent/40 bg-white px-3 py-2 text-brand-ink placeholder:text-brand-muted focus:outline-none focus:ring-2 focus:ring-brand-accent'
+
+export function EntryForm({ initialData }: { initialData?: Partial<EntryFormData> }) {
   const router = useRouter()
   const [type, setType] = useState(initialData?.type || 'recipe')
   const [title, setTitle] = useState(initialData?.title || '')
   const [category, setCategory] = useState(initialData?.category || '')
-  const [ingredients, setIngredients] = useState(initialData?.ingredients?.join('\n') || '')
+  const [blurb, setBlurb] = useState(initialData?.blurb || '')
+  const [time, setTime] = useState(initialData?.time || '')
+  const [servings, setServings] = useState(initialData?.servings ? String(initialData.servings) : '')
+  const [ingredients, setIngredients] = useState((initialData?.ingredients || []).join('\n'))
   const [instructions, setInstructions] = useState(initialData?.instructions || '')
   const [content, setContent] = useState(initialData?.content || '')
+  const [drinks, setDrinks] = useState(initialData?.drinks || '')
   const [source, setSource] = useState(initialData?.source || '')
   const [url, setUrl] = useState(initialData?.url || '')
-  const [notes, setNotes] = useState(initialData?.notes || '')
-  const [categories, setCategories] = useState<Category[]>([])
+  const [imageUrls, setImageUrls] = useState<string[]>(initialData?.imageUrls || [])
+  const [familyId, setFamilyId] = useState(initialData?.familyId || '')
+  const [families, setFamilies] = useState<{ id: string; name: string }[]>([])
+  const [categories, setCategories] = useState<CategoryDTO[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
+  // Hämta gemenskaper och förvald standardgemenskap
   useEffect(() => {
-    fetch(`/api/categories?type=${type}`)
+    fetch('/api/family')
       .then((r) => r.json())
-      .then(setCategories)
-  }, [type])
+      .then((d) => {
+        setFamilies(d.families || [])
+        if (!initialData?.familyId && d.activeId) setFamilyId(d.activeId)
+      })
+      .catch(() => {})
+  }, [initialData?.familyId])
+
+  useEffect(() => {
+    const fam = familyId ? `&family=${familyId}` : ''
+    fetch(`/api/categories?type=${type}${fam}`)
+      .then((r) => r.json())
+      .then((d) => setCategories(Array.isArray(d) ? d : []))
+      .catch(() => setCategories([]))
+  }, [type, familyId])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
     setError('')
-
     const data = {
       type,
       title,
       category,
-      ingredients: type === 'recipe' ? ingredients.split('\n').filter((i) => i.trim()) : [],
+      blurb: blurb || null,
+      time: type === 'recipe' ? time || null : null,
+      servings: type === 'recipe' && servings ? parseInt(servings, 10) || null : null,
+      ingredients:
+        type === 'recipe' ? ingredients.split('\n').map((s) => s.trim()).filter(Boolean) : [],
       instructions: type === 'recipe' ? instructions || null : null,
       content: type === 'tip' ? content || null : null,
+      drinks: drinks || null,
       source: source || null,
       url: url || null,
-      notes: notes || null,
-      imageUrls: initialImages || [],
+      imageUrls,
+      familyId: familyId || undefined,
     }
 
     const isEdit = !!initialData?.id
-    const fetchUrl = isEdit ? `/api/entries/${initialData.id}` : '/api/entries'
-    const method = isEdit ? 'PUT' : 'POST'
-
-    const res = await fetch(fetchUrl, {
-      method,
+    const res = await fetch(isEdit ? `/api/entries/${initialData.id}` : '/api/entries', {
+      method: isEdit ? 'PUT' : 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     })
 
     if (res.ok) {
       const entry = await res.json()
-      if (onSaved) {
-        onSaved()
-      } else {
-        router.push(`/entry/${entry.id}`)
-        router.refresh()
-      }
+      router.push(`/laga/entry/${entry.id}`)
+      router.refresh()
     } else {
-      const err = await res.json()
-      setError(err.error || 'Något gick fel')
+      const err = await res.json().catch(() => ({}))
+      setError(err.error || 'Kunde inte spara')
       setSaving(false)
     }
   }
 
-  const inputClass =
-    'w-full px-3 py-2 rounded-lg border border-amber-200 bg-white focus:outline-none focus:ring-2 focus:ring-amber-400 text-gray-800'
-
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Type toggle */}
+      {/* Typväljare */}
       <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => setType('recipe')}
-          className={`flex-1 py-2 rounded-lg font-medium transition-colors ${
-            type === 'recipe'
-              ? 'bg-amber-600 text-white'
-              : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-          }`}
-        >
-          Recept
-        </button>
-        <button
-          type="button"
-          onClick={() => setType('tip')}
-          className={`flex-1 py-2 rounded-lg font-medium transition-colors ${
-            type === 'tip'
-              ? 'bg-amber-600 text-white'
-              : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-          }`}
-        >
-          Tips
-        </button>
+        {(['recipe', 'tip'] as const).map((t) => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => setType(t)}
+            className={`flex-1 rounded-lg py-2 font-medium transition-colors ${
+              type === t
+                ? 'bg-brand-accent text-white'
+                : 'bg-brand-accent/10 text-brand-accent-dark hover:bg-brand-accent/20'
+            }`}
+          >
+            {t === 'recipe' ? 'Recept' : 'Tips'}
+          </button>
+        ))}
       </div>
 
-      {/* Title */}
-      <div>
-        <label className="block text-sm font-medium text-amber-800 mb-1">Titel *</label>
+      {families.length > 1 && (
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-brand-header">Gemenskap</label>
+          <select
+            className={inputClass}
+            value={familyId}
+            onChange={(e) => setFamilyId(e.target.value)}
+          >
+            {families.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium text-brand-header">Titel</label>
         <input
-          type="text"
+          className={inputClass}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className={inputClass}
+          placeholder={type === 'recipe' ? 'T.ex. Pasta Carbonara' : 'T.ex. Förvara basilika'}
           required
-          placeholder="T.ex. Pasta Carbonara"
         />
       </div>
 
-      {/* Category */}
-      <div>
-        <label className="block text-sm font-medium text-amber-800 mb-1">Kategori *</label>
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium text-brand-header">Kategori</label>
         <select
+          className={inputClass}
           value={category}
           onChange={(e) => setCategory(e.target.value)}
-          className={inputClass}
           required
         >
           <option value="">Välj kategori</option>
@@ -152,93 +172,103 @@ export function EntryForm({ initialData, onSaved, imageFilenames: initialImages 
         </select>
       </div>
 
-      {/* Recipe-specific fields */}
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium text-brand-header">Kort beskrivning (valfritt)</label>
+        <input
+          className={inputClass}
+          value={blurb}
+          onChange={(e) => setBlurb(e.target.value)}
+          placeholder="En rad om rätten…"
+        />
+      </div>
+
       {type === 'recipe' && (
         <>
-          <div>
-            <label className="block text-sm font-medium text-amber-800 mb-1">
-              Ingredienser (en per rad)
-            </label>
+          <div className="flex gap-3">
+            <div className="flex-1 space-y-1.5">
+              <label className="text-sm font-medium text-brand-header">Tid (valfritt)</label>
+              <input className={inputClass} value={time} onChange={(e) => setTime(e.target.value)} placeholder="t.ex. 45 min" />
+            </div>
+            <div className="w-32 space-y-1.5">
+              <label className="text-sm font-medium text-brand-header">Portioner</label>
+              <input className={inputClass} type="number" min={1} value={servings} onChange={(e) => setServings(e.target.value)} placeholder="4" />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-brand-header">Ingredienser (en per rad)</label>
             <textarea
+              className={inputClass}
+              rows={6}
               value={ingredients}
               onChange={(e) => setIngredients(e.target.value)}
-              className={inputClass}
-              rows={6}
-              placeholder="2 dl grädde&#10;200g pasta&#10;100g guanciale"
+              placeholder={'2 dl grädde\n200 g pasta\n…'}
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-amber-800 mb-1">Instruktioner</label>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-brand-header">Instruktioner</label>
             <textarea
-              value={instructions}
-              onChange={(e) => setInstructions(e.target.value)}
               className={inputClass}
               rows={6}
-              placeholder="Steg-för-steg..."
+              value={instructions}
+              onChange={(e) => setInstructions(e.target.value)}
+              placeholder="Steg för steg…"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-brand-header">Dryck som passar (valfritt)</label>
+            <input
+              className={inputClass}
+              value={drinks}
+              onChange={(e) => setDrinks(e.target.value)}
+              placeholder="T.ex. ett friskt vitt vin"
             />
           </div>
         </>
       )}
 
-      {/* Tip-specific field */}
       {type === 'tip' && (
-        <div>
-          <label className="block text-sm font-medium text-amber-800 mb-1">Innehåll</label>
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-brand-header">Innehåll</label>
           <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
             className={inputClass}
             rows={6}
-            placeholder="Skriv ditt tips här..."
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="Skriv ditt tips här…"
           />
         </div>
       )}
 
-      {/* Source */}
-      <div>
-        <label className="block text-sm font-medium text-amber-800 mb-1">Källa</label>
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium text-brand-header">Källa (valfritt)</label>
         <input
-          type="text"
+          className={inputClass}
           value={source}
           onChange={(e) => setSource(e.target.value)}
-          className={inputClass}
           placeholder="T.ex. Leila Lindholms kokbok"
         />
       </div>
-
-      {/* URL */}
-      <div>
-        <label className="block text-sm font-medium text-amber-800 mb-1">URL</label>
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium text-brand-header">Länk (valfritt)</label>
         <input
+          className={inputClass}
           type="url"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          className={inputClass}
-          placeholder="https://..."
+          placeholder="https://…"
         />
       </div>
 
-      {/* Notes */}
-      <div>
-        <label className="block text-sm font-medium text-amber-800 mb-1">Anteckningar</label>
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          className={inputClass}
-          rows={3}
-          placeholder="Egna anteckningar..."
-        />
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium text-brand-header">Bilder (valfritt)</label>
+        <PhotoUploader value={imageUrls} onChange={setImageUrls} />
       </div>
 
-      {error && <p className="text-red-500 text-sm">{error}</p>}
+      {error && <p className="text-sm text-red-600">{error}</p>}
 
-      <button
-        type="submit"
-        disabled={saving}
-        className="w-full py-3 bg-amber-600 text-white rounded-lg font-medium hover:bg-amber-700 disabled:opacity-50 transition-colors"
-      >
-        {saving ? 'Sparar...' : initialData?.id ? 'Uppdatera' : 'Spara'}
-      </button>
+      <Button type="submit" className="w-full" size="lg" disabled={saving}>
+        {saving ? 'Sparar…' : initialData?.id ? 'Uppdatera' : 'Spara'}
+      </Button>
     </form>
   )
 }

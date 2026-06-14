@@ -1,24 +1,20 @@
 import type { Metadata, Viewport } from 'next'
-import { NavBar } from '@/components/NavBar'
-import { ServiceWorker } from '@/components/ServiceWorker'
 import './globals.css'
+import { ServiceWorker } from '@/components/ServiceWorker'
 
 export const metadata: Metadata = {
-  title: 'Reza — Recept & mattips',
-  description: 'Samla och hitta dina favoritrecept',
+  title: 'VadSkaVi — gemenskapens receptbok',
+  description: 'Samla, dela och hitta gemenskapens favoritrecept',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'default',
-    title: 'Reza',
+    statusBarStyle: 'black-translucent',
+    title: 'VadSkaVi',
   },
 }
 
 export const viewport: Viewport = {
-  themeColor: '#f59e0b',
-  width: 'device-width',
-  initialScale: 1,
-  maximumScale: 1,
+  themeColor: '#1C3A2B',
 }
 
 export default function RootLayout({
@@ -28,12 +24,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="sv" className="h-full">
-      <head>
-        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-      </head>
-      <body className="min-h-full bg-amber-50 font-sans antialiased">
-        <div className="pb-16">{children}</div>
-        <NavBar />
+      <body className="min-h-full antialiased">
+        {children}
         <ServiceWorker />
       </body>
     </html>

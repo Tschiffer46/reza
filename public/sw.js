@@ -1,66 +1,79 @@
-const CACHE_NAME = 'reza-v3'
+// VadSkaVi service worker — enkel offline-cache.
+const CACHE = 'vadskavi-v2'
 
-self.addEventListener('install', (e) => {
-  e.waitUntil(self.skipWaiting())
-})
+const OFFLINE_HTML = `<!DOCTYPE html><html lang="sv"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Offline — Laga</title>
+<style>
+  body{margin:0;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    font-family:'Schibsted Grotesk',system-ui,sans-serif;background:#f6f5f1;color:#1a1a18;text-align:center;padding:24px}
+  .pot{width:64px;height:64px;border-radius:18px;background:#c75b39;display:flex;align-items:center;justify-content:center;margin-bottom:20px}
+  h1{font-size:22px;margin:0 0 8px;letter-spacing:-.02em}
+  p{color:#8a857c;margin:0 0 24px;max-width:32ch;line-height:1.5}
+  button{background:#c75b39;color:#fff;border:none;border-radius:12px;padding:12px 22px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit}
+</style></head><body>
+  <div class="pot"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13h14l-1.1 6.1a1.6 1.6 0 0 1-1.6 1.3H7.7a1.6 1.6 0 0 1-1.6-1.3L5 13ZM3.5 13h17M9 13c0-3 1-5.2 3-5.2s3 2.2 3 5.2M12 5.5V4"/></svg></div>
+  <h1>Du är offline</h1>
+  <p>Det går inte att nå Laga just nu. Kontrollera din anslutning och försök igen.</p>
+  <button onclick="location.reload()">Försök igen</button>
+</body></html>`
 
-self.addEventListener('activate', (e) => {
-  // Clean up old caches (incl. any blank/error HTML cached by older SW versions)
-  e.waitUntil(
-    caches.keys().then((names) =>
-      Promise.all(
-        names.filter((name) => name !== CACHE_NAME).map((name) => caches.delete(name))
-      )
-    ).then(() => self.clients.claim())
+self.addEventListener('install', (event) => {
+  self.skipWaiting()
+  event.waitUntil(
+    caches
+      .open(CACHE)
+      .then((c) => c.add('/'))
+      .catch(() => {}),
   )
 })
 
-// Minimal self-healing page shown only when a navigation fails AND we have no
-// network. It always runs JS, so the user can never get permanently stuck on a
-// blank cached shell (the previous black-screen failure mode on iOS PWAs).
-const OFFLINE_FALLBACK = `<!DOCTYPE html>
-<html lang="sv"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Reza — laddar om</title>
-<style>body{font-family:system-ui,sans-serif;background:#111;color:#eee;display:flex;
-min-height:100vh;margin:0;align-items:center;justify-content:center;text-align:center}
-button{font-size:1rem;padding:.75rem 1.25rem;border:0;border-radius:8px;background:#e07a3f;
-color:#fff;margin-top:1rem}</style></head>
-<body><div><p>Kunde inte nå Reza.</p>
-<button onclick="reset()">Ladda om</button>
-<script>async function reset(){try{const ks=await caches.keys();
-await Promise.all(ks.map(k=>caches.delete(k)));
-const rs=await navigator.serviceWorker.getRegistrations();
-await Promise.all(rs.map(r=>r.unregister()))}catch(e){}location.reload(true)}</script>
-</div></body></html>`
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches
+      .keys()
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim()),
+  )
+})
 
-self.addEventListener('fetch', (e) => {
-  const req = e.request
+self.addEventListener('fetch', (event) => {
+  const req = event.request
   if (req.method !== 'GET') return
+  const url = new URL(req.url)
 
-  // Never cache HTML documents or API calls — always go to the network so a
-  // transient bad response can never get stuck and serve a blank app shell.
-  if (req.mode === 'navigate' || req.url.includes('/api/')) {
-    e.respondWith(
-      fetch(req).catch(() =>
-        req.mode === 'navigate'
-          ? new Response(OFFLINE_FALLBACK, { headers: { 'Content-Type': 'text/html; charset=utf-8' } })
-          : Response.error()
-      )
+  // Auth/API: alltid nätverk (cacha aldrig).
+  if (url.pathname.startsWith('/api/')) return
+
+  // Navigeringar: network-first med offline-fallback.
+  if (req.mode === 'navigate') {
+    event.respondWith(
+      fetch(req)
+        .then((res) => {
+          const copy = res.clone()
+          caches.open(CACHE).then((c) => c.put(req, copy))
+          return res
+        })
+        .catch(async () => {
+          const cached = (await caches.match(req)) || (await caches.match('/'))
+          return cached || new Response(OFFLINE_HTML, { headers: { 'Content-Type': 'text/html; charset=utf-8' } })
+        }),
     )
     return
   }
 
-  // Static assets: network-first with cache fallback for offline use.
-  e.respondWith(
-    fetch(req)
-      .then((response) => {
-        if (response.ok) {
-          const clone = response.clone()
-          caches.open(CACHE_NAME).then((cache) => cache.put(req, clone))
-        }
-        return response
-      })
-      .catch(() => caches.match(req))
-  )
+  // Statiska assets: cache-first.
+  if (url.pathname.startsWith('/_next/') || url.pathname.startsWith('/icons/')) {
+    event.respondWith(
+      caches.match(req).then(
+        (m) =>
+          m ||
+          fetch(req).then((res) => {
+            const copy = res.clone()
+            caches.open(CACHE).then((c) => c.put(req, copy))
+            return res
+          }),
+      ),
+    )
+  }
 })
