@@ -19,6 +19,7 @@ model User {
   avatar        String?
   password      String?
   plan          String       @default("free")
+  isAdmin       Boolean      @default(false)
   emailVerified DateTime?
   onboardedAt   DateTime?
   createdAt     DateTime     @default(now())
@@ -71,6 +72,7 @@ model Family {
   id          String       @id @default(cuid())
   name        String
   inviteCode  String       @unique
+  status      String       @default("active")
   background  String?
   coverImage  String?
   createdAt   DateTime     @default(now())

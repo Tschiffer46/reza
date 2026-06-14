@@ -17,7 +17,7 @@ export default async function ProfilePage() {
   }
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { name: true, email: true, plan: true },
+    select: { name: true, email: true, plan: true, isAdmin: true },
   })
   const isPaid = user?.plan === 'paid'
   const usedThisMonth = await monthlyEntryCount(session.user.id)
@@ -80,6 +80,14 @@ export default async function ProfilePage() {
           >
             <Tags className="h-5 w-5 text-brand-accent-dark" /> Kategorier
           </Link>
+          {user?.isAdmin && (
+            <Link
+              href="/admin"
+              className="flex items-center gap-3 rounded-xl border border-brand-accent/20 bg-white p-4 hover:shadow-md"
+            >
+              <Users className="h-5 w-5 text-brand-accent-dark" /> Admin
+            </Link>
+          )}
         </div>
 
         <form action={logout}>
