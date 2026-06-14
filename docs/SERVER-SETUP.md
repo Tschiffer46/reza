@@ -242,8 +242,14 @@ credentials och lägga dem i `/home/deploy/hosting/.env.vadskavi`, sedan
    - Verifiera domänen (ladda upp Apples verifieringsfil om den efterfrågas).
 4. **Keys → +** → aktivera *Sign in with Apple* → ladda ner `.p8`-nyckeln (Key ID + Team ID).
 5. `AUTH_APPLE_ID` = Services ID:t. `AUTH_APPLE_SECRET` = en **signerad JWT** (ES256) genererad
-   från `.p8`-nyckeln, Team ID, Key ID, giltig ≤ 6 mån (måste förnyas). Generera t.ex. med
-   `npx auth add apple` lokalt eller ett litet skript; klistra in resultatet:
+   från `.p8`-nyckeln, Team ID, Key ID, giltig ≤ 6 mån (måste förnyas). Generera enkelt med det
+   medföljande scriptet (kör lokalt där `.p8`-filen ligger):
+   ```bash
+   APPLE_TEAM_ID=ABCDE12345 APPLE_KEY_ID=KEY1234567 \
+   APPLE_SERVICES_ID=nu.vadskavi.web APPLE_P8=./AuthKey_KEY1234567.p8 \
+   npm run apple-secret
+   ```
+   Klistra in:
    ```
    AUTH_APPLE_ID=nu.vadskavi.web
    AUTH_APPLE_SECRET=eyJhbGciOi...
