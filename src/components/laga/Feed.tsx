@@ -106,12 +106,6 @@ function RecipeCard({ entry }: { entry: EntryDTO }) {
 
       {/* räknare till höger */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5, color: 'var(--muted)', flexShrink: 0 }}>
-        {!!entry.heartCount && (
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12.5, fontWeight: 600 }}>
-            <Icon name="heart" size={14} color="var(--accent)" fill="var(--accent)" stroke={0} />
-            {entry.heartCount}
-          </span>
-        )}
         {!!entry.commentCount && (
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12.5, fontWeight: 600 }}>
             <Icon name="chat" size={14} />
@@ -128,22 +122,41 @@ export function Feed({
   categories,
   families = [],
   familyName,
+  activeFamilyId = '',
 }: {
   initialEntries: EntryDTO[]
   categories: CategoryDTO[]
   families?: { id: string; name: string }[]
   familyName: string
+  activeFamilyId?: string
 }) {
   const [entries, setEntries] = useState(initialEntries)
   const [searchInput, setSearchInput] = useState('')
   const [q, setQ] = useState('')
   const [type, setType] = useState('')
   const [cat, setCat] = useState('')
-  const [family, setFamily] = useState('')
+  const [family, setFamily] = useState(activeFamilyId)
+  const [familyMenuOpen, setFamilyMenuOpen] = useState(false)
   const [sort, setSort] = useState('createdAt')
   const [loading, setLoading] = useState(false)
   const first = useRef(true)
   const greeting = useMemo(greetingNow, [])
+
+  const currentFamilyName =
+    family === '' ? 'Alla gemenskaper' : families.find((f) => f.id === family)?.name || familyName
+
+  function selectFamily(id: string) {
+    setFamily(id)
+    setFamilyMenuOpen(false)
+    if (id) {
+      // Persistera valet som standardgemenskap (cookie) — bäst-effort.
+      fetch('/api/family/switch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ familyId: id }),
+      }).catch(() => {})
+    }
+  }
 
   useEffect(() => {
     const t = setTimeout(() => setQ(searchInput), 300)
@@ -180,32 +193,85 @@ export function Feed({
   return (
     <div>
       {/* hälsning */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, marginBottom: 20, flexWrap: 'wrap' }}>
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--accent)' }}>
-            {familyName}
-          </div>
-          <h1 style={{ fontWeight: 700, fontSize: 'clamp(26px,4.5vw,38px)', letterSpacing: '-0.025em', color: 'var(--ink)', marginTop: 4, lineHeight: 1.05 }}>
-            {greeting}
-          </h1>
+      <div style={{ marginBottom: 20 }}>
+        {/* gemenskaps-väljare */}
+        <div style={{ position: 'relative', display: 'inline-block', marginBottom: 4 }}>
+          {families.length > 1 ? (
+            <button
+              onClick={() => setFamilyMenuOpen((o) => !o)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                padding: 0,
+                fontSize: 13,
+                fontWeight: 600,
+                letterSpacing: '0.04em',
+                textTransform: 'uppercase',
+                color: 'var(--accent)',
+              }}
+            >
+              Gemenskap: {currentFamilyName}
+              <Icon name="sort" size={13} color="var(--accent)" />
+            </button>
+          ) : (
+            <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--accent)' }}>
+              Gemenskap: {familyName}
+            </div>
+          )}
+
+          {familyMenuOpen && families.length > 1 && (
+            <div
+              onClick={() => setFamilyMenuOpen(false)}
+              style={{ position: 'fixed', inset: 0, zIndex: 15 }}
+            />
+          )}
+          {familyMenuOpen && families.length > 1 && (
+            <div
+              style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                marginTop: 6,
+                zIndex: 20,
+                minWidth: 200,
+                background: 'var(--card)',
+                border: '1px solid var(--card-bd)',
+                borderRadius: 12,
+                boxShadow: '0 8px 24px -8px rgba(0,0,0,.25)',
+                padding: 4,
+              }}
+            >
+              {[{ id: '', name: 'Alla gemenskaper' }, ...families].map((f) => (
+                <button
+                  key={f.id || 'all'}
+                  onClick={() => selectFamily(f.id)}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    textAlign: 'left',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: 14,
+                    fontWeight: family === f.id ? 700 : 500,
+                    padding: '9px 12px',
+                    borderRadius: 8,
+                    background: family === f.id ? 'var(--accent-soft)' : 'transparent',
+                    color: family === f.id ? 'var(--accent)' : 'var(--ink)',
+                  }}
+                >
+                  {f.name}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-        <Link
-          href="/laga/family"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 9,
-            background: 'var(--card)',
-            border: '1px solid var(--card-bd)',
-            borderRadius: 999,
-            padding: '8px 16px',
-            color: 'var(--muted)',
-            fontSize: 13,
-            fontWeight: 600,
-          }}
-        >
-          Gemenskapen
-        </Link>
+        <h1 style={{ fontWeight: 700, fontSize: 'clamp(26px,4.5vw,38px)', letterSpacing: '-0.025em', color: 'var(--ink)', marginTop: 4, lineHeight: 1.05 }}>
+          {greeting}
+        </h1>
       </div>
 
       {/* sök */}
@@ -271,31 +337,6 @@ export function Feed({
           </select>
         </div>
       </div>
-
-      {/* gemenskapefilter (om fler än en) */}
-      {families.length > 1 && (
-        <div className="scrollbar-hide" style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, marginBottom: 10 }}>
-          {[{ id: '', name: 'Alla gemenskaper' }, ...families].map((f) => (
-            <button
-              key={f.id || 'all'}
-              onClick={() => setFamily(f.id)}
-              style={{
-                border: '1px solid ' + (family === f.id ? 'var(--accent)' : 'var(--card-bd)'),
-                cursor: 'pointer',
-                fontSize: 13.5,
-                fontWeight: 600,
-                padding: '7px 15px',
-                borderRadius: 999,
-                whiteSpace: 'nowrap',
-                background: family === f.id ? 'var(--accent-soft)' : 'var(--card)',
-                color: family === f.id ? 'var(--accent)' : 'var(--ink)',
-              }}
-            >
-              {f.name}
-            </button>
-          ))}
-        </div>
-      )}
 
       {/* kategori-chips */}
       <div className="scrollbar-hide" style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, marginBottom: 22 }}>

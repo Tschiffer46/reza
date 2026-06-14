@@ -115,15 +115,19 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
     return NextResponse.json({ error: 'Hittades inte' }, { status: 404 })
   }
 
-  // Endast betalande medlemmar som är skapare eller gemenskaps-admin får radera.
+  // Skapare får alltid radera egna recept; annars krävs betald + gemenskaps-admin
+  // (eller global admin).
   const [me, membership] = await Promise.all([
-    prisma.user.findUnique({ where: { id: userId }, select: { plan: true } }),
+    prisma.user.findUnique({ where: { id: userId }, select: { plan: true, isAdmin: true } }),
     prisma.membership.findUnique({ where: { userId_familyId: { userId, familyId: existing.familyId } } }),
   ])
-  const allowed = me?.plan === 'paid' && (existing.creatorId === userId || membership?.role === 'admin')
+  const allowed =
+    existing.creatorId === userId ||
+    (me?.plan === 'paid' && membership?.role === 'admin') ||
+    !!me?.isAdmin
   if (!allowed) {
     return NextResponse.json(
-      { error: 'Endast betalande medlemmar (skapare eller admin) kan ta bort recept.' },
+      { error: 'Du har inte behörighet att ta bort det här receptet.' },
       { status: 403 },
     )
   }

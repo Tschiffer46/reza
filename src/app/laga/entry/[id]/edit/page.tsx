@@ -21,12 +21,13 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
     notFound()
   }
 
-  // Radera tillåts för betalande som är skapare eller gemenskaps-admin
+  // Skapare får alltid radera egna; annars krävs betald + gemenskaps-admin, eller global admin.
   const [me, membership] = await Promise.all([
-    prisma.user.findUnique({ where: { id: userId }, select: { plan: true } }),
+    prisma.user.findUnique({ where: { id: userId }, select: { plan: true, isAdmin: true } }),
     prisma.membership.findUnique({ where: { userId_familyId: { userId, familyId: entry.familyId } } }),
   ])
-  const canDelete = me?.plan === 'paid' && (entry.creatorId === userId || membership?.role === 'admin')
+  const canDelete =
+    entry.creatorId === userId || (me?.plan === 'paid' && membership?.role === 'admin') || !!me?.isAdmin
 
   return (
     <AppShell>

@@ -3,18 +3,20 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Logo, Icon, AvatarStack, type Person } from '@/components/laga/ui'
+import { Logo, Icon, Avatar, AvatarStack, type Person } from '@/components/laga/ui'
 import { applyBackground } from '@/lib/backgrounds'
 
 const NAV = [
   { href: '/laga', key: 'home', icon: 'home', label: 'Hem' },
   { href: '/laga/family', key: 'family', icon: 'users', label: 'Gemenskapen' },
   { href: '/laga/entry/new', key: 'add', icon: 'plus', label: 'Lägg till' },
+  { href: '/laga/profile', key: 'account', icon: 'user', label: 'Konto' },
 ] as const
 
 function activeKey(pathname: string): string {
   if (pathname.startsWith('/laga/family')) return 'family'
   if (pathname.startsWith('/laga/entry/new') || pathname.startsWith('/laga/import')) return 'add'
+  if (pathname.startsWith('/laga/profile')) return 'account'
   return 'home'
 }
 
@@ -22,6 +24,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const active = activeKey(pathname)
   const [family, setFamily] = useState<{ name: string; members: Person[] } | null>(null)
+  const [me, setMe] = useState<{ name: string; avatar: string | null } | null>(null)
 
   useEffect(() => {
     fetch('/api/family')
@@ -35,6 +38,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             })),
           })
           applyBackground(d.active.background)
+        }
+      })
+      .catch(() => {})
+    fetch('/api/profile')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d && (d.name || d.email)) {
+          setMe({ name: d.name || (d.email ? String(d.email).split('@')[0] : 'Du'), avatar: d.avatar || null })
         }
       })
       .catch(() => {})
@@ -97,8 +108,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <Link href="/laga">
           <Logo size="sm" />
         </Link>
-        <Link href="/laga/family" style={{ display: 'flex' }}>
-          {memberPeople.length > 0 && <AvatarStack people={memberPeople} size={28} max={3} />}
+        <Link href="/laga/profile" style={{ display: 'flex' }} aria-label="Mitt konto">
+          {me ? (
+            <Avatar name={me.name} image={me.avatar || undefined} size={30} />
+          ) : (
+            memberPeople.length > 0 && <AvatarStack people={memberPeople} size={28} max={3} />
+          )}
         </Link>
       </header>
 

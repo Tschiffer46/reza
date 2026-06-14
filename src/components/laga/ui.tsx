@@ -5,6 +5,7 @@ export const ICON_PATHS: Record<string, string> = {
   home: 'M3 11.5 12 4l9 7.5M5.5 10v9.5h13V10',
   users:
     'M16 19v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 17.5V19M9.5 10.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM20 19v-1.5a3.5 3.5 0 0 0-2.7-3.4M15 4.6a3 3 0 0 1 0 5.8',
+  user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM5 20a7 7 0 0 1 14 0',
   plus: 'M12 5v14M5 12h14',
   search: 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14ZM20 20l-3.2-3.2',
   heart: 'M12 20s-6.5-4.2-9-8.2A4.6 4.6 0 0 1 12 6a4.6 4.6 0 0 1 9 5.8c-2.5 4-9 8.2-9 8.2Z',
@@ -78,15 +79,27 @@ export function colorFor(seed: string): string {
 export interface Person {
   name: string
   seed?: string
+  image?: string
 }
 
 function initial(name: string) {
   return name === 'Du' ? 'Du' : (name.trim()[0] || '?').toUpperCase()
 }
 
-export function Avatar({ name, seed, size = 28 }: Person & { size?: number }) {
+export function Avatar({ name, seed, image, size = 28 }: Person & { size?: number }) {
   const color = colorFor(seed || name)
   const ini = initial(name)
+  if (image) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={`/api/images/${image}`}
+        alt={name}
+        title={name}
+        style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, display: 'inline-block' }}
+      />
+    )
+  }
   return (
     <div
       title={name}
