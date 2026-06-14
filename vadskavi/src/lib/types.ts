@@ -14,6 +14,8 @@ export interface EntryDTO {
   url: string | null
   imageUrls: string[]
   timesCooked: number
+  ratingAvg?: number | null
+  ratingCount?: number
   lastCooked: string | null
   createdAt: string
   family?: { id: string; name: string }

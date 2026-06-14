@@ -48,7 +48,7 @@ export function EntryForm({ initialData }: { initialData?: Partial<EntryFormData
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  // Hämta familjer och förvald standardfamilj
+  // Hämta gemenskaper och förvald standardgemenskap
   useEffect(() => {
     fetch('/api/family')
       .then((r) => r.json())
@@ -129,7 +129,7 @@ export function EntryForm({ initialData }: { initialData?: Partial<EntryFormData
 
       {families.length > 1 && (
         <div className="space-y-1.5">
-          <label className="text-sm font-medium text-brand-header">Familj</label>
+          <label className="text-sm font-medium text-brand-header">Gemenskap</label>
           <select
             className={inputClass}
             value={familyId}

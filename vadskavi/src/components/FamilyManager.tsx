@@ -65,13 +65,13 @@ export function FamilyManager() {
 
   return (
     <div className="space-y-6">
-      {/* Standardfamilj */}
+      {/* Standardgemenskap */}
       <section className="space-y-3 rounded-xl border border-brand-accent/20 bg-white p-4">
         <h2 className="flex items-center gap-2 text-lg font-semibold text-brand-header">
-          <Users className="h-5 w-5" /> Standardfamilj
+          <Users className="h-5 w-5" /> Standardgemenskap
         </h2>
         <p className="text-sm text-brand-muted">
-          Nya recept hamnar här. Du ser och söker recept i alla dina familjer oavsett vald standard.
+          Nya recept hamnar här. Du ser och söker recept i alla dina gemenskaper oavsett vald standard.
         </p>
 
         <div className="flex gap-2">
@@ -118,10 +118,10 @@ export function FamilyManager() {
         </div>
       </section>
 
-      {/* Byt familj */}
+      {/* Byt gemenskap */}
       {data.families.length > 1 && (
         <section className="space-y-2 rounded-xl border border-brand-accent/20 bg-white p-4">
-          <h2 className="text-lg font-semibold text-brand-header">Mina familjer</h2>
+          <h2 className="text-lg font-semibold text-brand-header">Mina gemenskaper</h2>
           {data.families.map((f) => (
             <div key={f.id} className="flex items-center justify-between">
               <span className="text-brand-ink">{f.name}</span>
@@ -144,7 +144,7 @@ export function FamilyManager() {
 
       {/* Gå med */}
       <section className="space-y-2 rounded-xl border border-brand-accent/20 bg-white p-4">
-        <h2 className="text-lg font-semibold text-brand-header">Gå med i en familj</h2>
+        <h2 className="text-lg font-semibold text-brand-header">Gå med i en gemenskap</h2>
         <div className="flex gap-2">
           <input
             className={inputClass}
@@ -165,13 +165,13 @@ export function FamilyManager() {
 
       {/* Skapa ny */}
       <section className="space-y-2 rounded-xl border border-brand-accent/20 bg-white p-4">
-        <h2 className="text-lg font-semibold text-brand-header">Skapa ny familj</h2>
+        <h2 className="text-lg font-semibold text-brand-header">Skapa ny gemenskap</h2>
         <div className="flex gap-2">
           <input
             className={inputClass}
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            placeholder="Familjenamn"
+            placeholder="Gemenskapenamn"
           />
           <Button
             disabled={busy || !newName.trim()}

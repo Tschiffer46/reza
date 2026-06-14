@@ -1,7 +1,7 @@
 /**
- * Standardkategorier som nya familjer får vid skapande (kopieras in i Category-
- * tabellen kopplat till respektive familj). Återanvänds av seed och av
- * familjeskapande-flödet i senare sprintar.
+ * Standardkategorier som nya gemenskaper får vid skapande (kopieras in i Category-
+ * tabellen kopplat till respektive gemenskap). Återanvänds av seed och av
+ * gemenskapeskapande-flödet i senare sprintar.
  */
 export const DEFAULT_CATEGORIES: { name: string; type: 'recipe' | 'tip' }[] = [
   // Recept

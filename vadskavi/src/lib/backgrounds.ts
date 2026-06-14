@@ -1,4 +1,4 @@
-/** Familjens valbara bakgrunder: [sidbakgrund, tom-media-ton]. */
+/** Gemenskapens valbara bakgrunder: [sidbakgrund, tom-media-ton]. */
 export const BACKGROUNDS: Record<string, [string, string]> = {
   Linne: ['#f6f5f1', '#eceae4'],
   Varm: ['#faf3e8', '#efe6d6'],

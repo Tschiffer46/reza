@@ -43,7 +43,8 @@ function RegisterInner() {
     if (login?.error) {
       router.push(`/login?next=${encodeURIComponent(next)}`)
     } else {
-      router.push(next)
+      // Ny användare utan inbjudan → onboarding; inbjudna (next=/join/...) går dit.
+      router.push(next === '/laga' ? '/onboarding' : next)
       router.refresh()
     }
   }

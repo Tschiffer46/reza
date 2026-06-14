@@ -8,7 +8,7 @@ import { applyBackground } from '@/lib/backgrounds'
 
 const NAV = [
   { href: '/laga', key: 'home', icon: 'home', label: 'Hem' },
-  { href: '/laga/family', key: 'family', icon: 'users', label: 'Familjen' },
+  { href: '/laga/family', key: 'family', icon: 'users', label: 'Gemenskapen' },
   { href: '/laga/entry/new', key: 'add', icon: 'plus', label: 'Lägg till' },
 ] as const
 
@@ -84,7 +84,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   textOverflow: 'ellipsis',
                 }}
               >
-                {family?.name ?? 'Min familj'}
+                {family?.name ?? 'Min gemenskap'}
               </div>
               <div style={{ fontSize: 12, color: 'var(--muted)' }}>{memberPeople.length} medlemmar</div>
             </div>

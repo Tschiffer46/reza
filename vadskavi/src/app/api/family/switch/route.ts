@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     where: { userId_familyId: { userId, familyId } },
   })
   if (!membership) {
-    return NextResponse.json({ error: 'Du är inte medlem i den familjen' }, { status: 403 })
+    return NextResponse.json({ error: 'Du är inte medlem i den gemenskapen' }, { status: 403 })
   }
 
   const res = NextResponse.json({ ok: true })

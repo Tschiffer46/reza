@@ -3,8 +3,8 @@ import './globals.css'
 import { ServiceWorker } from '@/components/ServiceWorker'
 
 export const metadata: Metadata = {
-  title: 'VadSkaVi — familjens receptbok',
-  description: 'Samla, dela och hitta familjens favoritrecept',
+  title: 'VadSkaVi — gemenskapens receptbok',
+  description: 'Samla, dela och hitta gemenskapens favoritrecept',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,

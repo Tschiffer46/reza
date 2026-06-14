@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     orderBy: { name: 'asc' },
   })
 
-  // Vid union över flera familjer: deduplicera på namn+typ.
+  // Vid union över flera gemenskaper: deduplicera på namn+typ.
   if (scope.length > 1) {
     const seen = new Set<string>()
     const deduped = categories.filter((c) => {
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     try {
       await assertMember(userId, familyId)
     } catch {
-      return NextResponse.json({ error: 'Du tillhör inte den familjen' }, { status: 403 })
+      return NextResponse.json({ error: 'Du tillhör inte den gemenskapen' }, { status: 403 })
     }
   } else {
     familyId = await getDefaultFamily(userId)

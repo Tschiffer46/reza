@@ -31,6 +31,7 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
       notes: { include: { author: { select: { name: true, email: true } } }, orderBy: { createdAt: 'asc' } },
       changes: { where: { action: 'cooked' }, select: { action: true, user: { select: { name: true, email: true } } } },
       reactions: { select: { userId: true } },
+      ratings: { where: { userId }, select: { score: true } },
     },
   })
 
@@ -61,6 +62,9 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
     cookedBy: aggregateCooked(entry.changes),
     hearted: entry.reactions.some((r) => r.userId === userId),
     heartCount: entry.reactions.length,
+    ratingAvg: entry.ratingAvg,
+    ratingCount: entry.ratingCount,
+    myRating: entry.ratings[0]?.score ?? null,
     notes: entry.notes.map((n) => ({ id: n.id, text: n.text, author: displayName(n.author), date: relativeDate(n.createdAt) })),
     comments: entry.comments.map((c) => ({ id: c.id, text: c.text, author: displayName(c.author), date: relativeDate(c.createdAt) })),
   }

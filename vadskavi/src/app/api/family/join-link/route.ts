@@ -4,7 +4,7 @@ import { ACTIVE_FAMILY_COOKIE, requireUser } from '@/lib/family'
 
 /**
  * GET /api/family/join-link?code=XXXX
- * Går med i familjen bakom inbjudningskoden och skickar vidare till /laga.
+ * Går med i gemenskapen bakom inbjudningskoden och skickar vidare till /laga.
  * (GET eftersom den nås via redirect från /join/[code]-sidan.)
  */
 export async function GET(request: NextRequest) {

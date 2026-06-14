@@ -5,19 +5,28 @@ import { prisma } from '@/lib/db'
 import { userFamilyIds } from '@/lib/family'
 import { AppShell } from '@/components/laga/AppShell'
 import { EntryForm } from '@/components/EntryForm'
+import { DeleteEntryButton } from '@/components/laga/DeleteEntryButton'
 
 export default async function EditEntryPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
   if (!session?.user?.id) {
     redirect('/login')
   }
+  const userId = session.user.id
   const { id } = await params
 
   const entry = await prisma.entry.findUnique({ where: { id } })
-  const familyIds = await userFamilyIds(session.user.id)
+  const familyIds = await userFamilyIds(userId)
   if (!entry || !familyIds.includes(entry.familyId)) {
     notFound()
   }
+
+  // Radera tillåts för betalande som är skapare eller gemenskaps-admin
+  const [me, membership] = await Promise.all([
+    prisma.user.findUnique({ where: { id: userId }, select: { plan: true } }),
+    prisma.membership.findUnique({ where: { userId_familyId: { userId, familyId: entry.familyId } } }),
+  ])
+  const canDelete = me?.plan === 'paid' && (entry.creatorId === userId || membership?.role === 'admin')
 
   return (
     <AppShell>
@@ -45,6 +54,7 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
             familyId: entry.familyId,
           }}
         />
+        {canDelete && <DeleteEntryButton entryId={entry.id} />}
       </div>
     </AppShell>
   )

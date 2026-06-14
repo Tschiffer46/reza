@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db'
 import { requireUser, getDefaultFamily, userFamilyIds, assertMember } from '@/lib/family'
 import { searchEntries } from '@/lib/search'
 import { toEntryDTO } from '@/lib/laga'
+import { FREE_MONTHLY_LIMIT, monthlyEntryCount } from '@/lib/plan'
 
 export async function GET(request: NextRequest) {
   let userId
@@ -40,13 +41,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Titel, typ och kategori krävs' }, { status: 400 })
   }
 
-  // Målfamilj från body (validera medlemskap), annars standardfamiljen.
+  // Gratisgräns: max 3 recept/månad för gratisanvändare
+  const me = await prisma.user.findUnique({ where: { id: userId }, select: { plan: true } })
+  if (me?.plan !== 'paid') {
+    const used = await monthlyEntryCount(userId)
+    if (used >= FREE_MONTHLY_LIMIT) {
+      return NextResponse.json(
+        { error: `Gratisgränsen (${FREE_MONTHLY_LIMIT} recept/månad) är nådd. Uppgradera för obegränsat.` },
+        { status: 402 },
+      )
+    }
+  }
+
+  // Målgemenskap från body (validera medlemskap), annars standardgemenskapen.
   let familyId = body.familyId as string | undefined
   if (familyId) {
     try {
       await assertMember(userId, familyId)
     } catch {
-      return NextResponse.json({ error: 'Du tillhör inte den familjen' }, { status: 403 })
+      return NextResponse.json({ error: 'Du tillhör inte den gemenskapen' }, { status: 403 })
     }
   } else {
     familyId = await getDefaultFamily(userId)

@@ -12,6 +12,7 @@ const TYPES = [
 ]
 const SORTS = [
   { value: 'createdAt', label: 'Senaste' },
+  { value: 'rating', label: 'Högst betyg' },
   { value: 'popular', label: 'Populärast' },
   { value: 'timesCooked', label: 'Mest lagad' },
 ]
@@ -86,6 +87,11 @@ function RecipeCard({ entry }: { entry: EntryDTO }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
           <Tag>{entry.category}</Tag>
           {entry.type === 'tip' && <Tag tone="accent">Tips</Tag>}
+          {!!entry.ratingCount && entry.ratingAvg != null && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 12.5, fontWeight: 600, color: 'var(--accent)' }}>
+              ★ {entry.ratingAvg.toFixed(1)}
+            </span>
+          )}
           {entry.time && (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12.5, color: 'var(--muted)' }}>
               <Icon name="clock" size={13} />
@@ -198,7 +204,7 @@ export function Feed({
             fontWeight: 600,
           }}
         >
-          Familjen
+          Gemenskapen
         </Link>
       </div>
 
@@ -266,10 +272,10 @@ export function Feed({
         </div>
       </div>
 
-      {/* familjefilter (om fler än en) */}
+      {/* gemenskapefilter (om fler än en) */}
       {families.length > 1 && (
         <div className="scrollbar-hide" style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, marginBottom: 10 }}>
-          {[{ id: '', name: 'Alla familjer' }, ...families].map((f) => (
+          {[{ id: '', name: 'Alla gemenskaper' }, ...families].map((f) => (
             <button
               key={f.id || 'all'}
               onClick={() => setFamily(f.id)}
