@@ -25,6 +25,7 @@ model User {
   comments      Comment[]
   notes         Note[]
   reactions     Reaction[]
+  ratings       Rating[]
   changes       ChangeLog[]
   accounts      Account[]
   sessions      Session[]
@@ -106,6 +107,8 @@ model Entry {
   imageUrls    String[]    @default([])
   searchVector Unsupported("tsvector")?
   timesCooked  Int         @default(0)
+  ratingAvg    Float?
+  ratingCount  Int         @default(0)
   lastCooked   DateTime?
   createdAt    DateTime    @default(now())
   familyId     String
@@ -115,7 +118,20 @@ model Entry {
   comments     Comment[]
   notes        Note[]
   reactions    Reaction[]
+  ratings      Rating[]
   changes      ChangeLog[]
+}
+
+model Rating {
+  id        String   @id @default(cuid())
+  score     Int
+  createdAt DateTime @default(now())
+  entryId   String
+  userId    String
+  entry     Entry    @relation(fields: [entryId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([entryId, userId])
 }
 
 model Note {

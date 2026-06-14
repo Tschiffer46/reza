@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Icon, Tag, Avatar, AvatarStack } from '@/components/laga/ui'
 import { FormattedText } from '@/components/laga/FormattedText'
+import { CookMode } from '@/components/laga/CookMode'
 
 export interface RecipeDTO {
   id: string
@@ -25,6 +26,9 @@ export interface RecipeDTO {
   cookedBy: { name: string; n: number }[]
   hearted: boolean
   heartCount: number
+  ratingAvg: number | null
+  ratingCount: number
+  myRating: number | null
   notes: { id: string; text: string; author: string; date: string }[]
   comments: { id: string; text: string; author: string; date: string }[]
 }
@@ -58,10 +62,28 @@ export function RecipeView({ recipe, meName }: { recipe: RecipeDTO; meName: stri
   const [noteText, setNoteText] = useState('')
   const [commentText, setCommentText] = useState('')
   const [servings, setServings] = useState(recipe.servings || 0)
+  const [ratingAvg, setRatingAvg] = useState(recipe.ratingAvg)
+  const [ratingCount, setRatingCount] = useState(recipe.ratingCount)
+  const [myRating, setMyRating] = useState(recipe.myRating)
+  const [cooking, setCooking] = useState(false)
 
   const totalCooked = cookedBy.reduce((s, c) => s + c.n, 0)
   const scale = recipe.servings && servings ? servings / recipe.servings : 1
   const img = recipe.imageUrls[0]
+
+  async function rate(score: number) {
+    setMyRating(score)
+    const res = await fetch(`/api/entries/${recipe.id}/rating`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ score }),
+    })
+    if (res.ok) {
+      const d = await res.json()
+      setRatingAvg(d.ratingAvg)
+      setRatingCount(d.ratingCount)
+    }
+  }
 
   async function markCooked() {
     setCookedBy((prev) => {
@@ -123,24 +145,31 @@ export function RecipeView({ recipe, meName }: { recipe: RecipeDTO; meName: stri
     outline: 'none',
   }
 
+  if (cooking) {
+    return <CookMode title={recipe.title} steps={recipe.steps} onClose={() => setCooking(false)} />
+  }
+
   return (
     <div className="recipe-detail">
-      {/* hero */}
-      <div style={{ position: 'relative' }}>
-        <div className="recipe-hero" style={{ background: img ? undefined : 'var(--accent-soft)' }}>
-          {img ? (
-            // eslint-disable-next-line @next/next/no-img-element
+      {/* hero — endast när bild finns; annars bara en tillbaka-länk */}
+      {img ? (
+        <div style={{ position: 'relative' }}>
+          <div className="recipe-hero">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={`/api/images/${img}`} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-          ) : (
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Icon name="chefhat" size={40} color="var(--accent)" stroke={1.3} />
-            </div>
-          )}
+          </div>
+          <Link href="/laga" className="hero-back" aria-label="Tillbaka">
+            <Icon name="back" size={20} color="var(--ink)" />
+          </Link>
         </div>
-        <Link href="/laga" className="hero-back" aria-label="Tillbaka">
-          <Icon name="back" size={20} color="var(--ink)" />
+      ) : (
+        <Link
+          href="/laga"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--muted)', fontSize: 14, fontWeight: 600, margin: '4px 0 16px' }}
+        >
+          <Icon name="back" size={18} /> Tillbaka
         </Link>
-      </div>
+      )}
 
       <div className="recipe-body">
         <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -205,6 +234,58 @@ export function RecipeView({ recipe, meName }: { recipe: RecipeDTO; meName: stri
               <Icon name="heart" size={18} color="var(--accent)" fill={hearted ? 'var(--accent)' : 'none'} stroke={hearted ? 0 : 1.7} />
               {heartCount}
             </button>
+            {recipe.steps.length > 0 && (
+              <button
+                onClick={() => setCooking(true)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 7,
+                  background: 'var(--card)',
+                  border: '1px solid var(--accent)',
+                  color: 'var(--accent)',
+                  borderRadius: 12,
+                  padding: '12px 16px',
+                  cursor: 'pointer',
+                  fontSize: 15,
+                  fontWeight: 600,
+                }}
+              >
+                <Icon name="chefhat" size={18} color="var(--accent)" /> Börja laga rätten
+              </button>
+            )}
+          </div>
+
+          {/* betyg */}
+          <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 13.5, color: 'var(--muted)' }}>{myRating ? 'Ditt betyg:' : 'Sätt betyg:'}</span>
+            <div style={{ display: 'inline-flex', gap: 4 }}>
+              {[1, 2, 3, 4, 5, 6].map((n) => (
+                <button
+                  key={n}
+                  onClick={() => rate(n)}
+                  aria-label={`Betyg ${n}`}
+                  style={{
+                    width: 30,
+                    height: 30,
+                    borderRadius: 8,
+                    border: '1px solid ' + (myRating && n <= myRating ? 'var(--accent)' : 'var(--card-bd)'),
+                    background: myRating && n <= myRating ? 'var(--accent)' : 'var(--card)',
+                    color: myRating && n <= myRating ? '#fff' : 'var(--muted)',
+                    cursor: 'pointer',
+                    fontSize: 13,
+                    fontWeight: 700,
+                  }}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+            {ratingCount > 0 && ratingAvg != null && (
+              <span style={{ fontSize: 13.5, color: 'var(--accent)', fontWeight: 600 }}>
+                ★ {ratingAvg.toFixed(1)} <span style={{ color: 'var(--muted)', fontWeight: 400 }}>({ratingCount})</span>
+              </span>
+            )}
           </div>
           <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 9 }}>
             {totalCooked > 0 ? (

@@ -48,9 +48,11 @@ export async function searchEntries({ familyIds, q, type, category, family, sort
   const orderBy: Prisma.EntryOrderByWithRelationInput =
     sort === 'timesCooked'
       ? { timesCooked: 'desc' }
-      : sort === 'popular'
-        ? { reactions: { _count: 'desc' } }
-        : sort === 'lastCooked'
+      : sort === 'rating'
+        ? { ratingAvg: { sort: 'desc', nulls: 'last' } }
+        : sort === 'popular'
+          ? { reactions: { _count: 'desc' } }
+          : sort === 'lastCooked'
           ? { lastCooked: 'desc' }
           : sort === 'title'
             ? { title: 'asc' }

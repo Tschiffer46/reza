@@ -38,6 +38,8 @@ export type EntryWithMeta = {
   url: string | null
   imageUrls: string[]
   timesCooked: number
+  ratingAvg: number | null
+  ratingCount: number
   lastCooked: Date | null
   createdAt: Date
   family?: { id: string; name: string } | null
@@ -69,6 +71,8 @@ export function toEntryDTO(e: EntryWithMeta): EntryDTO {
     url: e.url,
     imageUrls: e.imageUrls,
     timesCooked: e.timesCooked,
+    ratingAvg: e.ratingAvg,
+    ratingCount: e.ratingCount,
     lastCooked: e.lastCooked ? e.lastCooked.toISOString() : null,
     createdAt: e.createdAt.toISOString(),
     family: e.family ? { id: e.family.id, name: e.family.name } : undefined,
