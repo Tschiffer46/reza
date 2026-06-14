@@ -7,6 +7,7 @@ import { Header } from '@/components/Header'
 import { NavBar } from '@/components/NavBar'
 import { ProfileForm } from '@/components/ProfileForm'
 import { PasswordForm } from '@/components/PasswordForm'
+import { Avatar } from '@/components/laga/ui'
 import { Button } from '@/components/ui/button'
 import { FREE_MONTHLY_LIMIT, monthlyEntryCount } from '@/lib/plan'
 
@@ -17,7 +18,7 @@ export default async function ProfilePage() {
   }
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { name: true, email: true, plan: true, isAdmin: true },
+    select: { name: true, email: true, plan: true, isAdmin: true, avatar: true, bio: true },
   })
   const isPaid = user?.plan === 'paid'
   const usedThisMonth = await monthlyEntryCount(session.user.id)
@@ -37,9 +38,12 @@ export default async function ProfilePage() {
         </Link>
       </Header>
       <main className="mx-auto max-w-2xl space-y-6 px-4 py-6">
-        <div>
-          <h1 className="text-xl font-semibold text-brand-header">Konto</h1>
-          <p className="text-sm text-brand-muted">{user?.email}</p>
+        <div className="flex items-center gap-3">
+          <Avatar name={user?.name || 'Du'} image={user?.avatar || undefined} size={52} />
+          <div>
+            <h1 className="text-xl font-semibold text-brand-header">{user?.name || 'Mitt konto'}</h1>
+            <p className="text-sm text-brand-muted">{user?.email}</p>
+          </div>
         </div>
 
         <div className="rounded-xl border border-brand-accent/20 bg-white p-4">
@@ -63,7 +67,11 @@ export default async function ProfilePage() {
           )}
         </div>
 
-        <ProfileForm initialName={user?.name || ''} />
+        <ProfileForm
+          initialName={user?.name || ''}
+          initialBio={user?.bio || ''}
+          initialAvatar={user?.avatar || null}
+        />
 
         <PasswordForm />
 

@@ -7,6 +7,45 @@ import { Icon } from '@/components/laga/ui'
  * Helskärms-lagläge: håller skärmen vaken (Wake Lock) och fokuserar på nästa
  * steg. Klarmarkerade steg dämpas; nästa omarkerade steg visas överst.
  */
+function StepRow({ index, text, done, onToggle }: { index: number; text: string; done: boolean; onToggle: () => void }) {
+  return (
+    <li>
+      <button
+        onClick={onToggle}
+        style={{
+          display: 'flex',
+          gap: 12,
+          width: '100%',
+          textAlign: 'left',
+          background: 'transparent',
+          border: 'none',
+          cursor: 'pointer',
+          padding: '6px 0',
+          opacity: done ? 0.4 : 1,
+        }}
+      >
+        <span
+          style={{
+            flexShrink: 0,
+            width: 26,
+            height: 26,
+            borderRadius: '50%',
+            border: '2px solid ' + (done ? 'var(--accent)' : 'var(--card-bd)'),
+            background: done ? 'var(--accent)' : 'transparent',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginTop: 2,
+          }}
+        >
+          {done ? <Icon name="check" size={15} color="#fff" /> : <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--muted)' }}>{index + 1}</span>}
+        </span>
+        <span style={{ fontSize: 15.5, lineHeight: 1.5, color: 'var(--ink)', textDecoration: done ? 'line-through' : 'none' }}>{text}</span>
+      </button>
+    </li>
+  )
+}
+
 export function CookMode({
   title,
   steps,
@@ -43,6 +82,8 @@ export function CookMode({
 
   const nextIndex = done.findIndex((d) => !d)
   const allDone = nextIndex === -1
+  const upcomingIdx = steps.map((_, i) => i).filter((i) => !done[i])
+  const doneIdx = steps.map((_, i) => i).filter((i) => done[i])
 
   function toggle(i: number) {
     setDone((prev) => prev.map((d, idx) => (idx === i ? !d : d)))
@@ -90,45 +131,25 @@ export function CookMode({
           </div>
         )}
 
-        {/* alla steg */}
+        {/* steg: kommande först, klara samlas längst ned */}
         <ol style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {steps.map((s, i) => (
-            <li key={i}>
-              <button
-                onClick={() => toggle(i)}
-                style={{
-                  display: 'flex',
-                  gap: 12,
-                  width: '100%',
-                  textAlign: 'left',
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: '6px 0',
-                  opacity: done[i] ? 0.4 : 1,
-                }}
-              >
-                <span
-                  style={{
-                    flexShrink: 0,
-                    width: 26,
-                    height: 26,
-                    borderRadius: '50%',
-                    border: '2px solid ' + (done[i] ? 'var(--accent)' : 'var(--card-bd)'),
-                    background: done[i] ? 'var(--accent)' : 'transparent',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginTop: 2,
-                  }}
-                >
-                  {done[i] ? <Icon name="check" size={15} color="#fff" /> : <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--muted)' }}>{i + 1}</span>}
-                </span>
-                <span style={{ fontSize: 15.5, lineHeight: 1.5, color: 'var(--ink)', textDecoration: done[i] ? 'line-through' : 'none' }}>{s}</span>
-              </button>
-            </li>
+          {upcomingIdx.map((i) => (
+            <StepRow key={i} index={i} text={steps[i]} done={false} onToggle={() => toggle(i)} />
           ))}
         </ol>
+
+        {doneIdx.length > 0 && (
+          <>
+            <div style={{ margin: '22px 0 12px', fontSize: 12.5, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--muted)' }}>
+              Klara steg
+            </div>
+            <ol style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {doneIdx.map((i) => (
+                <StepRow key={i} index={i} text={steps[i]} done onToggle={() => toggle(i)} />
+              ))}
+            </ol>
+          </>
+        )}
       </div>
     </div>
   )

@@ -40,8 +40,14 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
     notFound()
   }
 
-  const me = await prisma.user.findUnique({ where: { id: userId }, select: { name: true, email: true } })
+  const [me, membership] = await Promise.all([
+    prisma.user.findUnique({ where: { id: userId }, select: { name: true, email: true, plan: true, isAdmin: true } }),
+    prisma.membership.findUnique({ where: { userId_familyId: { userId, familyId: entry.familyId } } }),
+  ])
   const meName = displayName(me)
+  // Skapare får alltid radera egna; annars krävs betald + gemenskaps-admin, eller global admin.
+  const canDelete =
+    entry.creatorId === userId || (me?.plan === 'paid' && membership?.role === 'admin') || !!me?.isAdmin
 
   const recipe: RecipeDTO = {
     id: entry.id,
@@ -71,7 +77,7 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
 
   return (
     <AppShell>
-      <RecipeView recipe={recipe} meName={meName} />
+      <RecipeView recipe={recipe} meName={meName} canDelete={canDelete} />
     </AppShell>
   )
 }

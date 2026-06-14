@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { Icon, Tag, Avatar, AvatarStack } from '@/components/laga/ui'
 import { FormattedText } from '@/components/laga/FormattedText'
 import { CookMode } from '@/components/laga/CookMode'
+import { DeleteEntryButton } from '@/components/laga/DeleteEntryButton'
 
 export interface RecipeDTO {
   id: string
@@ -51,12 +52,10 @@ function SectionTitle({ children, icon }: { children: React.ReactNode; icon?: st
   )
 }
 
-export function RecipeView({ recipe, meName }: { recipe: RecipeDTO; meName: string }) {
+export function RecipeView({ recipe, meName, canDelete = false }: { recipe: RecipeDTO; meName: string; canDelete?: boolean }) {
   const router = useRouter()
   const [cookedBy, setCookedBy] = useState(recipe.cookedBy)
   const [justCooked, setJustCooked] = useState(false)
-  const [hearted, setHearted] = useState(recipe.hearted)
-  const [heartCount, setHeartCount] = useState(recipe.heartCount)
   const [notes, setNotes] = useState(recipe.notes)
   const [comments, setComments] = useState(recipe.comments)
   const [noteText, setNoteText] = useState('')
@@ -85,29 +84,31 @@ export function RecipeView({ recipe, meName }: { recipe: RecipeDTO; meName: stri
     }
   }
 
-  async function markCooked() {
+  async function recordCook() {
     setCookedBy((prev) => {
       const mine = prev.find((c) => c.name === meName)
       if (mine) return prev.map((c) => (c.name === meName ? { ...c, n: c.n + 1 } : c))
       return [{ name: meName, n: 1 }, ...prev]
     })
-    setJustCooked(true)
-    setTimeout(() => setJustCooked(false), 2200)
     await fetch(`/api/entries/${recipe.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'cooked' }),
     })
-    router.refresh()
   }
 
-  async function toggleHeart() {
-    const res = await fetch(`/api/entries/${recipe.id}/reactions`, { method: 'POST' })
-    if (res.ok) {
-      const d = await res.json()
-      setHearted(d.hearted)
-      setHeartCount(d.count)
-    }
+  // "Börja laga rätten" räknar rätten som lagad och öppnar lagläget.
+  function startCooking() {
+    void recordCook()
+    setCooking(true)
+  }
+
+  // Fallback för recept utan steg: markera som lagad utan lagläge.
+  async function markCookedOnly() {
+    setJustCooked(true)
+    setTimeout(() => setJustCooked(false), 2200)
+    await recordCook()
+    router.refresh()
   }
 
   async function addNote() {
@@ -194,66 +195,49 @@ export function RecipeView({ recipe, meName }: { recipe: RecipeDTO; meName: stri
         {/* actions */}
         <div className="recipe-actions">
           <div style={{ display: 'flex', alignItems: 'center', gap: 13, flexWrap: 'wrap' }}>
-            <button
-              onClick={markCooked}
-              className="btn-cooked"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-                background: justCooked ? 'var(--sage)' : 'var(--accent)',
-                color: '#fff',
-                border: 'none',
-                borderRadius: 12,
-                padding: '12px 20px',
-                cursor: 'pointer',
-                fontSize: 15.5,
-                fontWeight: 600,
-                transition: 'background .2s, transform .1s',
-              }}
-            >
-              <Icon name={justCooked ? 'check' : 'pot'} size={19} color="#fff" />
-              {justCooked ? 'Lagad! 🎉' : 'Jag lagade den'}
-            </button>
-            <button
-              onClick={toggleHeart}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 7,
-                background: 'var(--card)',
-                border: '1px solid var(--card-bd)',
-                color: hearted ? 'var(--accent)' : 'var(--ink)',
-                borderRadius: 12,
-                padding: '12px 16px',
-                cursor: 'pointer',
-                fontSize: 15,
-                fontWeight: 600,
-              }}
-            >
-              <Icon name="heart" size={18} color="var(--accent)" fill={hearted ? 'var(--accent)' : 'none'} stroke={hearted ? 0 : 1.7} />
-              {heartCount}
-            </button>
-            {recipe.steps.length > 0 && (
+            {recipe.steps.length > 0 ? (
               <button
-                onClick={() => setCooking(true)}
+                onClick={startCooking}
+                className="btn-cooked"
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: 7,
-                  background: 'var(--card)',
-                  border: '1px solid var(--accent)',
-                  color: 'var(--accent)',
+                  gap: 8,
+                  background: 'var(--accent)',
+                  color: '#fff',
+                  border: 'none',
                   borderRadius: 12,
-                  padding: '12px 16px',
+                  padding: '12px 20px',
                   cursor: 'pointer',
-                  fontSize: 15,
+                  fontSize: 15.5,
                   fontWeight: 600,
                 }}
               >
-                <Icon name="chefhat" size={18} color="var(--accent)" /> Börja laga rätten
+                <Icon name="chefhat" size={19} color="#fff" /> Börja laga rätten
               </button>
-            )}
+            ) : recipe.type !== 'tip' ? (
+              <button
+                onClick={markCookedOnly}
+                className="btn-cooked"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  background: justCooked ? 'var(--sage)' : 'var(--accent)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 12,
+                  padding: '12px 20px',
+                  cursor: 'pointer',
+                  fontSize: 15.5,
+                  fontWeight: 600,
+                  transition: 'background .2s, transform .1s',
+                }}
+              >
+                <Icon name={justCooked ? 'check' : 'pot'} size={19} color="#fff" />
+                {justCooked ? 'Lagad! 🎉' : 'Markera som lagad'}
+              </button>
+            ) : null}
           </div>
 
           {/* betyg */}
@@ -419,6 +403,7 @@ export function RecipeView({ recipe, meName }: { recipe: RecipeDTO; meName: stri
                 <Icon name="edit" size={15} /> Redigera receptet
               </Link>
             </div>
+            {canDelete && <DeleteEntryButton entryId={recipe.id} />}
           </div>
         </div>
       </div>
