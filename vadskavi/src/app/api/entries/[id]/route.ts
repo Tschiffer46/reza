@@ -115,8 +115,24 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
     return NextResponse.json({ error: 'Hittades inte' }, { status: 404 })
   }
 
+  // Endast betalande medlemmar som är skapare eller gemenskaps-admin får radera.
+  const [me, membership] = await Promise.all([
+    prisma.user.findUnique({ where: { id: userId }, select: { plan: true } }),
+    prisma.membership.findUnique({ where: { userId_familyId: { userId, familyId: existing.familyId } } }),
+  ])
+  const allowed = me?.plan === 'paid' && (existing.creatorId === userId || membership?.role === 'admin')
+  if (!allowed) {
+    return NextResponse.json(
+      { error: 'Endast betalande medlemmar (skapare eller admin) kan ta bort recept.' },
+      { status: 403 },
+    )
+  }
+
   await prisma.$transaction([
     prisma.comment.deleteMany({ where: { entryId: id } }),
+    prisma.note.deleteMany({ where: { entryId: id } }),
+    prisma.reaction.deleteMany({ where: { entryId: id } }),
+    prisma.rating.deleteMany({ where: { entryId: id } }),
     prisma.changeLog.deleteMany({ where: { entryId: id } }),
     prisma.entry.delete({ where: { id } }),
   ])

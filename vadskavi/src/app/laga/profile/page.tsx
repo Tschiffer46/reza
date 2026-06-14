@@ -8,6 +8,7 @@ import { NavBar } from '@/components/NavBar'
 import { ProfileForm } from '@/components/ProfileForm'
 import { PasswordForm } from '@/components/PasswordForm'
 import { Button } from '@/components/ui/button'
+import { FREE_MONTHLY_LIMIT, monthlyEntryCount } from '@/lib/plan'
 
 export default async function ProfilePage() {
   const session = await auth()
@@ -16,8 +17,10 @@ export default async function ProfilePage() {
   }
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { name: true, email: true },
+    select: { name: true, email: true, plan: true },
   })
+  const isPaid = user?.plan === 'paid'
+  const usedThisMonth = await monthlyEntryCount(session.user.id)
 
   async function logout() {
     'use server'
@@ -37,6 +40,27 @@ export default async function ProfilePage() {
         <div>
           <h1 className="text-xl font-semibold text-brand-header">Konto</h1>
           <p className="text-sm text-brand-muted">{user?.email}</p>
+        </div>
+
+        <div className="rounded-xl border border-brand-accent/20 bg-white p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium text-brand-header">Plan</p>
+              <p className="text-sm text-brand-muted">{isPaid ? 'Betalande — obegränsat antal recept' : 'Gratis'}</p>
+            </div>
+            <span className="rounded-full bg-brand-accent/15 px-3 py-1 text-xs font-semibold text-brand-accent-dark">
+              {isPaid ? 'Premium' : 'Gratis'}
+            </span>
+          </div>
+          {!isPaid && (
+            <p className="mt-3 text-sm text-brand-muted">
+              Recept denna månad:{' '}
+              <span className="font-semibold text-brand-ink">
+                {usedThisMonth} av {FREE_MONTHLY_LIMIT}
+              </span>
+              {usedThisMonth >= FREE_MONTHLY_LIMIT && ' — gränsen nådd'}
+            </p>
+          )}
         </div>
 
         <ProfileForm initialName={user?.name || ''} />
