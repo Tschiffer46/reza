@@ -8,6 +8,7 @@ import { Header } from '@/components/Header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { OAuthButtons } from '@/components/OAuthButtons'
 
 function RegisterInner() {
   const router = useRouter()
@@ -58,6 +59,10 @@ function RegisterInner() {
             <CardTitle>Skapa konto</CardTitle>
           </CardHeader>
           <CardContent>
+            <OAuthButtons callbackUrl={next} />
+            <div className="my-4 flex items-center gap-3 text-xs text-brand-muted">
+              <span className="h-px flex-1 bg-brand-accent/20" /> eller <span className="h-px flex-1 bg-brand-accent/20" />
+            </div>
             <form onSubmit={handleSubmit} className="space-y-3">
               <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Namn (valfritt)" autoComplete="name" />
               <Input

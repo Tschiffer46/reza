@@ -8,6 +8,7 @@ import { Header } from '@/components/Header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { OAuthButtons } from '@/components/OAuthButtons'
 
 function LoginInner() {
   const router = useRouter()
@@ -63,6 +64,10 @@ function LoginInner() {
                 <CardTitle>Logga in</CardTitle>
               </CardHeader>
               <CardContent>
+                <OAuthButtons callbackUrl={next} />
+                <div className="my-4 flex items-center gap-3 text-xs text-brand-muted">
+                  <span className="h-px flex-1 bg-brand-accent/20" /> eller <span className="h-px flex-1 bg-brand-accent/20" />
+                </div>
                 <form onSubmit={loginPassword} className="space-y-3">
                   <Input
                     type="email"

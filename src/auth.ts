@@ -2,6 +2,8 @@ import NextAuth from 'next-auth'
 import { PrismaAdapter } from '@auth/prisma-adapter'
 import Nodemailer from 'next-auth/providers/nodemailer'
 import Credentials from 'next-auth/providers/credentials'
+import Google from 'next-auth/providers/google'
+import Apple from 'next-auth/providers/apple'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/db'
 import { sendVerificationRequest, canonicalUrl, PUBLIC_BASE_URL } from '@/lib/auth-email'
@@ -17,6 +19,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     verifyRequest: '/login?skickat=1',
   },
   providers: [
+    // Social login. allowDangerousEmailAccountLinking länkar ihop samma (verifierade)
+    // e-post med ett befintligt konto i stället för att skapa ett dubblettkonto.
+    Google({ allowDangerousEmailAccountLinking: true }),
+    Apple({ allowDangerousEmailAccountLinking: true }),
     Nodemailer({
       server: {
         host: process.env.EMAIL_SERVER_HOST,

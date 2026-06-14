@@ -213,3 +213,41 @@ Receptbilder sparas på disk i containern (`/app/data/uploads`) och måste ligga
 
 > Görs detta inte försvinner uppladdade bilder vid nästa deploy (men recept-texten finns
 > kvar i databasen).
+
+---
+
+## OAuth: Logga in med Google & Apple
+
+Appen stödjer "Fortsätt med Google/Apple" (Auth.js). Koden finns; du behöver bara skapa
+credentials och lägga dem i `/home/deploy/hosting/.env.vadskavi`, sedan
+`docker compose up -d vadskavi`.
+
+### Google (gratis)
+1. [Google Cloud Console](https://console.cloud.google.com/) → skapa/välj projekt.
+2. **APIs & Services → OAuth consent screen** → External, fyll i app-namn + supportmejl.
+3. **Credentials → Create credentials → OAuth client ID → Web application**.
+   - Authorized redirect URI: `https://vadskavi.nu/api/auth/callback/google`
+4. Kopiera Client ID/Secret →
+   ```
+   AUTH_GOOGLE_ID=...
+   AUTH_GOOGLE_SECRET=...
+   ```
+
+### Apple (kräver Apple Developer Program)
+1. [developer.apple.com](https://developer.apple.com/) → **Certificates, Identifiers & Profiles**.
+2. **Identifiers → App ID** (om du inte har) → aktivera *Sign in with Apple*.
+3. **Identifiers → Services ID** (t.ex. `nu.vadskavi.web`) → aktivera *Sign in with Apple*,
+   konfigurera:
+   - Domain: `vadskavi.nu`  ·  Return URL: `https://vadskavi.nu/api/auth/callback/apple`
+   - Verifiera domänen (ladda upp Apples verifieringsfil om den efterfrågas).
+4. **Keys → +** → aktivera *Sign in with Apple* → ladda ner `.p8`-nyckeln (Key ID + Team ID).
+5. `AUTH_APPLE_ID` = Services ID:t. `AUTH_APPLE_SECRET` = en **signerad JWT** (ES256) genererad
+   från `.p8`-nyckeln, Team ID, Key ID, giltig ≤ 6 mån (måste förnyas). Generera t.ex. med
+   `npx auth add apple` lokalt eller ett litet skript; klistra in resultatet:
+   ```
+   AUTH_APPLE_ID=nu.vadskavi.web
+   AUTH_APPLE_SECRET=eyJhbGciOi...
+   ```
+
+> Samma e-post som redan finns som lösenordskonto länkas ihop automatiskt
+> (`allowDangerousEmailAccountLinking`). Nya OAuth-konton skickas till onboarding.

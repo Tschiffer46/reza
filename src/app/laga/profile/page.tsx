@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Users, Tags } from 'lucide-react'
+import { Users, Tags, MessageSquare } from 'lucide-react'
 import { auth, signOut } from '@/auth'
 import { prisma } from '@/lib/db'
 import { Header } from '@/components/Header'
@@ -87,6 +87,12 @@ export default async function ProfilePage() {
             className="flex items-center gap-3 rounded-xl border border-brand-accent/20 bg-white p-4 hover:shadow-md"
           >
             <Tags className="h-5 w-5 text-brand-accent-dark" /> Kategorier
+          </Link>
+          <Link
+            href="/laga/feedback"
+            className="flex items-center gap-3 rounded-xl border border-brand-accent/20 bg-white p-4 hover:shadow-md"
+          >
+            <MessageSquare className="h-5 w-5 text-brand-accent-dark" /> Tyck till
           </Link>
           {user?.isAdmin && (
             <Link
