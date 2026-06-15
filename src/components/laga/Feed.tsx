@@ -1,0 +1,413 @@
+'use client'
+
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import Link from 'next/link'
+import type { CategoryDTO, EntryDTO } from '@/lib/types'
+import { Icon, Tag, CookedBy } from '@/components/laga/ui'
+
+const TYPES = [
+  { value: '', label: 'Alla' },
+  { value: 'recipe', label: 'Recept' },
+  { value: 'tip', label: 'Tips' },
+]
+const SORTS = [
+  { value: 'createdAt', label: 'Senaste' },
+  { value: 'rating', label: 'Högst betyg' },
+  { value: 'popular', label: 'Populärast' },
+  { value: 'timesCooked', label: 'Mest lagad' },
+]
+
+function greetingNow() {
+  const h = new Date().getHours()
+  if (h < 10) return 'God morgon'
+  if (h < 14) return 'Dags för lunch'
+  if (h < 22) return 'Vad ska vi laga?'
+  return 'Sen kvällshunger?'
+}
+
+function RecipeCard({ entry }: { entry: EntryDTO }) {
+  const img = entry.imageUrls[0]
+  return (
+    <Link
+      href={`/laga/entry/${entry.id}`}
+      className="laga-card"
+      style={{
+        border: '1px solid var(--card-bd)',
+        background: 'var(--card)',
+        borderRadius: 13,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 13,
+        padding: '10px 12px',
+        color: 'inherit',
+      }}
+    >
+      {/* liten tumnagel */}
+      <div
+        style={{
+          position: 'relative',
+          width: 64,
+          height: 64,
+          borderRadius: 10,
+          overflow: 'hidden',
+          background: 'var(--thumb-empty)',
+          flexShrink: 0,
+        }}
+      >
+        {img ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={`/api/images/${img}`}
+            alt=""
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+        ) : (
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Icon name="chefhat" size={22} stroke={1.5} color="var(--muted)" />
+          </div>
+        )}
+      </div>
+
+      {/* text + meta */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            fontWeight: 600,
+            fontSize: 16,
+            letterSpacing: '-0.01em',
+            color: 'var(--ink)',
+            lineHeight: 1.25,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          {entry.title}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
+          <Tag>{entry.category}</Tag>
+          {entry.type === 'tip' && <Tag tone="accent">Tips</Tag>}
+          {!!entry.ratingCount && entry.ratingAvg != null && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 12.5, fontWeight: 600, color: 'var(--accent)' }}>
+              ★ {entry.ratingAvg.toFixed(1)}
+            </span>
+          )}
+          {entry.time && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12.5, color: 'var(--muted)' }}>
+              <Icon name="clock" size={13} />
+              {entry.time}
+            </span>
+          )}
+        </div>
+        <div style={{ marginTop: 5 }}>
+          <CookedBy cookedBy={entry.cookedBy || []} size={16} />
+        </div>
+      </div>
+
+      {/* räknare till höger */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5, color: 'var(--muted)', flexShrink: 0 }}>
+        {!!entry.commentCount && (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12.5, fontWeight: 600 }}>
+            <Icon name="chat" size={14} />
+            {entry.commentCount}
+          </span>
+        )}
+      </div>
+    </Link>
+  )
+}
+
+export function Feed({
+  initialEntries,
+  categories,
+  families = [],
+  familyName,
+  activeFamilyId = '',
+}: {
+  initialEntries: EntryDTO[]
+  categories: CategoryDTO[]
+  families?: { id: string; name: string }[]
+  familyName: string
+  activeFamilyId?: string
+}) {
+  const [entries, setEntries] = useState(initialEntries)
+  const [searchInput, setSearchInput] = useState('')
+  const [q, setQ] = useState('')
+  const [type, setType] = useState('')
+  const [cat, setCat] = useState('')
+  const [family, setFamily] = useState(activeFamilyId)
+  const [familyMenuOpen, setFamilyMenuOpen] = useState(false)
+  const [sort, setSort] = useState('createdAt')
+  const [loading, setLoading] = useState(false)
+  const first = useRef(true)
+  const greeting = useMemo(greetingNow, [])
+
+  const currentFamilyName =
+    family === '' ? 'Alla gemenskaper' : families.find((f) => f.id === family)?.name || familyName
+
+  // Tom-läget skiljer på "inga recept än" (framhäv Lägg till) och "inga sökträffar".
+  const hasActiveFilter = !!q || !!type || !!cat
+
+  function selectFamily(id: string) {
+    setFamily(id)
+    setFamilyMenuOpen(false)
+    if (id) {
+      // Persistera valet som standardgemenskap (cookie) — bäst-effort.
+      fetch('/api/family/switch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ familyId: id }),
+      }).catch(() => {})
+    }
+  }
+
+  useEffect(() => {
+    const t = setTimeout(() => setQ(searchInput), 300)
+    return () => clearTimeout(t)
+  }, [searchInput])
+
+  const fetchEntries = useCallback(async () => {
+    setLoading(true)
+    const p = new URLSearchParams()
+    if (q) p.set('q', q)
+    if (type) p.set('type', type)
+    if (cat) p.set('category', cat)
+    if (family) p.set('family', family)
+    if (sort) p.set('sort', sort)
+    const res = await fetch(`/api/entries?${p.toString()}`)
+    const data = await res.json()
+    setEntries(data.entries || [])
+    setLoading(false)
+  }, [q, type, cat, family, sort])
+
+  useEffect(() => {
+    if (first.current) {
+      first.current = false
+      return
+    }
+    fetchEntries()
+  }, [fetchEntries])
+
+  const chipCats = useMemo(() => {
+    const names = categories.filter((c) => !type || c.type === type).map((c) => c.name)
+    return ['Alla', ...names]
+  }, [categories, type])
+
+  return (
+    <div>
+      {/* hälsning */}
+      <div style={{ marginBottom: 20 }}>
+        {/* gemenskaps-väljare */}
+        <div style={{ position: 'relative', display: 'inline-block', marginBottom: 4 }}>
+          {families.length > 1 ? (
+            <button
+              onClick={() => setFamilyMenuOpen((o) => !o)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                padding: 0,
+                fontSize: 13,
+                fontWeight: 600,
+                letterSpacing: '0.04em',
+                textTransform: 'uppercase',
+                color: 'var(--accent)',
+              }}
+            >
+              Gemenskap: {currentFamilyName}
+              <Icon name="sort" size={13} color="var(--accent)" />
+            </button>
+          ) : (
+            <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--accent)' }}>
+              Gemenskap: {familyName}
+            </div>
+          )}
+
+          {familyMenuOpen && families.length > 1 && (
+            <div
+              onClick={() => setFamilyMenuOpen(false)}
+              style={{ position: 'fixed', inset: 0, zIndex: 15 }}
+            />
+          )}
+          {familyMenuOpen && families.length > 1 && (
+            <div
+              style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                marginTop: 6,
+                zIndex: 20,
+                minWidth: 200,
+                background: 'var(--card)',
+                border: '1px solid var(--card-bd)',
+                borderRadius: 12,
+                boxShadow: '0 8px 24px -8px rgba(0,0,0,.25)',
+                padding: 4,
+              }}
+            >
+              {[{ id: '', name: 'Alla gemenskaper' }, ...families].map((f) => (
+                <button
+                  key={f.id || 'all'}
+                  onClick={() => selectFamily(f.id)}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    textAlign: 'left',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: 14,
+                    fontWeight: family === f.id ? 700 : 500,
+                    padding: '9px 12px',
+                    borderRadius: 8,
+                    background: family === f.id ? 'var(--accent-soft)' : 'transparent',
+                    color: family === f.id ? 'var(--accent)' : 'var(--ink)',
+                  }}
+                >
+                  {f.name}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <h1 style={{ fontWeight: 700, fontSize: 'clamp(26px,4.5vw,38px)', letterSpacing: '-0.025em', color: 'var(--ink)', marginTop: 4, lineHeight: 1.05 }}>
+          {greeting}
+        </h1>
+      </div>
+
+      {/* sök */}
+      <div style={{ position: 'relative', marginBottom: 16 }}>
+        <span style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }}>
+          <Icon name="search" size={19} />
+        </span>
+        <input
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          placeholder="Sök recept & tips…"
+          style={{
+            width: '100%',
+            padding: '13px 16px 13px 44px',
+            borderRadius: 'var(--radius)',
+            border: '1px solid var(--field-bd)',
+            background: 'var(--card)',
+            fontSize: 15.5,
+            color: 'var(--ink)',
+            outline: 'none',
+          }}
+        />
+      </div>
+
+      {/* typ + sort */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
+        <div style={{ display: 'inline-flex', background: 'var(--chip)', borderRadius: 10, padding: 3, gap: 2 }}>
+          {TYPES.map((t) => (
+            <button
+              key={t.value}
+              onClick={() => {
+                setType(t.value)
+                setCat('')
+              }}
+              style={{
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: 14,
+                fontWeight: 600,
+                padding: '7px 16px',
+                borderRadius: 8,
+                background: type === t.value ? 'var(--card)' : 'transparent',
+                color: type === t.value ? 'var(--ink)' : 'var(--muted)',
+                boxShadow: type === t.value ? '0 1px 3px rgba(0,0,0,.08)' : 'none',
+              }}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--muted)' }}>
+          <Icon name="sort" size={16} />
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value)}
+            style={{ appearance: 'none', border: 'none', background: 'transparent', fontSize: 14, fontWeight: 600, color: 'var(--ink)', cursor: 'pointer', outline: 'none' }}
+          >
+            {SORTS.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* kategori-chips */}
+      <div className="scrollbar-hide" style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, marginBottom: 22 }}>
+        {chipCats.map((c) => {
+          const value = c === 'Alla' ? '' : c
+          const activeChip = cat === value
+          return (
+            <button
+              key={c}
+              onClick={() => setCat(value)}
+              style={{
+                border: '1px solid ' + (activeChip ? 'var(--accent)' : 'var(--card-bd)'),
+                cursor: 'pointer',
+                fontSize: 13.5,
+                fontWeight: 600,
+                padding: '7px 15px',
+                borderRadius: 999,
+                whiteSpace: 'nowrap',
+                background: activeChip ? 'var(--accent)' : 'var(--card)',
+                color: activeChip ? '#fff' : 'var(--ink)',
+              }}
+            >
+              {c}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* grid */}
+      {loading ? (
+        <p style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)' }}>Laddar…</p>
+      ) : entries.length === 0 ? (
+        hasActiveFilter ? (
+          <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--muted)' }}>
+            <Icon name="search" size={34} color="var(--muted)" />
+            <p style={{ marginTop: 12, fontSize: 15 }}>Inga träffar. Prova ett annat ord.</p>
+          </div>
+        ) : (
+          <div style={{ textAlign: 'center', padding: '52px 22px' }}>
+            <span style={{ display: 'inline-flex', width: 64, height: 64, borderRadius: 18, background: 'var(--accent-soft)', alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name="chefhat" size={32} color="var(--accent)" />
+            </span>
+            <h2 style={{ fontWeight: 700, fontSize: 21, letterSpacing: '-0.02em', color: 'var(--ink)', margin: '16px 0 6px' }}>
+              Här var det tomt!
+            </h2>
+            <p style={{ fontSize: 15, color: 'var(--muted)', maxWidth: '34ch', margin: '0 auto 20px', lineHeight: 1.5 }}>
+              Börja med att lägga till ert första recept eller tips — klistra in text, en länk eller ett foto.
+            </p>
+            <Link
+              href="/laga/entry/new"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'var(--accent)', color: '#fff', borderRadius: 12, padding: '13px 22px', fontSize: 15.5, fontWeight: 600 }}
+            >
+              <Icon name="plus" size={19} color="#fff" /> Lägg till recept
+            </Link>
+            <div style={{ marginTop: 14 }}>
+              <Link href="/laga/family" style={{ fontSize: 14, fontWeight: 600, color: 'var(--accent)' }}>
+                Bjud in fler till gemenskapen →
+              </Link>
+            </div>
+          </div>
+        )
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+          {entries.map((e) => (
+            <RecipeCard key={e.id} entry={e} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}

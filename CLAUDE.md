@@ -1,118 +1,144 @@
-# Reza — Receptsamling
+# VadSkaVi — familjens receptbok
 
 ## Projekt
-Personlig receptsamlings-app för 2 användare. Klistra in text, screenshots eller ta foto av recept/tips — Claude AI extraherar strukturerad data som sparas i PostgreSQL med sök och filter.
+Familjereceptbok-PWA där hushåll/grupper ("gemenskaper") samlar recept och tips. Klistra in
+text, screenshots eller foto — Claude AI extraherar strukturerad receptdata som sparas i
+PostgreSQL med svensk fulltext-sök, betyg, kommentarer och tillagningslogg. Inloggning med
+magic link eller e-post + lösenord.
 
-**Live:** https://reza.agiletransition.se
-**Repo:** https://github.com/tschiffer46/reza
+**Live:** https://vadskavi.nu (app under `/laga`)
+**Repo:** https://github.com/tschiffer46/reza (image: `ghcr.io/tschiffer46/vadskavi`)
+
+> Repot hette tidigare "reza" (en avvecklad POC). All kod här är VadSkaVi — appen ligger i
+> repo-roten.
 
 ## Stack
-- **Next.js 15** (16.2.2) med App Router, TypeScript, Tailwind CSS 4
-- **React 19** (19.2.4)
-- **PostgreSQL 16** med Prisma 6 ORM
-- **Anthropic SDK** — Haiku 4.5 för text, Sonnet 4 för bilder
-- **Sharp** för bildresize (WebP, max 1200px)
-- **Auth**: HMAC-signerad cookie via Web Crypto API (Edge-kompatibel, delat lösenord, ingen NextAuth)
-- **PWA** med manifest.json och service worker
+- **Next.js 15** (App Router, `output: 'standalone'`), **React 19**, **TypeScript**
+- **Tailwind CSS 4** (`@theme`-tokens + CSS-variabler) + **shadcn/ui** (grönt "skandinaviskt"
+  tema: header `#1C3A2B`, accent `#4CAF7D`, Georgia)
+- **PostgreSQL 16** + **Prisma 6** ORM
+- **Auth.js v5** (NextAuth) — JWT-sessioner + PrismaAdapter; Nodemailer magic link (SMTP/Mailcow)
+  + Credentials (e-post + lösenord, bcryptjs)
+- **Anthropic SDK** — Haiku 4.5 (text) / Sonnet (bild) för receptextraktion
+- **Sharp** för bildresize (WebP), **Wake Lock API** för lägescookning
+- **Docker** (multi-stage, node:20-alpine) bakom **Nginx Proxy Manager**, **PWA** (manifest + SW)
 
 ## Filstruktur
 ```
 src/
 ├── app/
-│   ├── page.tsx              # Startsida: lista + snabblänkar
-│   ├── login/page.tsx        # Inloggning (delat lösenord)
-│   ├── categories/page.tsx   # Hantera kategorier (CRUD)
-│   ├── import/page.tsx       # Batch-import: klistra text → AI extraherar flera recept
-│   ├── entry/
-│   │   ├── new/page.tsx      # Nytt recept/tips (text/bild/URL → AI-extraktion)
-│   │   ├── [id]/page.tsx     # Visa enskilt recept/tips
-│   │   └── [id]/edit/page.tsx # Redigera
+│   ├── page.tsx                # Landningssida
+│   ├── login/  register/  onboarding/   # Auth-flöde
+│   ├── admin/page.tsx          # Admin: statistik + stäng/öppna gemenskaper
+│   ├── laga/                   # Själva appen
+│   │   ├── page.tsx            # Receptlista/feed
+│   │   ├── entry/new · [id] · [id]/edit  # Skapa/visa/redigera recept
+│   │   ├── family/page.tsx     # Hantera gemenskap (bjud in, byt, omslag)
+│   │   ├── categories/page.tsx # Kategori-CRUD
+│   │   ├── import/page.tsx     # Batch-import (AI extraherar flera recept)
+│   │   └── profile/page.tsx    # Konto, plan/användning, lösenord
 │   └── api/
-│       ├── auth/route.ts       # POST login, DELETE logout
-│       ├── categories/route.ts # GET lista, POST skapa, DELETE ta bort
-│       ├── entries/route.ts    # GET lista (med sök/filter), POST skapa
-│       ├── entries/[id]/route.ts # GET, PUT, DELETE enskild entry
-│       ├── extract/route.ts    # POST AI-extraktion (text eller bild)
-│       ├── extract/batch/route.ts # POST batch AI-extraktion (flera recept)
-│       ├── upload/route.ts     # POST bilduppladdning (→ WebP)
-│       └── images/[filename]/route.ts # GET servera uppladdad bild
-├── components/
-│   ├── CategoryFilter.tsx    # Filtrera efter kategori
-│   ├── CookButton.tsx        # Räkna tillagningar
-│   ├── EntryActions.tsx      # Redigera/ta bort-knappar
-│   ├── EntryCard.tsx         # Kort i listan
-│   ├── EntryForm.tsx         # Formulär för recept/tips
-│   ├── EntryList.tsx         # Lista med entries
-│   ├── ExtractPreview.tsx    # Förhandsgranska AI-resultat
-│   ├── ImageUploader.tsx     # Kamera + galleri (separata knappar)
-│   ├── LogoutButton.tsx      # Logga ut
-│   ├── NavBar.tsx            # Navigering
-│   ├── SearchBar.tsx         # Sökfält
-│   └── ServiceWorker.tsx     # Registrera PWA service worker
+│       ├── auth/[...nextauth]  register  onboarding  profile{,/password}
+│       ├── entries{,/[id]}     entries/[id]/{comments,notes,rating,reactions}
+│       ├── family{,/[id]}      family/{join,join-link,switch}  family/[id]/cover
+│       ├── categories{,/[id]}  extract{,/batch}  upload  images/[filename]
+│       └── admin/families/[id] # PATCH suspend/active
+├── components/        # EntryForm, EntryCard, CookButton, ImageUploader …
+│   ├── laga/          # AppShell, Feed, RecipeView, CookMode, FamilyView, AdminFamilies …
+│   └── ui/            # shadcn-primitiver (button, card, input)
 ├── lib/
-│   ├── auth.ts               # HMAC-signerade sessioner, lösenordskontroll
-│   ├── claude.ts             # Anthropic SDK: extractFromText + extractFromImage
-│   ├── db.ts                 # Prisma singleton
-│   ├── images.ts             # Sharp: saveImage, prepareForClaude, readImage, deleteImage
-│   └── search.ts             # PostgreSQL fulltext-sök (svenska, tsvector + GIN)
-└── middleware.ts              # Auth-kontroll på alla routes utom /login, /api/auth
+│   ├── auth-email.ts  # canonicalUrl() + Nodemailer magic-link-mejl
+│   ├── family.ts      # gemenskaps-helpers (se nedan) + requireUser/requireAdmin
+│   ├── plan.ts        # FREE_MONTHLY_LIMIT, monthlyEntryCount
+│   ├── search.ts      # svensk tsvector-sök (raw SQL)
+│   ├── ai.ts  url-extract.ts  images.ts  categories.ts  laga.ts  db.ts  types.ts  utils.ts
+├── auth.ts            # NextAuth-config (providers, callbacks, JWT)
+└── middleware.ts      # auth-gate; PUBLIC_PATHS släpper /login,/register,/api/register …
+prisma/schema.prisma   # datamodell (nedan)
+scripts/setup-search.ts# idempotent: svensk tsvector-trigger + GIN-index + backfill
 ```
 
-## Databas
-Två modeller i Prisma:
-- **Entry**: recept eller tips med titel, kategori, ingredienser, instruktioner, bilder, tillagningsräknare
-- **Category**: namn + typ (recipe/tip), seedas via `prisma/seed.ts`
-
-Fulltext-sök implementerat med raw SQL: `search_vector` (tsvector) kolumn med GIN-index och trigger som uppdaterar vid INSERT/UPDATE. Använder `plainto_tsquery('swedish', ...)`.
+## Datamodell (Prisma)
+- **User** — `email`, `name`, `avatar`, `password?`, `plan` (`free`/`paid`, default free),
+  `isAdmin` (default false), `emailVerified`, `onboardedAt`. Relationer till memberships,
+  recipes, ratings, notes, reactions, comments, changes + Auth.js Account/Session.
+- **Family** ("gemenskap") — `name`, `inviteCode @unique`, `status` (`active`/`suspended`),
+  `background?`, `coverImage?`. Har members (Membership), entries, categories.
+- **Membership** — kopplar User↔Family, `role` (`member`/…), `@@unique([userId, familyId])`.
+- **Entry** — recept/tips: `type`, `title`, `category`, `blurb?`, `time?`, `servings?`,
+  `ingredients[]`, `instructions?`, `content?`, `drinks?`, `source?`, `url?`, `imageUrls[]`,
+  `searchVector Unsupported("tsvector")?`, `timesCooked`, **`ratingAvg?`/`ratingCount`**
+  (denormaliserat betygssnitt), `lastCooked?`, `familyId`, `creatorId`.
+- **Rating** — `score` (1–6), `@@unique([entryId, userId])` (en röst/person, snittet skrivs
+  tillbaka till Entry).
+- **Note**, **Comment** — fritext per recept. **Reaction** — `@@unique([entryId, userId])`.
+- **ChangeLog** — `action` (t.ex. `cooked`), `field?` — källa till "lagad av" + aktivitetsflöde.
+- **Category** — `name`, `type` (`recipe`/`tip`), per familj.
+- Auth.js: **Account**, **Session**, **VerificationToken**.
 
 ## Konventioner
-- Språk i UI: **Svenska**
-- API-routes returnerar JSON
-- Bilder sparas som WebP i `data/uploads/` (gitignored)
-- Prisma client singleton i `src/lib/db.ts`
-- Auth middleware i `src/middleware.ts`
-- Kategorier (recept): Huvudrätt, Förrätt, Efterrätt, Bakning, Sallad, Soppa, Frukost, Snacks, Dryck
-- Kategorier (tips): Matlagning, Förvaring, Kryddor, Redskap, Övrigt
-- `output: 'standalone'` i next.config.ts för produktion
-- Ingen NextAuth — enkel HMAC-cookie med Web Crypto API
+- Språk i UI: **Svenska**. API-routes returnerar JSON.
+- Prisma client singleton i `src/lib/db.ts`. Bilder som WebP i `data/uploads/` (gitignored;
+  Docker-volym i prod).
+- shadcn-komponenter under `src/components/ui/`; appspecifik UI under `src/components/laga/`.
+- Tematokens i `src/app/globals.css` (`--ink`, `--muted`, `--accent`, `--card` …).
 
 ## Kommandon
 ```bash
-npm run dev              # Starta utvecklingsserver (port 3000)
-npm run build            # Bygg för produktion (standalone)
-npx prisma migrate dev   # Kör migrationer (utveckling)
-npx prisma migrate deploy # Kör migrationer (produktion)
-npx prisma db seed       # Seeda kategorier
-npx prisma studio        # Databas-GUI
-```
-
-## Miljövariabler
-Se `.env.example`:
-```
-DATABASE_URL=postgresql://reza:PASSWORD@localhost:5432/reza
-REZA_PASSWORD=your-shared-password
-SESSION_SECRET=generate-a-random-64-char-hex-string
-ANTHROPIC_API_KEY=sk-ant-your-api-key
-UPLOAD_DIR=./data/uploads
-HOSTNAME=0.0.0.0    # Produktion
-PORT=3456            # Produktion
+npm install           # installerar + kör `prisma generate` (postinstall)
+npm run dev           # utvecklingsserver (port 3000)
+npm run build         # prisma generate + next build (standalone)
+npm run start         # kör produktionsbygget
+npm run db:push       # prisma db push — synka schema mot DB (INGA migrations)
+npm run db:seed       # seeda standardkategorier
+npm run db:search     # scripts/setup-search.ts (svensk tsvector-sök)
+npx prisma studio     # databas-GUI
 ```
 
 ## Deploy
-- **Server**: Hetzner VPS (89.167.90.112), användare `deploy`
-- **Process**: Systemd-tjänst (`reza.service`), körs som standalone Node.js
-- **Proxy**: Nginx Proxy Manager (Docker, nätverk `hosting_web`, gateway `172.18.0.1`) → port 3456
-- **DNS/CDN**: Cloudflare (SSL: Full) → reza.agiletransition.se
-- **CI/CD**: GitHub Actions (`.github/workflows/deploy.yml`) — auto-deploy vid push till `main`
-- **Nätverksregel**: `iptables -I INPUT -s 172.18.0.0/16 -p tcp --dport 3456 -j ACCEPT` (Docker→host)
-- **Manuell deploy**:
-  ```bash
-  cd ~/reza && git pull origin main && export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && npm ci && npm run build && cp -r public .next/standalone/public && cp -r .next/static .next/standalone/.next/static && sudo systemctl restart reza
-  ```
+- **CI/CD:** `.github/workflows/deploy.yml` — push till `main` bygger Docker-imagen, pushar
+  `ghcr.io/tschiffer46/vadskavi:latest`, SSH:ar till servern och kör `docker compose up -d
+  vadskavi`, sedan `prisma db push` + `scripts/setup-search.ts`. `.github/workflows/ci.yml`
+  kör typecheck + build på varje PR.
+- **Server:** Hetzner VPS (89.167.90.112), användare `deploy`. Compose i
+  `/home/deploy/hosting/docker-compose.yml`, secrets i `/home/deploy/hosting/.env.vadskavi`,
+  internt nät `web` (=`hosting_web`), uploads-volym `vadskavi-uploads`. NPM → `vadskavi:3000`,
+  domän `vadskavi.nu`. Engångs-setup: se `docs/SERVER-SETUP.md`.
 
-## Viktigt för AI-assistenter
-- Läs AGENTS.md för Next.js-specifika regler
-- Ändra inte auth-flödet utan att testa i Edge Runtime
-- `search.ts` använder raw SQL — var försiktig med SQL injection (parametriserade queries)
-- Bilder till Claude API resizas till 800px JPEG för att spara tokens
-- Standalone build kräver att `public/` och `.next/static/` kopieras manuellt
+## Viktig kunskap / gotchas (läs innan du börjar)
+- **DB-migrering:** Vi använder **`prisma db push`**, INTE `prisma migrate`. Schemaändringar
+  i `prisma/schema.prisma` deployas automatiskt vid push till main (deploy kör `db push` +
+  `setup-search.ts`). Lägg inte till migrations-mappar.
+- **Terminologi:** UI säger **"Gemenskap"**, men kod/routes/cookie/DB använder
+  `family`/`familyId` (`/laga/family`, `/api/family`, cookie `vadskavi-active-family`).
+  Ändra INTE de interna namnen — bara visningstexten.
+- **Auth:** NextAuth v5 (JWT-strategi). Nya publika routes MÅSTE läggas i `PUBLIC_PATHS` i
+  `src/middleware.ts` (annars 307→/login, t.ex. POST `/api/register` som blir 405). Den
+  publika URL:en pinnas via `canonicalUrl()` (`src/lib/auth-email.ts`) + redirect-callback i
+  `src/auth.ts`, annars genererar Auth.js `0.0.0.0`-länkar bakom NPM. Servern måste ha
+  `AUTH_URL=https://vadskavi.nu` i `.env.vadskavi`.
+- **Roller (manuellt, ingen Stripe än):** `User.plan` = `free`/`paid` och `User.isAdmin`
+  sätts via SQL. Gratis = max 3 recept/månad (`FREE_MONTHLY_LIMIT` i `src/lib/plan.ts`).
+  `Family.status='suspended'` blockerar åtkomst (admin stänger missbrukade gemenskaper).
+- **Härledd data:** "lagad av" + aktivitetsflöde härleds ur `ChangeLog`; betygssnitt
+  denormaliseras till `Entry.ratingAvg/ratingCount` (uppdatera vid ny Rating).
+- **Byggmiljö (Claude-session):** ingen Docker-daemon → verifiera med `npx tsc --noEmit` +
+  `npm run build`; faktiskt DB-/runtime-test sker först efter deploy mot live.
+- **Arbetssätt:** kör `tsc` + `build` före commit.
+- **Branch/PR-arbetssätt (VIKTIGT — undvik föräldralösa commits):** Skapa en **ny branch per
+  uppgift**, grenad från senaste `main` (eller aktuell integrationstipp om en oöppnad PR ännu
+  inte mergats), och öppna draft-PR:en direkt. **Återanvänd ALDRIG en branch vars PR redan
+  mergats** — då hamnar nya commits utan öppen PR. Ska du fortsätta efter en merge: gren om från
+  uppdaterad `main`. Verifiera att en öppen PR finns för branchen innan du pushar mer.
+- **Server-fällor:** GHCR-imagen måste vara **publik** (annars `docker login ghcr.io` på
+  servern); en utgången ghcr-inloggning ger `denied` även för publika images → `docker
+  logout ghcr.io`. Bilder kräver uploads-**volym** (annars försvinner de vid omdeploy).
+
+## SQL-snuttar (admin/plan, körs mot DB)
+```sql
+-- Gör en användare betalande / admin:
+UPDATE "User" SET plan = 'paid'   WHERE email = 'thomas@schiffer.se';
+UPDATE "User" SET "isAdmin" = true WHERE email = 'thomas@schiffer.se';
+-- Stäng/öppna en gemenskap (görs annars i /admin):
+UPDATE "Family" SET status = 'suspended' WHERE "inviteCode" = 'XXXX';
+```

@@ -1,99 +1,73 @@
-# 🍳 Reza — Receptsamling
+# VadSkaVi — familjens receptbok
 
-En personlig receptsamlings-app för att spara recept och matlagnings-tips. Klistra in text, ta ett foto eller ladda upp en screenshot — Claude AI extraherar all information automatiskt.
+Familjereceptbok-PWA. Next.js 15 (App Router, TypeScript), Tailwind 4 + shadcn/ui,
+PostgreSQL via Prisma, inloggning med magic link (Auth.js v5 över SMTP).
 
-**Live:** https://reza.agiletransition.se
+**Live:** https://vadskavi.nu
+**Repo:** https://github.com/tschiffer46/reza · image `ghcr.io/tschiffer46/vadskavi`
 
-## Funktioner
+> Repot hette tidigare "reza" (en avvecklad POC). Appen ligger nu i repo-roten. Se
+> [`CLAUDE.md`](./CLAUDE.md) för arkitektur, datamodell och viktiga gotchas.
 
-- **AI-extraktion** — Klistra in text eller ta foto → Claude extraherar recept/tips automatiskt
-- **Batch-import** — Importera flera recept från en lång text på en gång
-- **Fulltext-sök** — Sök på svenska med PostgreSQL tsvector
-- **Kategorier** — Filtrera efter typ (recept/tips) och kategori, hantera kategorier
-- **Bilder** — Ta foto med kamera eller välj från galleri, sparas som WebP
-- **PWA** — Installera som app på mobilen
-- **Tillagningsräknare** — Håll koll på hur ofta du lagar varje recept
-
-## Tech Stack
-
-| Lager | Teknik |
-|-------|--------|
-| Frontend | Next.js 15, React 19, TypeScript, Tailwind CSS 4 |
-| Backend | Next.js API Routes (App Router) |
-| Databas | PostgreSQL 16, Prisma 6 |
-| AI | Anthropic SDK (Haiku 4.5 text, Sonnet 4 bilder) |
-| Bilder | Sharp (WebP, resize) |
-| Auth | HMAC-signerad cookie (Web Crypto API) |
-| Deploy | Hetzner VPS, systemd, Nginx Proxy Manager, Cloudflare |
-| CI/CD | GitHub Actions |
-
-## Snabbstart (lokal utveckling)
-
-### Förkrav
-- Node.js 20+
-- PostgreSQL 16+
-
-### Steg
-
-```bash
-# 1. Klona och installera
-git clone https://github.com/tschiffer46/reza.git
-cd reza
-npm install
-
-# 2. Skapa .env (kopiera och fyll i)
-cp .env.example .env
-
-# 3. Skapa databasen
-createdb reza  # eller via psql
-
-# 4. Kör migrationer och seeda kategorier
-npx prisma migrate dev
-npx prisma db seed
-
-# 5. Starta
-npm run dev
-```
-
-Öppna http://localhost:3000 och logga in med lösenordet du satte i `.env`.
-
-## Produktion (Hetzner VPS)
-
-Se [BOOTSTRAP.md](BOOTSTRAP.md) för fullständig guide att sätta upp servern från scratch.
-
-Kort version:
-1. PostgreSQL + Node.js 20 på servern
-2. Klona repo, skapa `.env.production`
-3. `npm ci && npm run build`
-4. Installera systemd-tjänst (`scripts/reza.service`)
-5. Konfigurera Nginx Proxy Manager → port 3456
-6. Cloudflare DNS (SSL: Full)
-7. GitHub Actions deploy triggas automatiskt vid push till `main`
+## Stack
+- **Next.js 15** (App Router, standalone), **React 19**, **TypeScript**
+- **Tailwind CSS 4** + **shadcn/ui** (grönt tema: header `#1C3A2B`, accent `#4CAF7D`, Georgia)
+- **PostgreSQL 16** + **Prisma 6**
+- **Auth.js v5** (NextAuth) — magic link via **Nodemailer/SMTP** (Mailcow)
+- **Anthropic SDK** — förberett för AI-extraktion i senare sprintar
+- **Docker** (multi-stage) bakom **Nginx Proxy Manager**
 
 ## Miljövariabler
+Se [`.env.example`](./.env.example). Kopiera till `.env` och fyll i.
 
 | Variabel | Beskrivning |
-|----------|-------------|
-| `DATABASE_URL` | PostgreSQL connection string |
-| `REZA_PASSWORD` | Delat lösenord för inloggning |
-| `SESSION_SECRET` | 64 tecken hex-sträng för HMAC |
-| `ANTHROPIC_API_KEY` | Anthropic API-nyckel |
-| `UPLOAD_DIR` | Sökväg för uppladdade bilder (default: `./data/uploads`) |
-| `HOSTNAME` | `0.0.0.0` i produktion |
-| `PORT` | `3456` i produktion |
+| --- | --- |
+| `DATABASE_URL` | PostgreSQL-anslutning (`postgresql://vadskavi:…@vadskavi-db:5432/vadskavi`) |
+| `AUTH_SECRET` | Auth.js-hemlighet. Generera: `openssl rand -base64 32` |
+| `AUTH_URL` | Publik bas-URL, t.ex. `https://vadskavi.nu` |
+| `AUTH_TRUST_HOST` | `true` bakom proxy (NPM) |
+| `EMAIL_SERVER_HOST` | SMTP-host, `mail.schiffer.se` |
+| `EMAIL_SERVER_PORT` | SMTP-port, `587` |
+| `EMAIL_SERVER_USER` | `noreply@vadskavi.nu` |
+| `EMAIL_SERVER_PASSWORD` | SMTP-lösenord (sätts på servern, committas aldrig) |
+| `EMAIL_FROM` | Avsändare, `"VadSkaVi <noreply@vadskavi.nu>"` |
+| `ANTHROPIC_API_KEY` | Anthropic-nyckel (används i senare sprintar) |
 
-## Projektstruktur
-
+## Köra lokalt
+```bash
+cp .env.example .env          # fyll i värden (starta gärna en lokal postgres)
+npm install
+npx prisma db push            # skapa tabeller i din databas
+npm run db:seed               # seeda standardkategorier (mall-familj)
+npm run dev                   # http://localhost:3000
 ```
-src/app/           Sidor och API-routes (Next.js App Router)
-src/components/    React-komponenter
-src/lib/           Delade bibliotek (auth, db, AI, bilder, sök)
-prisma/            Schema, migrationer, seed
-scripts/           Systemd-tjänst, setup-script
-public/            PWA manifest, ikoner, service worker
-data/uploads/      Uppladdade bilder (gitignored)
+
+## Kommandon
+```bash
+npm run dev        # utvecklingsserver
+npm run build      # prisma generate + next build (standalone)
+npm run start      # kör produktionsbygget
+npm run db:push    # prisma db push (synka schema mot DB)
+npm run db:seed    # seeda standardkategorier
 ```
 
-## Licens
+## Deploy & uppdatering
+Deploy sker via GitHub Actions (`.github/workflows/deploy.yml`):
 
-Privat projekt.
+1. **Push till `main`** (eller kör workflowen manuellt).
+2. Workflowen bygger Docker-imagen, pushar till `ghcr.io/tschiffer46/vadskavi:latest`,
+   SSH:ar till servern, kör `docker compose up -d vadskavi`, `prisma db push` och
+   `scripts/setup-search.ts`.
+
+**Första gången** måste servern förberedas manuellt (swapfil, `.env.vadskavi`-secrets,
+compose-tjänster, GHCR-paketet publikt, NPM proxy host). Följ
+[`docs/SERVER-SETUP.md`](./docs/SERVER-SETUP.md).
+
+> På servern ligger secrets i `/home/deploy/hosting/.env.vadskavi` (per-app, som övriga
+> appar) — inte i container-`environment:`. GHCR-imagen måste vara **publik** (eller
+> servern inloggad mot ghcr.io) för att kunna hämtas.
+
+**Uppdatera** sedan genom att bara pusha till `main` — resten är automatiskt.
+
+> **Roller/plan** (`User.plan`, `User.isAdmin`) sätts manuellt via SQL — se
+> [`CLAUDE.md`](./CLAUDE.md#sql-snuttar-adminplan-körs-mot-db).

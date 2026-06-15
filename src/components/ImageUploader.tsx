@@ -1,77 +1,52 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useRef, useState } from 'react'
+import { Camera, ImageIcon } from 'lucide-react'
 
-interface ImageUploaderProps {
-  onUploaded: (filenames: string[]) => void
-}
-
-export function ImageUploader({ onUploaded }: ImageUploaderProps) {
-  const [uploading, setUploading] = useState(false)
+/**
+ * Väljer bild(er) för AI-extraktion. Lämnar File-objekten till föräldern (laddas
+ * inte upp till servern — de skickas direkt till /api/extract).
+ */
+export function ImageUploader({ onSelected }: { onSelected: (files: File[]) => void }) {
   const [previews, setPreviews] = useState<string[]>([])
   const cameraInput = useRef<HTMLInputElement>(null)
   const galleryInput = useRef<HTMLInputElement>(null)
 
-  async function handleFiles(files: FileList | null) {
-    if (!files || files.length === 0) return
-
-    setUploading(true)
-    const formData = new FormData()
-    const newPreviews: string[] = []
-
-    for (const file of Array.from(files)) {
-      formData.append('files', file)
-      newPreviews.push(URL.createObjectURL(file))
-    }
-
-    setPreviews((prev) => [...prev, ...newPreviews])
-
-    const res = await fetch('/api/upload', { method: 'POST', body: formData })
-    if (res.ok) {
-      const data = await res.json()
-      onUploaded(data.filenames)
-    }
-
-    setUploading(false)
+  function handleFiles(list: FileList | null) {
+    if (!list || list.length === 0) return
+    const files = Array.from(list).slice(0, 3)
+    setPreviews(files.map((f) => URL.createObjectURL(f)))
+    onSelected(files)
   }
 
   return (
     <div className="space-y-3">
-      {/* Preview thumbnails */}
       {previews.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto">
+        <div className="scrollbar-hide flex gap-2 overflow-x-auto">
           {previews.map((src, i) => (
-            <img
-              key={i}
-              src={src}
-              alt=""
-              className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
-            />
+            // eslint-disable-next-line @next/next/no-img-element
+            <img key={i} src={src} alt="" className="h-20 w-20 flex-shrink-0 rounded-lg object-cover" />
           ))}
         </div>
       )}
 
-      {/* Upload buttons */}
       <div className="flex gap-2">
         <button
           type="button"
           onClick={() => cameraInput.current?.click()}
-          disabled={uploading}
-          className="flex-1 py-3 border-2 border-dashed border-amber-300 rounded-lg text-amber-700 font-medium hover:bg-amber-50 disabled:opacity-50 transition-colors"
+          className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-brand-accent/10 py-3 text-brand-accent-dark hover:bg-brand-accent/20"
         >
-          {uploading ? 'Laddar upp...' : '📷 Ta foto'}
+          <Camera className="h-5 w-5" /> Ta foto
         </button>
         <button
           type="button"
           onClick={() => galleryInput.current?.click()}
-          disabled={uploading}
-          className="flex-1 py-3 border-2 border-dashed border-amber-300 rounded-lg text-amber-700 font-medium hover:bg-amber-50 disabled:opacity-50 transition-colors"
+          className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-brand-accent/10 py-3 text-brand-accent-dark hover:bg-brand-accent/20"
         >
-          {uploading ? 'Laddar upp...' : '🖼️ Välj bild'}
+          <ImageIcon className="h-5 w-5" /> Välj bild
         </button>
       </div>
 
-      {/* Camera input — opens camera on mobile */}
       <input
         ref={cameraInput}
         type="file"
@@ -80,8 +55,6 @@ export function ImageUploader({ onUploaded }: ImageUploaderProps) {
         onChange={(e) => handleFiles(e.target.files)}
         className="hidden"
       />
-
-      {/* Gallery input — opens photo library / file picker */}
       <input
         ref={galleryInput}
         type="file"
