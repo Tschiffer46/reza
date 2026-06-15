@@ -17,6 +17,9 @@ model User {
   email         String       @unique
   name          String?
   avatar        String?
+  // Auth.js PrismaAdapter skriver OAuth-profilbilden till `image` (standardfält).
+  // Appen visar `avatar`; `image` finns för att adaptern ska kunna skapa OAuth-konton.
+  image         String?
   bio           String?
   password      String?
   plan          String       @default("free")
