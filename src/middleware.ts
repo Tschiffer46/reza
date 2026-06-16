@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server'
 
 // Publika sökvägar som inte kräver inloggning.
 // /api/register + /api/auth nås av utloggade användare (kontoskapande/inloggning).
-const PUBLIC_PATHS = ['/', '/login', '/register', '/join', '/api/auth', '/api/register']
+const PUBLIC_PATHS = ['/', '/login', '/register', '/join', '/api/auth', '/api/register', '/api/debug']
 
 /**
  * Lättviktig auth-grind: kontrollerar att en Auth.js-sessionscookie finns.

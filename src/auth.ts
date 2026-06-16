@@ -7,6 +7,7 @@ import Apple from 'next-auth/providers/apple'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/db'
 import { sendVerificationRequest, canonicalUrl, PUBLIC_BASE_URL } from '@/lib/auth-email'
+import { recordAuthError } from '@/lib/auth-debug'
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -14,6 +15,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: 'jwt' },
   // Appen körs bakom Nginx Proxy Manager; lita på proxy-host-headern.
   trustHost: true,
+  // TILLFÄLLIG: spara senaste auth-fel i minnet för diagnostik via /api/debug.
+  logger: {
+    error(error) {
+      recordAuthError(error)
+      console.error('[auth][error]', error)
+    },
+  },
   pages: {
     signIn: '/login',
     verifyRequest: '/login?skickat=1',
