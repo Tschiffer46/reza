@@ -1,10 +1,9 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { auth } from '@/auth'
-import { Header } from '@/components/Header'
-import { NavBar } from '@/components/NavBar'
+import { AppShell } from '@/components/laga/AppShell'
+import { Icon } from '@/components/laga/ui'
 import { CategoryManager } from '@/components/CategoryManager'
-import { Button } from '@/components/ui/button'
 
 export default async function CategoriesPage() {
   const session = await auth()
@@ -12,19 +11,20 @@ export default async function CategoriesPage() {
     redirect('/login')
   }
   return (
-    <div className="min-h-screen pb-20">
-      <Header>
-        <Link href="/laga/profile">
-          <Button variant="outline" size="sm" className="border-white/60 text-white hover:bg-white/10">
-            Tillbaka
-          </Button>
+    <AppShell>
+      <div className="mx-auto max-w-2xl">
+        <Link
+          href="/laga/profile"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--muted)', fontSize: 14, fontWeight: 600, marginBottom: 16 }}
+        >
+          <Icon name="back" size={18} /> Tillbaka
         </Link>
-      </Header>
-      <main className="mx-auto max-w-2xl px-4 py-6">
-        <h1 className="mb-4 text-xl font-semibold text-brand-header">Kategorier</h1>
+        <h1 className="mb-1 text-xl font-semibold text-brand-header">Kategorier</h1>
+        <p className="mb-4 text-sm text-brand-muted">
+          Kategorierna gäller hela gemenskapen — alla medlemmar delar samma uppsättning.
+        </p>
         <CategoryManager />
-      </main>
-      <NavBar />
-    </div>
+      </div>
+    </AppShell>
   )
 }

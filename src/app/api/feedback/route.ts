@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireUser } from '@/lib/family'
 
-const TYPES = ['bug', 'idea', 'other']
+const TYPES = ['bug', 'idea', 'other', 'upgrade']
 
 /** Användare skickar feedback — sparas i DB och visas i admin. */
 export async function POST(request: NextRequest) {

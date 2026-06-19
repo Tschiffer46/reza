@@ -101,10 +101,33 @@ export async function requireUser(): Promise<string> {
   return session.user.id
 }
 
+/**
+ * Bootstrap-admins via env: ADMIN_EMAILS=thomas@schiffer.se,annan@exempel.se
+ * (kommaseparerad). Låter ägaren bli admin utan SQL — sätt variabeln i
+ * .env.vadskavi på servern. Övriga admins kan sedan hanteras i /admin.
+ */
+export function isEnvAdmin(email?: string | null): boolean {
+  if (!email) return false
+  const list = (process.env.ADMIN_EMAILS || '')
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean)
+  return list.includes(email.toLowerCase())
+}
+
 /** Kräver inloggad admin; returnerar userId. */
 export async function requireAdmin(): Promise<string> {
   const userId = await requireUser()
-  const u = await prisma.user.findUnique({ where: { id: userId }, select: { isAdmin: true } })
-  if (!u?.isAdmin) throw new Error('FORBIDDEN')
-  return userId
+  const u = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { isAdmin: true, email: true },
+  })
+  if (u?.isAdmin) return userId
+  // Env-admin: släpp in och befordra till riktig DB-admin första gången, så att
+  // hen kan hantera andra användare i admin-vyn.
+  if (isEnvAdmin(u?.email)) {
+    await prisma.user.update({ where: { id: userId }, data: { isAdmin: true } })
+    return userId
+  }
+  throw new Error('FORBIDDEN')
 }

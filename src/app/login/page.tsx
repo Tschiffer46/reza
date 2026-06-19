@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import { Header } from '@/components/Header'
+import { Logo } from '@/components/laga/ui'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -13,14 +14,12 @@ import { OAuthButtons } from '@/components/OAuthButtons'
 function LoginInner() {
   const router = useRouter()
   const params = useSearchParams()
-  const skickat = params.get('skickat')
   // Tillåt bara interna mål (skydd mot open redirect)
   const rawNext = params.get('next') || ''
   const next = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/laga'
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [magicEmail, setMagicEmail] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
@@ -38,89 +37,53 @@ function LoginInner() {
     }
   }
 
-  async function sendMagicLink(e: React.FormEvent) {
-    e.preventDefault()
-    if (!magicEmail.trim()) return
-    await signIn('nodemailer', { email: magicEmail.trim(), callbackUrl: next })
-  }
-
   return (
     <div className="min-h-screen">
       <Header />
       <main className="mx-auto max-w-md space-y-4 px-4 py-10">
-        {skickat ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>Kolla din mejl 📧</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-brand-muted">
-              <p>Vi har skickat en inloggningslänk. Klicka på länken i mejlet (gäller 24 h).</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <>
-            <Card>
-              <CardHeader>
-                <CardTitle>Logga in</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <OAuthButtons callbackUrl={next} />
-                <div className="my-4 flex items-center gap-3 text-xs text-brand-muted">
-                  <span className="h-px flex-1 bg-brand-accent/20" /> eller <span className="h-px flex-1 bg-brand-accent/20" />
-                </div>
-                <form onSubmit={loginPassword} className="space-y-3">
-                  <Input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="du@exempel.se"
-                    autoComplete="email"
-                    required
-                  />
-                  <Input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Lösenord"
-                    autoComplete="current-password"
-                    required
-                  />
-                  {error && <p className="text-sm text-red-600">{error}</p>}
-                  <Button type="submit" className="w-full" disabled={busy}>
-                    {busy ? 'Loggar in…' : 'Logga in'}
-                  </Button>
-                </form>
-                <p className="mt-3 text-sm text-brand-muted">
-                  Inget konto?{' '}
-                  <Link href={`/register?next=${encodeURIComponent(next)}`} className="text-brand-accent-dark underline">
-                    Skapa ett
-                  </Link>
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">…eller magisk länk</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={sendMagicLink} className="space-y-3">
-                  <Input
-                    type="email"
-                    value={magicEmail}
-                    onChange={(e) => setMagicEmail(e.target.value)}
-                    placeholder="du@exempel.se"
-                    autoComplete="email"
-                  />
-                  <Button type="submit" variant="outline" className="w-full">
-                    Skicka inloggningslänk
-                  </Button>
-                  <p className="text-xs text-brand-muted">Logga in utan lösenord — vi mejlar en länk.</p>
-                </form>
-              </CardContent>
-            </Card>
-          </>
-        )}
+        <div className="flex flex-col items-center gap-2 text-center">
+          <Logo size="lg" />
+          <p className="text-sm text-brand-muted">Logga in till er gemensamma receptbok</p>
+        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Logga in</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <OAuthButtons callbackUrl={next} />
+            <div className="my-4 flex items-center gap-3 text-xs text-brand-muted">
+              <span className="h-px flex-1 bg-brand-accent/20" /> eller <span className="h-px flex-1 bg-brand-accent/20" />
+            </div>
+            <form onSubmit={loginPassword} className="space-y-3">
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="du@exempel.se"
+                autoComplete="email"
+                required
+              />
+              <Input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Lösenord"
+                autoComplete="current-password"
+                required
+              />
+              {error && <p className="text-sm text-red-600">{error}</p>}
+              <Button type="submit" className="w-full" disabled={busy}>
+                {busy ? 'Loggar in…' : 'Logga in'}
+              </Button>
+            </form>
+            <p className="mt-3 text-sm text-brand-muted">
+              Inget konto?{' '}
+              <Link href={`/register?next=${encodeURIComponent(next)}`} className="text-brand-accent-dark underline">
+                Skapa ett
+              </Link>
+            </p>
+          </CardContent>
+        </Card>
       </main>
     </div>
   )

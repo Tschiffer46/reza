@@ -68,9 +68,12 @@ export default function NewEntryPage() {
         {mode === 'choose' && (
           <div className="space-y-3">
             <h1 className="text-xl font-semibold text-brand-header">Lägg till recept eller tips</h1>
-            <ChooseButton icon={FileText} title="Klistra in text" desc="AI extraherar receptet" onClick={() => setMode('text')} />
-            <ChooseButton icon={Camera} title="Ta foto / välj bild" desc="AI läser av bilden" onClick={() => setMode('image')} />
-            <ChooseButton icon={Link2} title="Klistra in länk" desc="AI hämtar receptet från sidan" onClick={() => setMode('url')} />
+            <p className="text-sm text-brand-muted">
+              Har du sett något gott? AI:n läser av det åt dig — du behöver inte skriva av något.
+            </p>
+            <ChooseButton icon={FileText} title="Klistra in text" desc="Recept du kopierat från valfri källa" onClick={() => setMode('text')} />
+            <ChooseButton icon={Camera} title="Ta foto / välj bild" desc="Fota en kokbok, en skärmdump eller en maträtt" onClick={() => setMode('image')} />
+            <ChooseButton icon={Link2} title="Klistra in länk" desc="Instagram, TikTok, en blogg eller receptsida" onClick={() => setMode('url')} />
             <ChooseButton icon={PencilLine} title="Fyll i manuellt" desc="Skriv in själv" onClick={() => { setExtracted(undefined); setMode('form') }} />
             <Link href="/laga/import" className="block text-center text-sm text-brand-accent-dark underline">
               Importera flera recept på en gång

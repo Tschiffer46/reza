@@ -4,8 +4,8 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import type { ExtractedEntry } from '@/lib/ai'
-import { Header } from '@/components/Header'
-import { NavBar } from '@/components/NavBar'
+import { AppShell } from '@/components/laga/AppShell'
+import { Icon } from '@/components/laga/ui'
 import { Button } from '@/components/ui/button'
 
 export default function ImportPage() {
@@ -65,16 +65,14 @@ export default function ImportPage() {
   }
 
   return (
-    <div className="min-h-screen pb-20">
-      <Header>
-        <Link href="/laga">
-          <Button variant="outline" size="sm" className="border-white/60 text-white hover:bg-white/10">
-            Tillbaka
-          </Button>
+    <AppShell>
+      <div className="mx-auto max-w-2xl space-y-4">
+        <Link
+          href="/laga"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--muted)', fontSize: 14, fontWeight: 600 }}
+        >
+          <Icon name="back" size={18} /> Tillbaka
         </Link>
-      </Header>
-
-      <main className="mx-auto max-w-2xl space-y-4 px-4 py-6">
         <h1 className="text-xl font-semibold text-brand-header">Importera flera recept</h1>
 
         {!entries && (
@@ -133,9 +131,7 @@ export default function ImportPage() {
         )}
 
         {error && <p className="text-sm text-red-600">{error}</p>}
-      </main>
-
-      <NavBar />
-    </div>
+      </div>
+    </AppShell>
   )
 }
