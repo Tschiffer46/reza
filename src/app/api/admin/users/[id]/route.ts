@@ -36,3 +36,50 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   })
   return NextResponse.json(user)
 }
+
+/**
+ * Admin: ta bort en användare. Vi inaktiverar och anonymiserar kontot i stället
+ * för att radera raden — recept/betyg/kommentarer användaren bidragit med blir
+ * kvar i gemenskaperna (annars förlorar andra medlemmar innehåll). Inloggning
+ * stoppas (lösenord rensas, OAuth-konton + sessioner tas bort, e-posten frigörs)
+ * och medlemskap avslutas.
+ */
+export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  let adminId: string
+  try {
+    adminId = await requireAdmin()
+  } catch {
+    return NextResponse.json({ error: 'Ej behörig' }, { status: 403 })
+  }
+
+  const { id } = await params
+  if (id === adminId) {
+    return NextResponse.json({ error: 'Du kan inte ta bort ditt eget konto' }, { status: 400 })
+  }
+  const target = await prisma.user.findUnique({ where: { id }, select: { id: true } })
+  if (!target) {
+    return NextResponse.json({ error: 'Användaren finns inte' }, { status: 404 })
+  }
+
+  await prisma.$transaction([
+    prisma.session.deleteMany({ where: { userId: id } }),
+    prisma.account.deleteMany({ where: { userId: id } }),
+    prisma.membership.deleteMany({ where: { userId: id } }),
+    prisma.user.update({
+      where: { id },
+      data: {
+        name: 'Borttagen användare',
+        email: `borttagen+${id}@vadskavi.invalid`,
+        password: null,
+        avatar: null,
+        image: null,
+        bio: null,
+        isAdmin: false,
+        plan: 'free',
+        bonusCredits: 0,
+      },
+    }),
+  ])
+
+  return NextResponse.json({ ok: true })
+}

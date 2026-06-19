@@ -16,8 +16,9 @@ function relativeDate(d: Date): string {
 }
 
 export default async function AdminPage() {
+  let adminId: string
   try {
-    await requireAdmin()
+    adminId = await requireAdmin()
   } catch {
     notFound()
   }
@@ -78,6 +79,7 @@ export default async function AdminPage() {
 
       <h2 style={{ fontWeight: 700, fontSize: 18, color: 'var(--ink)', margin: '28px 0 12px' }}>Användare</h2>
       <AdminUsers
+        currentUserId={adminId}
         users={userRows.map((u) => ({
           id: u.id,
           name: u.name,

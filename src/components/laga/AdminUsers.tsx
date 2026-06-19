@@ -13,7 +13,7 @@ export interface AdminUser {
   families: number
 }
 
-export function AdminUsers({ users }: { users: AdminUser[] }) {
+export function AdminUsers({ users, currentUserId }: { users: AdminUser[]; currentUserId: string }) {
   const router = useRouter()
   const [busy, setBusy] = useState<string | null>(null)
   const [credit, setCredit] = useState<Record<string, string>>({})
@@ -25,6 +25,19 @@ export function AdminUsers({ users }: { users: AdminUser[] }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     })
+    setBusy(null)
+    router.refresh()
+  }
+
+  async function remove(u: AdminUser) {
+    if (
+      !confirm(
+        `Ta bort ${u.name || u.email}?\n\nKontot inaktiveras (personen kan inte logga in) men recept, betyg och kommentarer de lagt till behålls i gemenskaperna. Kan inte ångras.`,
+      )
+    )
+      return
+    setBusy(u.id)
+    await fetch(`/api/admin/users/${u.id}`, { method: 'DELETE' })
     setBusy(null)
     router.refresh()
   }
@@ -73,7 +86,7 @@ export function AdminUsers({ users }: { users: AdminUser[] }) {
               <button onClick={() => patch(u.id, { isAdmin: !u.isAdmin })} disabled={busy === u.id} style={pill(u.isAdmin, '#b07d2a')}>
                 {u.isAdmin ? 'Ta admin' : 'Gör admin'}
               </button>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                 <input
                   type="number"
                   min={1}
@@ -90,6 +103,15 @@ export function AdminUsers({ users }: { users: AdminUser[] }) {
                   Ge recept
                 </button>
               </span>
+              {u.id !== currentUserId && (
+                <button
+                  onClick={() => remove(u)}
+                  disabled={busy === u.id}
+                  style={{ ...pill(false, '#c0392b'), color: '#c0392b', borderColor: '#e0b4ab', marginLeft: 'auto' }}
+                >
+                  Ta bort
+                </button>
+              )}
             </div>
           </div>
         )
