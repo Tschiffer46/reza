@@ -74,6 +74,9 @@ scripts/setup-search.ts# idempotent: svensk tsvector-trigger + GIN-index + backf
 - **Note**, **Comment** — fritext per recept. **Reaction** — `@@unique([entryId, userId])`.
 - **ChangeLog** — `action` (t.ex. `cooked`), `field?` — källa till "lagad av" + aktivitetsflöde.
 - **Category** — `name`, `type` (`recipe`/`tip`), per familj.
+- **Post** / **PostReply** — medlemssnack (anslagstavla) per gemenskap: `text`, `createdAt`.
+  Inlägg göms/rensas efter 7 dagar (`SNACK_TTL_DAYS` i `src/lib/snack.ts`); betalande
+  medlemmar kan ta bort andras inlägg/svar, alla sina egna.
 - Auth.js: **Account**, **Session**, **VerificationToken**.
 
 ## Konventioner
@@ -118,7 +121,11 @@ npx prisma studio     # databas-GUI
   `src/auth.ts`, annars genererar Auth.js `0.0.0.0`-länkar bakom NPM. Servern måste ha
   `AUTH_URL=https://vadskavi.nu` i `.env.vadskavi`.
 - **Roller (manuellt, ingen Stripe än):** `User.plan` = `free`/`paid` och `User.isAdmin`
-  sätts via SQL. Gratis = max 3 recept/månad (`FREE_MONTHLY_LIMIT` i `src/lib/plan.ts`).
+  sätts via SQL eller i `/admin`-vyn. **Första admin utan SQL:** sätt
+  `ADMIN_EMAILS=epost1,epost2` i `.env.vadskavi` — `requireAdmin` (`src/lib/family.ts`)
+  släpper in dessa och befordrar dem till riktig DB-admin första gången. Gratis = max 3
+  recept/månad (`FREE_MONTHLY_LIMIT` i `src/lib/plan.ts`). Premium-förmåner idag: obegränsat
+  antal recept, byta gemenskapens omslagsbild, moderera medlemssnack.
   `Family.status='suspended'` blockerar åtkomst (admin stänger missbrukade gemenskaper).
 - **Härledd data:** "lagad av" + aktivitetsflöde härleds ur `ChangeLog`; betygssnitt
   denormaliseras till `Entry.ratingAvg/ratingCount` (uppdatera vid ny Rating).
