@@ -41,15 +41,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Titel, typ och kategori krävs' }, { status: 400 })
   }
 
-  // Gratisgräns: max 3 recept/månad för gratisanvändare
-  const me = await prisma.user.findUnique({ where: { id: userId }, select: { plan: true } })
+  // Gratisgräns: max 3 recept/månad. Därutöver förbrukas ev. bonusrecept
+  // (välkomstbonus eller admin-kompensation).
+  const me = await prisma.user.findUnique({ where: { id: userId }, select: { plan: true, bonusCredits: true } })
   if (me?.plan !== 'paid') {
     const used = await monthlyEntryCount(userId)
     if (used >= FREE_MONTHLY_LIMIT) {
-      return NextResponse.json(
-        { error: `Gratisgränsen (${FREE_MONTHLY_LIMIT} recept/månad) är nådd. Uppgradera för obegränsat.` },
-        { status: 402 },
-      )
+      if ((me?.bonusCredits ?? 0) > 0) {
+        await prisma.user.update({ where: { id: userId }, data: { bonusCredits: { decrement: 1 } } })
+      } else {
+        return NextResponse.json(
+          { error: `Gränsen är nådd (${FREE_MONTHLY_LIMIT} recept/månad). Uppgradera för obegränsat.` },
+          { status: 402 },
+        )
+      }
     }
   }
 

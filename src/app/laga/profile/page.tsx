@@ -19,11 +19,12 @@ export default async function ProfilePage() {
   }
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { name: true, email: true, plan: true, isAdmin: true, avatar: true, bio: true },
+    select: { name: true, email: true, plan: true, isAdmin: true, avatar: true, bio: true, bonusCredits: true },
   })
   const isPaid = user?.plan === 'paid'
   const showAdmin = !!user?.isAdmin || isEnvAdmin(user?.email)
   const usedThisMonth = await monthlyEntryCount(session.user.id)
+  const bonus = user?.bonusCredits ?? 0
 
   async function logout() {
     'use server'
@@ -62,9 +63,14 @@ export default async function ProfilePage() {
             <p className="mt-3 text-sm text-brand-muted">
               Recept denna månad:{' '}
               <span className="font-semibold text-brand-ink">
-                {usedThisMonth} av {FREE_MONTHLY_LIMIT}
+                {Math.min(usedThisMonth, FREE_MONTHLY_LIMIT)} av {FREE_MONTHLY_LIMIT}
               </span>
-              {usedThisMonth >= FREE_MONTHLY_LIMIT && ' — gränsen nådd'}
+              {bonus > 0 && (
+                <>
+                  {' '}· <span className="font-semibold text-brand-ink">{bonus} bonusrecept</span> kvar
+                </>
+              )}
+              {usedThisMonth >= FREE_MONTHLY_LIMIT && bonus === 0 && ' — gränsen nådd'}
             </p>
           )}
         </div>

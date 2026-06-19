@@ -6,6 +6,23 @@ export function snackCutoff(): Date {
   return new Date(Date.now() - SNACK_TTL_DAYS * 24 * 60 * 60 * 1000)
 }
 
+/**
+ * Plocka ut @-omnämnanden ur text och matcha mot medlemmars visningsnamn.
+ * Matchar @token mot förnamnet (första ordet) i namnet, t.ex. "@Kalle" →
+ * medlemmen "Kalle Svensson". Returnerar unika userId:n.
+ */
+export function parseMentions(text: string, members: { id: string; name: string }[]): string[] {
+  const tokens = text.match(/@([\p{L}][\p{L}\d_-]*)/gu)
+  if (!tokens) return []
+  const wanted = new Set(tokens.map((t) => t.slice(1).toLowerCase()))
+  const ids = new Set<string>()
+  for (const m of members) {
+    const first = m.name.trim().split(/\s+/)[0]?.toLowerCase()
+    if (first && wanted.has(first)) ids.add(m.id)
+  }
+  return [...ids]
+}
+
 /** Kort svensk "för X sedan"-text. */
 export function timeAgo(d: Date): string {
   const s = Math.floor((Date.now() - d.getTime()) / 1000)

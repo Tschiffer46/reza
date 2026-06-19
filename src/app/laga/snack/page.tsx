@@ -40,6 +40,7 @@ export default async function SnackPage() {
     text: p.text,
     when: timeAgo(p.createdAt),
     mine: p.authorId === userId,
+    mentionsMe: p.mentions.includes(userId),
     replies: p.replies.map((r) => ({
       id: r.id,
       author: displayName(r.author),
@@ -47,8 +48,12 @@ export default async function SnackPage() {
       text: r.text,
       when: timeAgo(r.createdAt),
       mine: r.authorId === userId,
+      mentionsMe: r.mentions.includes(userId),
     })),
   }))
+
+  // Markera Snack som sett → nollställer olästa @-omnämnanden i menyn.
+  await prisma.user.update({ where: { id: userId }, data: { snackSeenAt: new Date() } })
 
   return (
     <AppShell>

@@ -67,6 +67,9 @@ export function RecipeView({ recipe, meName, canDelete = false }: { recipe: Reci
   const [cooking, setCooking] = useState(false)
 
   const totalCooked = cookedBy.reduce((s, c) => s + c.n, 0)
+  // Betyg visas först när man själv har lagat rätten (eller redan satt ett betyg).
+  const iCooked = cookedBy.some((c) => c.name === meName)
+  const showRating = iCooked || myRating != null
   const scale = recipe.servings && servings ? servings / recipe.servings : 1
   const img = recipe.imageUrls[0]
 
@@ -164,12 +167,27 @@ export function RecipeView({ recipe, meName, canDelete = false }: { recipe: Reci
           </Link>
         </div>
       ) : (
-        <Link
-          href="/laga"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--muted)', fontSize: 14, fontWeight: 600, margin: '4px 0 16px' }}
-        >
-          <Icon name="back" size={18} /> Tillbaka
-        </Link>
+        <div style={{ position: 'relative' }}>
+          <div
+            style={{
+              height: 150,
+              borderRadius: 'var(--radius)',
+              marginBottom: 18,
+              background: 'linear-gradient(135deg, var(--accent-soft), var(--thumb-empty))',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden',
+            }}
+          >
+            <span style={{ opacity: 0.4, display: 'flex' }}>
+              <Icon name={recipe.type === 'tip' ? 'sliders' : 'chefhat'} size={66} color="var(--accent)" />
+            </span>
+          </div>
+          <Link href="/laga" className="hero-back" aria-label="Tillbaka">
+            <Icon name="back" size={20} color="var(--ink)" />
+          </Link>
+        </div>
       )}
 
       <div className="recipe-body">
@@ -240,37 +258,56 @@ export function RecipeView({ recipe, meName, canDelete = false }: { recipe: Reci
             ) : null}
           </div>
 
-          {/* betyg */}
-          <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 13.5, color: 'var(--muted)' }}>{myRating ? 'Ditt betyg:' : 'Sätt betyg:'}</span>
-            <div style={{ display: 'inline-flex', gap: 4 }}>
-              {[1, 2, 3, 4, 5, 6].map((n) => (
-                <button
-                  key={n}
-                  onClick={() => rate(n)}
-                  aria-label={`Betyg ${n}`}
-                  style={{
-                    width: 30,
-                    height: 30,
-                    borderRadius: 8,
-                    border: '1px solid ' + (myRating && n <= myRating ? 'var(--accent)' : 'var(--card-bd)'),
-                    background: myRating && n <= myRating ? 'var(--accent)' : 'var(--card)',
-                    color: myRating && n <= myRating ? '#fff' : 'var(--muted)',
-                    cursor: 'pointer',
-                    fontSize: 13,
-                    fontWeight: 700,
-                  }}
-                >
-                  {n}
-                </button>
-              ))}
+          {recipe.steps.length > 0 && (
+            <p style={{ marginTop: 10, fontSize: 12.5, color: 'var(--muted)', lineHeight: 1.45, maxWidth: '46ch' }}>
+              Lagläget håller skärmen vaken medan du lagar — du slipper väcka mobilen med kladdiga fingrar.
+            </p>
+          )}
+
+          {/* betyg — visas först när du lagat rätten */}
+          {showRating ? (
+            <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 13.5, color: 'var(--muted)' }}>{myRating ? 'Ditt betyg:' : 'Sätt betyg:'}</span>
+              <div style={{ display: 'inline-flex', gap: 4 }}>
+                {[1, 2, 3, 4, 5, 6].map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => rate(n)}
+                    aria-label={`Betyg ${n}`}
+                    style={{
+                      width: 30,
+                      height: 30,
+                      borderRadius: 8,
+                      border: '1px solid ' + (myRating && n <= myRating ? 'var(--accent)' : 'var(--card-bd)'),
+                      background: myRating && n <= myRating ? 'var(--accent)' : 'var(--card)',
+                      color: myRating && n <= myRating ? '#fff' : 'var(--muted)',
+                      cursor: 'pointer',
+                      fontSize: 13,
+                      fontWeight: 700,
+                    }}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+              {ratingCount > 0 && ratingAvg != null && (
+                <span style={{ fontSize: 13.5, color: 'var(--accent)', fontWeight: 600 }}>
+                  ★ {ratingAvg.toFixed(1)} <span style={{ color: 'var(--muted)', fontWeight: 400 }}>({ratingCount})</span>
+                </span>
+              )}
             </div>
-            {ratingCount > 0 && ratingAvg != null && (
-              <span style={{ fontSize: 13.5, color: 'var(--accent)', fontWeight: 600 }}>
-                ★ {ratingAvg.toFixed(1)} <span style={{ color: 'var(--muted)', fontWeight: 400 }}>({ratingCount})</span>
-              </span>
-            )}
-          </div>
+          ) : (
+            recipe.type !== 'tip' && (
+              <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 13.5, color: 'var(--muted)' }}>Sätt betyg när du har lagat rätten.</span>
+                {ratingCount > 0 && ratingAvg != null && (
+                  <span style={{ fontSize: 13.5, color: 'var(--accent)', fontWeight: 600 }}>
+                    ★ {ratingAvg.toFixed(1)} <span style={{ color: 'var(--muted)', fontWeight: 400 }}>({ratingCount})</span>
+                  </span>
+                )}
+              </div>
+            )
+          )}
           <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 9 }}>
             {totalCooked > 0 ? (
               <>

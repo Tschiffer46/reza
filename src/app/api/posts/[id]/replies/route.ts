@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireUser, assertMember } from '@/lib/family'
+import { displayName } from '@/lib/laga'
+import { parseMentions } from '@/lib/snack'
 
 /** Svara på ett inlägg. Alla medlemmar i gemenskapen får svara. */
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -28,8 +30,17 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: 'Skriv något' }, { status: 400 })
   }
 
+  const members = await prisma.membership.findMany({
+    where: { familyId: post.familyId },
+    select: { user: { select: { id: true, name: true, email: true } } },
+  })
+  const mentions = parseMentions(
+    t,
+    members.map((m) => ({ id: m.user.id, name: displayName(m.user) })),
+  ).filter((uid) => uid !== userId)
+
   const reply = await prisma.postReply.create({
-    data: { postId: id, authorId: userId, text: t.slice(0, 2000) },
+    data: { postId: id, authorId: userId, text: t.slice(0, 2000), mentions },
   })
   return NextResponse.json({ id: reply.id }, { status: 201 })
 }

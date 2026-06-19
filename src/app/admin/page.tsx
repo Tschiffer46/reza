@@ -16,8 +16,9 @@ function relativeDate(d: Date): string {
 }
 
 export default async function AdminPage() {
+  let adminId: string
   try {
-    await requireAdmin()
+    adminId = await requireAdmin()
   } catch {
     notFound()
   }
@@ -32,7 +33,7 @@ export default async function AdminPage() {
       orderBy: { createdAt: 'desc' },
     }),
     prisma.user.findMany({
-      select: { id: true, name: true, email: true, plan: true, isAdmin: true, _count: { select: { memberships: true } } },
+      select: { id: true, name: true, email: true, plan: true, isAdmin: true, bonusCredits: true, _count: { select: { memberships: true } } },
       orderBy: { createdAt: 'desc' },
       take: 100,
     }),
@@ -78,12 +79,14 @@ export default async function AdminPage() {
 
       <h2 style={{ fontWeight: 700, fontSize: 18, color: 'var(--ink)', margin: '28px 0 12px' }}>Användare</h2>
       <AdminUsers
+        currentUserId={adminId}
         users={userRows.map((u) => ({
           id: u.id,
           name: u.name,
           email: u.email,
           plan: u.plan,
           isAdmin: u.isAdmin,
+          bonusCredits: u.bonusCredits,
           families: u._count.memberships,
         }))}
       />

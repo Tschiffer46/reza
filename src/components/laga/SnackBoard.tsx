@@ -12,6 +12,7 @@ export interface SnackReply {
   text: string
   when: string
   mine: boolean
+  mentionsMe: boolean
 }
 export interface SnackPost {
   id: string
@@ -20,8 +21,36 @@ export interface SnackPost {
   text: string
   when: string
   mine: boolean
+  mentionsMe: boolean
   replies: SnackReply[]
 }
+
+/** Rendera text med @-omnämnanden markerade i accentfärg. */
+function renderText(text: string) {
+  return text.split(/(@[\p{L}][\p{L}\d_-]*)/gu).map((part, i) =>
+    part.startsWith('@') ? (
+      <span key={i} style={{ color: 'var(--accent)', fontWeight: 600 }}>
+        {part}
+      </span>
+    ) : (
+      <span key={i}>{part}</span>
+    ),
+  )
+}
+
+const messageText: React.CSSProperties = {
+  fontSize: 14.5,
+  color: 'var(--ink)',
+  lineHeight: 1.5,
+  whiteSpace: 'pre-wrap',
+  overflowWrap: 'anywhere',
+}
+
+const toYouChip = (
+  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11.5, fontWeight: 600, color: 'var(--accent)', background: 'var(--accent-soft)', padding: '2px 8px', borderRadius: 999 }}>
+    <Icon name="chat" size={12} color="var(--accent)" /> Till dig
+  </span>
+)
 
 const card: React.CSSProperties = {
   background: 'var(--card)',
@@ -101,10 +130,13 @@ export function SnackBoard({ posts, canModerate }: { posts: SnackPost[]; canMode
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Vad vill du fråga eller dela? T.ex. ”Sugen på att grilla ikväll — någon med ett bra salladsrecept?”"
+          placeholder="Skriv något till gänget – en fråga, ett tips, en idé…"
           style={textareaStyle}
         />
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 10 }}>
+          <span style={{ fontSize: 12.5, color: 'var(--muted)' }}>
+            Tagga någon med <b style={{ color: 'var(--accent)', fontWeight: 600 }}>@namn</b> så får hen en notis.
+          </span>
           <button onClick={post} disabled={busy || !text.trim()} style={{ ...primaryBtn, opacity: busy || !text.trim() ? 0.6 : 1 }}>
             Posta
           </button>
@@ -118,15 +150,16 @@ export function SnackBoard({ posts, canModerate }: { posts: SnackPost[]; canMode
       )}
 
       {posts.map((p) => (
-        <div key={p.id} style={card}>
+        <div key={p.id} style={p.mentionsMe ? { ...card, borderLeft: '3px solid var(--accent)' } : card}>
           <div style={{ display: 'flex', gap: 12 }}>
             <Avatar name={p.author} image={p.avatar || undefined} size={40} />
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                 <b style={{ fontSize: 15, fontWeight: 600, color: 'var(--ink)' }}>{p.author}</b>
                 <span style={{ fontSize: 12.5, color: 'var(--muted)' }}>{p.when}</span>
+                {p.mentionsMe && toYouChip}
               </div>
-              <div style={{ fontSize: 14.5, color: 'var(--ink)', lineHeight: 1.5, marginTop: 4, whiteSpace: 'pre-wrap' }}>{p.text}</div>
+              <div style={{ ...messageText, marginTop: 4 }}>{renderText(p.text)}</div>
               <div style={{ display: 'flex', gap: 16, marginTop: 8 }}>
                 <button
                   onClick={() => { setReplyFor(replyFor === p.id ? null : p.id); setReplyText('') }}
@@ -148,16 +181,17 @@ export function SnackBoard({ posts, canModerate }: { posts: SnackPost[]; canMode
                     <div key={r.id} style={{ display: 'flex', gap: 9 }}>
                       <Avatar name={r.author} image={r.avatar || undefined} size={28} />
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
                           <b style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--ink)' }}>{r.author}</b>
                           <span style={{ fontSize: 12, color: 'var(--muted)' }}>{r.when}</span>
+                          {r.mentionsMe && toYouChip}
                           {(r.mine || canModerate) && (
                             <button onClick={() => del(`/api/posts/${p.id}/replies/${r.id}`)} disabled={busy} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: '#c0392b', marginLeft: 'auto' }}>
                               Ta bort
                             </button>
                           )}
                         </div>
-                        <div style={{ fontSize: 14, color: 'var(--ink)', lineHeight: 1.45, marginTop: 2, whiteSpace: 'pre-wrap' }}>{r.text}</div>
+                        <div style={{ ...messageText, fontSize: 14, marginTop: 2 }}>{renderText(r.text)}</div>
                       </div>
                     </div>
                   ))}

@@ -24,8 +24,13 @@ model User {
   password      String?
   plan          String       @default("free")
   isAdmin       Boolean      @default(false)
+  // Extra recept utöver gratis månadskvoten (välkomstbonus + ev. kompensation
+  // tilldelad av admin). Förbrukas när månadskvoten är slut. Se src/lib/plan.ts.
+  bonusCredits  Int          @default(15)
   emailVerified DateTime?
   onboardedAt   DateTime?
+  // Senast användaren öppnade Snack — används för olästa @-omnämnanden.
+  snackSeenAt   DateTime?
   createdAt     DateTime     @default(now())
   memberships   Membership[]
   recipes       Entry[]      @relation("Creator")
@@ -205,6 +210,7 @@ model Post {
   familyId  String
   authorId  String
   text      String
+  mentions  String[]    @default([])
   createdAt DateTime    @default(now())
   family    Family      @relation(fields: [familyId], references: [id])
   author    User        @relation(fields: [authorId], references: [id])
@@ -216,6 +222,7 @@ model PostReply {
   postId    String
   authorId  String
   text      String
+  mentions  String[] @default([])
   createdAt DateTime @default(now())
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   author    User     @relation(fields: [authorId], references: [id])
