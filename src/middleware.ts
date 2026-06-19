@@ -3,7 +3,28 @@ import type { NextRequest } from 'next/server'
 
 // Publika sökvägar som inte kräver inloggning.
 // /api/register + /api/auth nås av utloggade användare (kontoskapande/inloggning).
-const PUBLIC_PATHS = ['/', '/login', '/register', '/join', '/api/auth', '/api/register', '/api/debug']
+// Den publika marknadsförings-/SEO-ytan (recept, om, kontakt, juridiska sidor) samt
+// crawler-/delningsresurser (robots, sitemap, OG-bild, statiska bilder i /public/img)
+// måste vara publika – annars redirectas crawlers till /login.
+const PUBLIC_PATHS = [
+  '/',
+  '/login',
+  '/register',
+  '/join',
+  '/recept',
+  '/om',
+  '/kontakt',
+  '/integritetspolicy',
+  '/cookiepolicy',
+  '/om-annonslankar',
+  '/robots.txt',
+  '/sitemap.xml',
+  '/opengraph-image',
+  '/img',
+  '/api/auth',
+  '/api/register',
+  '/api/debug',
+]
 
 /**
  * Lättviktig auth-grind: kontrollerar att en Auth.js-sessionscookie finns.
