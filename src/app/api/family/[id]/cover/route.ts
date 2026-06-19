@@ -19,6 +19,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: 'Du är inte medlem i den gemenskapen' }, { status: 403 })
   }
 
+  // Byta omslagsbild är en Premium-förmån.
+  const me = await prisma.user.findUnique({ where: { id: userId }, select: { plan: true } })
+  if (me?.plan !== 'paid') {
+    return NextResponse.json({ error: 'Premium krävs för att byta omslag' }, { status: 402 })
+  }
+
   const form = await request.formData()
   const file = form.get('file')
   if (!(file instanceof File)) {
