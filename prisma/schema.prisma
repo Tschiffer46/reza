@@ -24,6 +24,9 @@ model User {
   password      String?
   plan          String       @default("free")
   isAdmin       Boolean      @default(false)
+  // Extra recept utöver gratis månadskvoten (välkomstbonus + ev. kompensation
+  // tilldelad av admin). Förbrukas när månadskvoten är slut. Se src/lib/plan.ts.
+  bonusCredits  Int          @default(15)
   emailVerified DateTime?
   onboardedAt   DateTime?
   createdAt     DateTime     @default(now())

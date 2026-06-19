@@ -11,7 +11,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   }
   const { id } = await params
   const body = await request.json()
-  const data: { plan?: string; isAdmin?: boolean } = {}
+  const data: { plan?: string; isAdmin?: boolean; bonusCredits?: { increment: number } } = {}
   if ('plan' in body) {
     if (body.plan !== 'free' && body.plan !== 'paid') {
       return NextResponse.json({ error: 'Ogiltig plan' }, { status: 400 })
@@ -19,13 +19,20 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     data.plan = body.plan
   }
   if ('isAdmin' in body) data.isAdmin = !!body.isAdmin
+  if ('addCredits' in body) {
+    const n = Math.trunc(Number(body.addCredits))
+    if (!Number.isFinite(n) || n === 0) {
+      return NextResponse.json({ error: 'Ogiltigt antal' }, { status: 400 })
+    }
+    data.bonusCredits = { increment: n }
+  }
   if (Object.keys(data).length === 0) {
     return NextResponse.json({ error: 'Inget att uppdatera' }, { status: 400 })
   }
   const user = await prisma.user.update({
     where: { id },
     data,
-    select: { id: true, plan: true, isAdmin: true },
+    select: { id: true, plan: true, isAdmin: true, bonusCredits: true },
   })
   return NextResponse.json(user)
 }

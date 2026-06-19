@@ -32,7 +32,7 @@ export default async function AdminPage() {
       orderBy: { createdAt: 'desc' },
     }),
     prisma.user.findMany({
-      select: { id: true, name: true, email: true, plan: true, isAdmin: true, _count: { select: { memberships: true } } },
+      select: { id: true, name: true, email: true, plan: true, isAdmin: true, bonusCredits: true, _count: { select: { memberships: true } } },
       orderBy: { createdAt: 'desc' },
       take: 100,
     }),
@@ -84,6 +84,7 @@ export default async function AdminPage() {
           email: u.email,
           plan: u.plan,
           isAdmin: u.isAdmin,
+          bonusCredits: u.bonusCredits,
           families: u._count.memberships,
         }))}
       />
