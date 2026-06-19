@@ -17,6 +17,11 @@ const SLIDES = [
     body: 'En gemenskap kan vara familjen, kompisgänget eller kursen ni gick. Alla lägger till sina recept, ser vem som lagat vad och lämnar sina hemliga tweaks.',
   },
   {
+    icon: 'camera',
+    title: 'Fyll boken på sekunder',
+    body: 'Klistra in en länk från Instagram eller TikTok, fota ett uppslag ur en kokbok, ta en skärmdump eller skriv själv — AI:n plockar ut titel, ingredienser och steg åt dig. Tryck på "Lägg till" för att börja.',
+  },
+  {
     icon: 'heart',
     title: 'Beröm, betyg & bestämda åsikter',
     body: 'Hjärta favoriterna, sätt betyg 1–6 efter du lagat, och starta lagläge som håller skärmen vaken medan du bockar av steg. Mormors köttbullar förtjänar en 6:a.',

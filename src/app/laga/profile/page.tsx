@@ -1,13 +1,14 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Users, Tags, MessageSquare } from 'lucide-react'
+import { Users, Tags, MessageSquare, ShieldCheck } from 'lucide-react'
 import { auth, signOut } from '@/auth'
 import { prisma } from '@/lib/db'
-import { Header } from '@/components/Header'
-import { NavBar } from '@/components/NavBar'
+import { isEnvAdmin } from '@/lib/family'
+import { AppShell } from '@/components/laga/AppShell'
+import { Icon, Avatar } from '@/components/laga/ui'
 import { ProfileForm } from '@/components/ProfileForm'
 import { PasswordForm } from '@/components/PasswordForm'
-import { Avatar } from '@/components/laga/ui'
+import { UpgradePrompt } from '@/components/UpgradePrompt'
 import { Button } from '@/components/ui/button'
 import { FREE_MONTHLY_LIMIT, monthlyEntryCount } from '@/lib/plan'
 
@@ -21,6 +22,7 @@ export default async function ProfilePage() {
     select: { name: true, email: true, plan: true, isAdmin: true, avatar: true, bio: true },
   })
   const isPaid = user?.plan === 'paid'
+  const showAdmin = !!user?.isAdmin || isEnvAdmin(user?.email)
   const usedThisMonth = await monthlyEntryCount(session.user.id)
 
   async function logout() {
@@ -29,15 +31,15 @@ export default async function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen pb-20">
-      <Header>
-        <Link href="/laga">
-          <Button variant="outline" size="sm" className="border-white/60 text-white hover:bg-white/10">
-            Tillbaka
-          </Button>
+    <AppShell>
+      <div className="mx-auto max-w-2xl space-y-6">
+        <Link
+          href="/laga"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--muted)', fontSize: 14, fontWeight: 600 }}
+        >
+          <Icon name="back" size={18} /> Tillbaka
         </Link>
-      </Header>
-      <main className="mx-auto max-w-2xl space-y-6 px-4 py-6">
+
         <div className="flex items-center gap-3">
           <Avatar name={user?.name || 'Du'} image={user?.avatar || undefined} size={52} />
           <div>
@@ -50,7 +52,7 @@ export default async function ProfilePage() {
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-medium text-brand-header">Plan</p>
-              <p className="text-sm text-brand-muted">{isPaid ? 'Betalande — obegränsat antal recept' : 'Gratis'}</p>
+              <p className="text-sm text-brand-muted">{isPaid ? 'Premium — obegränsat antal recept' : 'Gratis'}</p>
             </div>
             <span className="rounded-full bg-brand-accent/15 px-3 py-1 text-xs font-semibold text-brand-accent-dark">
               {isPaid ? 'Premium' : 'Gratis'}
@@ -66,6 +68,8 @@ export default async function ProfilePage() {
             </p>
           )}
         </div>
+
+        {!isPaid && <UpgradePrompt />}
 
         <ProfileForm
           initialName={user?.name || ''}
@@ -94,12 +98,12 @@ export default async function ProfilePage() {
           >
             <MessageSquare className="h-5 w-5 text-brand-accent-dark" /> Tyck till
           </Link>
-          {user?.isAdmin && (
+          {showAdmin && (
             <Link
               href="/admin"
               className="flex items-center gap-3 rounded-xl border border-brand-accent/20 bg-white p-4 hover:shadow-md"
             >
-              <Users className="h-5 w-5 text-brand-accent-dark" /> Admin
+              <ShieldCheck className="h-5 w-5 text-brand-accent-dark" /> Admin
             </Link>
           )}
         </div>
@@ -109,8 +113,7 @@ export default async function ProfilePage() {
             Logga ut
           </Button>
         </form>
-      </main>
-      <NavBar />
-    </div>
+      </div>
+    </AppShell>
   )
 }

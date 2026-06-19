@@ -37,6 +37,8 @@ model User {
   accounts      Account[]
   sessions      Session[]
   feedback      Feedback[]
+  posts         Post[]
+  postReplies   PostReply[]
 }
 
 model Account {
@@ -85,6 +87,7 @@ model Family {
   members     Membership[]
   entries     Entry[]
   categories  Category[]
+  posts       Post[]
 }
 
 model Membership {
@@ -190,6 +193,32 @@ model Category {
   type     String
   familyId String
   family   Family @relation(fields: [familyId], references: [id])
+}
+
+/**
+ * Medlemssnack: en enkel anslagstavla per gemenskap. Inlägg göms/raderas efter
+ * 7 dagar (filtreras vid läsning + opportunistisk rensning). Betalande medlemmar
+ * kan ta bort andras inlägg/svar; alla kan ta bort sina egna.
+ */
+model Post {
+  id        String      @id @default(cuid())
+  familyId  String
+  authorId  String
+  text      String
+  createdAt DateTime    @default(now())
+  family    Family      @relation(fields: [familyId], references: [id])
+  author    User        @relation(fields: [authorId], references: [id])
+  replies   PostReply[]
+}
+
+model PostReply {
+  id        String   @id @default(cuid())
+  postId    String
+  authorId  String
+  text      String
+  createdAt DateTime @default(now())
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author    User     @relation(fields: [authorId], references: [id])
 }
 
 model Feedback {

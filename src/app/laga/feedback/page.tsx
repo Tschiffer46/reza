@@ -1,9 +1,8 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { auth } from '@/auth'
-import { Header } from '@/components/Header'
-import { NavBar } from '@/components/NavBar'
-import { Button } from '@/components/ui/button'
+import { AppShell } from '@/components/laga/AppShell'
+import { Icon } from '@/components/laga/ui'
 import { FeedbackForm } from '@/components/FeedbackForm'
 
 export default async function FeedbackPage() {
@@ -13,15 +12,14 @@ export default async function FeedbackPage() {
   }
 
   return (
-    <div className="min-h-screen pb-20">
-      <Header>
-        <Link href="/laga/profile">
-          <Button variant="outline" size="sm" className="border-white/60 text-white hover:bg-white/10">
-            Tillbaka
-          </Button>
+    <AppShell>
+      <div className="mx-auto max-w-2xl space-y-5">
+        <Link
+          href="/laga/profile"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--muted)', fontSize: 14, fontWeight: 600 }}
+        >
+          <Icon name="back" size={18} /> Tillbaka
         </Link>
-      </Header>
-      <main className="mx-auto max-w-2xl space-y-5 px-4 py-6">
         <div>
           <h1 className="text-xl font-semibold text-brand-header">Tyck till</h1>
           <p className="text-sm text-brand-muted">
@@ -29,8 +27,7 @@ export default async function FeedbackPage() {
           </p>
         </div>
         <FeedbackForm />
-      </main>
-      <NavBar />
-    </div>
+      </div>
+    </AppShell>
   )
 }

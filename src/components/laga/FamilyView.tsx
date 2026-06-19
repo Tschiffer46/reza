@@ -16,6 +16,8 @@ export interface FamilyViewData {
   members: { name: string; role: string; added: number; cooked: number }[]
   activity: { actor: string; verb: string; entryId: string; title: string; img: string | null; when: string }[]
   families: { id: string; name: string }[]
+  /** Endast betalande får byta omslagsbild. */
+  canEditCover: boolean
 }
 
 const card: React.CSSProperties = {
@@ -93,22 +95,34 @@ export function FamilyView({ data }: { data: FamilyViewData }) {
       {/* header card */}
       <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
         <div
-          onClick={() => coverInput.current?.click()}
+          onClick={data.canEditCover ? () => coverInput.current?.click() : undefined}
           style={{
             height: 150,
-            cursor: 'pointer',
+            cursor: data.canEditCover ? 'pointer' : 'default',
             position: 'relative',
-            background: data.coverImage ? undefined : 'linear-gradient(135deg,var(--accent-soft),var(--thumb-empty))',
+            background: data.coverImage ? undefined : 'center / cover no-repeat url(/default-cover.svg)',
           }}
         >
           {data.coverImage && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={`/api/images/${data.coverImage}`} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
           )}
-          <span style={{ position: 'absolute', bottom: 12, right: 12, display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(0,0,0,.55)', color: '#fff', fontSize: 12, fontWeight: 600, padding: '6px 11px', borderRadius: 999 }}>
-            <Icon name="edit" size={13} color="#fff" /> {data.coverImage ? 'Byt omslag' : 'Lägg till omslag'}
-          </span>
-          <input ref={coverInput} type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => uploadCover(e.target.files)} />
+          {data.canEditCover ? (
+            <span style={{ position: 'absolute', bottom: 12, right: 12, display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(0,0,0,.55)', color: '#fff', fontSize: 12, fontWeight: 600, padding: '6px 11px', borderRadius: 999 }}>
+              <Icon name="edit" size={13} color="#fff" /> {data.coverImage ? 'Byt omslag' : 'Lägg till omslag'}
+            </span>
+          ) : (
+            <Link
+              href="/laga/profile"
+              onClick={(e) => e.stopPropagation()}
+              style={{ position: 'absolute', bottom: 12, right: 12, display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(0,0,0,.45)', color: '#fff', fontSize: 12, fontWeight: 600, padding: '6px 11px', borderRadius: 999 }}
+            >
+              <Icon name="edit" size={13} color="#fff" /> Byt omslag med Premium
+            </Link>
+          )}
+          {data.canEditCover && (
+            <input ref={coverInput} type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => uploadCover(e.target.files)} />
+          )}
         </div>
         <div style={{ padding: '22px 24px 24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>

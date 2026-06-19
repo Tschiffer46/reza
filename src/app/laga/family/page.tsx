@@ -25,6 +25,8 @@ export default async function FamilyPage() {
   const userId = session.user.id
   const familyId = await getDefaultFamily(userId)
   const families = await getUserFamilies(userId)
+  const me = await prisma.user.findUnique({ where: { id: userId }, select: { plan: true } })
+  const canEditCover = me?.plan === 'paid'
 
   const family = await prisma.family.findUnique({
     where: { id: familyId },
@@ -91,6 +93,7 @@ export default async function FamilyPage() {
     members,
     activity: activity.map(({ actor, verb, entryId, title, img, when }) => ({ actor, verb, entryId, title, img, when })),
     families: families.map((f) => ({ id: f.id, name: f.name })),
+    canEditCover,
   }
 
   return (

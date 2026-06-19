@@ -10,12 +10,14 @@ const NAV = [
   { href: '/laga', key: 'home', icon: 'home', label: 'Hem' },
   { href: '/laga/family', key: 'family', icon: 'users', label: 'Gemenskapen' },
   { href: '/laga/entry/new', key: 'add', icon: 'plus', label: 'Lägg till' },
+  { href: '/laga/snack', key: 'snack', icon: 'chat', label: 'Snack' },
   { href: '/laga/profile', key: 'account', icon: 'user', label: 'Konto' },
 ] as const
 
 function activeKey(pathname: string): string {
   if (pathname.startsWith('/laga/family')) return 'family'
   if (pathname.startsWith('/laga/entry/new') || pathname.startsWith('/laga/import')) return 'add'
+  if (pathname.startsWith('/laga/snack')) return 'snack'
   if (pathname.startsWith('/laga/profile')) return 'account'
   return 'home'
 }

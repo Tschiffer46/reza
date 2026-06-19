@@ -24,6 +24,7 @@ export const ICON_PATHS: Record<string, string> = {
   link: 'M9 15l6-6M10.5 7.5l1-1a3.5 3.5 0 0 1 5 5l-1 1M13.5 16.5l-1 1a3.5 3.5 0 0 1-5-5l1-1',
   x: 'M6 6l12 12M18 6 6 18',
   bell: 'M6 9a6 6 0 1 1 12 0c0 5 2 6 2 6H4s2-1 2-6M10 19a2 2 0 0 0 4 0',
+  camera: 'M4 8h3l1.5-2h7L17 8h3v11H4V8Zm8 8.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z',
 }
 
 export function Icon({

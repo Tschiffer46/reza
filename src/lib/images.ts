@@ -14,6 +14,9 @@ export async function saveImage(buffer: Buffer): Promise<string> {
   await ensureDir()
   const filename = `${randomUUID()}.webp`
   await sharp(buffer)
+    // .rotate() utan argument läser EXIF-orienteringen och roterar bilden rätt
+    // (annars hamnar telefonfoton på sidan/upp-och-ner). Måste ske före resize.
+    .rotate()
     .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true })
     .webp({ quality: 80 })
     .toFile(path.join(UPLOAD_DIR, filename))
@@ -48,6 +51,7 @@ export async function prepareForClaude(
   buffer: Buffer,
 ): Promise<{ base64: string; mediaType: string }> {
   const resized = await sharp(buffer)
+    .rotate()
     .resize(800, 800, { fit: 'inside', withoutEnlargement: true })
     .jpeg({ quality: 60 })
     .toBuffer()
