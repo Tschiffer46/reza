@@ -22,11 +22,24 @@ function activeKey(pathname: string): string {
   return 'home'
 }
 
+/** Ikon med liten accent-prick (för olästa @-omnämnanden på Snack). */
+function NavIcon({ icon, size, stroke, dot }: { icon: string; size: number; stroke: number; dot: boolean }) {
+  return (
+    <span style={{ position: 'relative', display: 'inline-flex' }}>
+      <Icon name={icon} size={size} stroke={stroke} />
+      {dot && (
+        <span style={{ position: 'absolute', top: -1, right: -2, width: 9, height: 9, borderRadius: '50%', background: 'var(--accent)', border: '2px solid var(--card)' }} />
+      )}
+    </span>
+  )
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const active = activeKey(pathname)
   const [family, setFamily] = useState<{ name: string; members: Person[] } | null>(null)
   const [me, setMe] = useState<{ name: string; avatar: string | null } | null>(null)
+  const [snackUnread, setSnackUnread] = useState(0)
 
   useEffect(() => {
     fetch('/api/family')
@@ -53,6 +66,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       .catch(() => {})
   }, [])
 
+  // Olästa @-omnämnanden för menypricken — uppdateras vid varje navigering,
+  // nollställs när man är inne på Snack.
+  useEffect(() => {
+    if (pathname.startsWith('/laga/snack')) {
+      setSnackUnread(0)
+      return
+    }
+    fetch('/api/snack/unread')
+      .then((r) => r.json())
+      .then((d) => setSnackUnread(d.count || 0))
+      .catch(() => {})
+  }, [pathname])
+
   const memberPeople = family?.members ?? []
 
   return (
@@ -67,7 +93,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <nav style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           {NAV.map((n) => (
             <Link key={n.key} href={n.href} className={'nav-item' + (active === n.key ? ' active' : '')}>
-              <Icon name={n.icon} size={21} stroke={active === n.key ? 2 : 1.7} />
+              <NavIcon icon={n.icon} size={21} stroke={active === n.key ? 2 : 1.7} dot={n.key === 'snack' && snackUnread > 0} />
               <span>{n.label}</span>
             </Link>
           ))}
@@ -130,7 +156,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <nav className="laga-bottomnav">
         {NAV.map((n) => (
           <Link key={n.key} href={n.href} className={'bn-item' + (active === n.key ? ' active' : '')}>
-            <Icon name={n.icon} size={23} stroke={active === n.key ? 2 : 1.7} />
+            <NavIcon icon={n.icon} size={23} stroke={active === n.key ? 2 : 1.7} dot={n.key === 'snack' && snackUnread > 0} />
             <span>{n.label}</span>
           </Link>
         ))}
