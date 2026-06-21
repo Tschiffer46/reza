@@ -1,7 +1,8 @@
 import { randomBytes } from 'crypto'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { prisma } from '@/lib/db'
 import { auth } from '@/auth'
+import { getBearerUserId } from '@/lib/mobile-auth'
 import { DEFAULT_CATEGORIES } from '@/lib/categories'
 
 export const ACTIVE_FAMILY_COOKIE = 'vadskavi-active-family'
@@ -43,8 +44,10 @@ export async function getDefaultFamily(userId: string): Promise<string> {
   if (active.length === 0) {
     return createFamilyForUser(userId, 'Min gemenskap')
   }
+  // Mobil-appen väljer aktiv gemenskap via `x-family-id`-header; webben via cookie.
+  const hdrs = await headers()
   const cookieStore = await cookies()
-  const preferred = cookieStore.get(ACTIVE_FAMILY_COOKIE)?.value
+  const preferred = hdrs.get('x-family-id') || cookieStore.get(ACTIVE_FAMILY_COOKIE)?.value
   if (preferred && active.some((m) => m.familyId === preferred)) {
     return preferred
   }
@@ -94,6 +97,9 @@ export async function requireFamily(): Promise<{ userId: string; familyId: strin
 
 /** Kräver inloggad användare; returnerar userId. */
 export async function requireUser(): Promise<string> {
+  // Mobil-app: Bearer-token har företräde. Faller tillbaka på NextAuth-cookie (webben).
+  const bearerUserId = await getBearerUserId()
+  if (bearerUserId) return bearerUserId
   const session = await auth()
   if (!session?.user?.id) {
     throw new Error('UNAUTHORIZED')
