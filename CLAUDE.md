@@ -8,6 +8,8 @@ magic link eller e-post + lösenord.
 
 **Live:** https://vadskavi.nu (app under `/laga`)
 **Repo:** https://github.com/tschiffer46/reza (image: `ghcr.io/tschiffer46/vadskavi`)
+**Mobil-app:** native iOS-app i separat repo `laga-app` (Expo) som konsumerar detta API via
+Bearer-token — se **"Mobil-API"** nedan.
 
 > Repot hette tidigare "reza" (en avvecklad POC). All kod här är VadSkaVi — appen ligger i
 > repo-roten.
@@ -39,6 +41,7 @@ src/
 │   │   └── profile/page.tsx    # Konto, plan/användning, lösenord
 │   └── api/
 │       ├── auth/[...nextauth]  register  onboarding  profile{,/password}
+│       ├── mobile/login        # native-appens Bearer-inloggning (publik)
 │       ├── entries{,/[id]}     entries/[id]/{comments,notes,rating,reactions}
 │       ├── family{,/[id]}      family/{join,join-link,switch}  family/[id]/cover
 │       ├── categories{,/[id]}  extract{,/batch}  upload  images/[filename]
@@ -49,11 +52,12 @@ src/
 ├── lib/
 │   ├── auth-email.ts  # canonicalUrl() + Nodemailer magic-link-mejl
 │   ├── family.ts      # gemenskaps-helpers (se nedan) + requireUser/requireAdmin
+│   ├── mobile-auth.ts # Bearer-token (HS256, AUTH_SECRET) för native-appen
 │   ├── plan.ts        # FREE_MONTHLY_LIMIT, monthlyEntryCount
 │   ├── search.ts      # svensk tsvector-sök (raw SQL)
 │   ├── ai.ts  url-extract.ts  images.ts  categories.ts  laga.ts  db.ts  types.ts  utils.ts
 ├── auth.ts            # NextAuth-config (providers, callbacks, JWT)
-└── middleware.ts      # auth-gate; PUBLIC_PATHS släpper /login,/register,/api/register …
+└── middleware.ts      # auth-gate; PUBLIC_PATHS (/login,/register,/api/register,/api/mobile/login …) + Bearer-header för /api/*
 prisma/schema.prisma   # datamodell (nedan)
 scripts/setup-search.ts# idempotent: svensk tsvector-trigger + GIN-index + backfill
 ```
@@ -85,6 +89,24 @@ scripts/setup-search.ts# idempotent: svensk tsvector-trigger + GIN-index + backf
   Docker-volym i prod).
 - shadcn-komponenter under `src/components/ui/`; appspecifik UI under `src/components/laga/`.
 - Tematokens i `src/app/globals.css` (`--ink`, `--muted`, `--accent`, `--card` …).
+
+## Mobil-API (native-appen `laga-app`)
+Native iOS-appen kan inte hantera NextAuth:s HTTP-only-cookie, så den autentiserar med en
+**Bearer-token** vid sidan av webbens cookie-session:
+- **`POST /api/mobile/login`** (publik) — `{ email, password }` → `{ token, user, families,
+  activeFamilyId }`. Samma bcrypt-kontroll som Credentials-providern i `src/auth.ts`.
+- **`src/lib/mobile-auth.ts`** — `signMobileToken` / `verifyMobileToken` / `getBearerUserId`.
+  HS256-JWT signerad med befintliga `AUTH_SECRET` via `node:crypto`. **Statslös** (ingen
+  DB-tabell), **ingen ny dependency**, **ingen schemaändring**, ingen ny server-env.
+- **`requireUser()`** (`src/lib/family.ts`) provar Bearer först, faller annars tillbaka på
+  cookie-sessionen ⇒ **alla** befintliga `/api/*`-routes funkar för appen utan per-route-ändring.
+- **`getDefaultFamily()`** läser `x-family-id`-header för val av aktiv gemenskap (saknas den
+  används första aktiva gemenskapen, precis som webbens cookie-fallback).
+- **`src/middleware.ts`** — `/api/mobile/login` ligger i `PUBLIC_PATHS`; requests med
+  `Authorization: Bearer` släpps förbi auth-grinden men **endast för `/api/*`** (sidor som
+  `/laga`/`/admin` kan inte kringgås med en godtycklig header).
+- **Bilder:** `/api/images/[filename]` kräver inloggning ⇒ appen skickar Bearer-token i
+  `<Image>`-headern (`source={{ uri, headers }}`).
 
 ## Kommandon
 ```bash
@@ -119,7 +141,8 @@ npx prisma studio     # databas-GUI
   `src/middleware.ts` (annars 307→/login, t.ex. POST `/api/register` som blir 405). Den
   publika URL:en pinnas via `canonicalUrl()` (`src/lib/auth-email.ts`) + redirect-callback i
   `src/auth.ts`, annars genererar Auth.js `0.0.0.0`-länkar bakom NPM. Servern måste ha
-  `AUTH_URL=https://vadskavi.nu` i `.env.vadskavi`.
+  `AUTH_URL=https://vadskavi.nu` i `.env.vadskavi`. Native-appen autentiserar i stället med
+  **Bearer-token** (se **"Mobil-API"** ovan) — `requireUser()` hanterar båda vägarna.
 - **Roller (manuellt, ingen Stripe än):** `User.plan` = `free`/`paid` och `User.isAdmin`
   sätts via SQL eller i `/admin`-vyn. **Första admin utan SQL:** sätt
   `ADMIN_EMAILS=epost1,epost2` i `.env.vadskavi` — `requireAdmin` (`src/lib/family.ts`)
