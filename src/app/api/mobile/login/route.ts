@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/db'
 import { signMobileToken } from '@/lib/mobile-auth'
-import { getUserFamilies } from '@/lib/family'
+import { getDefaultFamily, getUserFamilies } from '@/lib/family'
 
 /**
  * POST /api/mobile/login — inloggning för mobil-appen.
@@ -32,13 +32,16 @@ export async function POST(request: NextRequest) {
   }
 
   const token = signMobileToken(user.id)
-  // Auto-skapar en gemenskap om användaren saknar (matchar webbens beteende).
+  // Säkerställ en aktiv gemenskap (auto-skapar vid behov) — samma logik som övriga
+  // /api/*-routes via getDefaultFamily, så activeFamilyId aldrig blir null och alltid
+  // ingår i families-listan.
+  const activeFamilyId = await getDefaultFamily(user.id)
   const families = await getUserFamilies(user.id)
 
   return NextResponse.json({
     token,
     user: { id: user.id, email: user.email, name: user.name },
     families,
-    activeFamilyId: families[0]?.id ?? null,
+    activeFamilyId,
   })
 }

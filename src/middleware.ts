@@ -23,7 +23,7 @@ const PUBLIC_PATHS = [
   '/img',
   '/api/auth',
   '/api/register',
-  '/api/mobile',
+  '/api/mobile/login',
   '/api/debug',
 ]
 
@@ -41,9 +41,12 @@ export function middleware(req: NextRequest) {
   if (isPublic) return NextResponse.next()
 
   // Mobil-appen skickar `Authorization: Bearer <token>` i stället för sessionscookie.
-  // Vi släpper förbi grinden här; den riktiga token-valideringen sker i route-handlern
-  // (requireUser → getBearerUserId).
-  const hasBearer = req.headers.get('authorization')?.startsWith('Bearer ') ?? false
+  // Bara API-anrop får passera grinden via header (den riktiga token-valideringen sker
+  // i route-handlern, requireUser → getBearerUserId). Sidor (t.ex. /laga, /admin) ska
+  // inte kunna kringgå redirecten med en godtycklig Authorization-header.
+  const hasBearer =
+    pathname.startsWith('/api/') &&
+    (req.headers.get('authorization')?.startsWith('Bearer ') ?? false)
   const hasSession =
     hasBearer ||
     req.cookies.has('authjs.session-token') ||
