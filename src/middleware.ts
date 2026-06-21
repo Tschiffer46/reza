@@ -23,6 +23,7 @@ const PUBLIC_PATHS = [
   '/img',
   '/api/auth',
   '/api/register',
+  '/api/mobile',
   '/api/debug',
 ]
 
@@ -39,7 +40,12 @@ export function middleware(req: NextRequest) {
   )
   if (isPublic) return NextResponse.next()
 
+  // Mobil-appen skickar `Authorization: Bearer <token>` i stället för sessionscookie.
+  // Vi släpper förbi grinden här; den riktiga token-valideringen sker i route-handlern
+  // (requireUser → getBearerUserId).
+  const hasBearer = req.headers.get('authorization')?.startsWith('Bearer ') ?? false
   const hasSession =
+    hasBearer ||
     req.cookies.has('authjs.session-token') ||
     req.cookies.has('__Secure-authjs.session-token')
 
