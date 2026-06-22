@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireUser } from '@/lib/family'
+import { FREE_MONTHLY_LIMIT, monthlyEntryCount } from '@/lib/plan'
 
 export async function GET() {
   let userId
@@ -11,9 +12,11 @@ export async function GET() {
   }
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { name: true, email: true, avatar: true, bio: true },
+    select: { name: true, email: true, avatar: true, bio: true, plan: true },
   })
-  return NextResponse.json(user)
+  // Plan + månadsanvändning så appen kan visa kvot/uppgradering (gratis = max FREE_MONTHLY_LIMIT).
+  const count = await monthlyEntryCount(userId)
+  return NextResponse.json({ ...user, usage: { count, limit: FREE_MONTHLY_LIMIT } })
 }
 
 export async function PATCH(request: NextRequest) {

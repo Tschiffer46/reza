@@ -23,11 +23,17 @@ export async function GET(_request: NextRequest, { params }: Params) {
         include: { author: { select: { name: true, email: true } } },
         orderBy: { createdAt: 'asc' },
       },
+      notes: {
+        include: { author: { select: { name: true, email: true } } },
+        orderBy: { createdAt: 'asc' },
+      },
       changes: {
         include: { user: { select: { name: true, email: true } } },
         orderBy: { createdAt: 'desc' },
         take: 20,
       },
+      _count: { select: { reactions: true } },
+      reactions: { where: { userId }, select: { id: true } },
     },
   })
 
@@ -35,7 +41,9 @@ export async function GET(_request: NextRequest, { params }: Params) {
   if (!entry || !familyIds.includes(entry.familyId)) {
     return NextResponse.json({ error: 'Hittades inte' }, { status: 404 })
   }
-  return NextResponse.json(entry)
+  // Plocka ut hjärt-summering (antal + om jag hjärtat) och returnera resten som det är.
+  const { _count, reactions, ...rest } = entry
+  return NextResponse.json({ ...rest, heartCount: _count.reactions, hearted: reactions.length > 0 })
 }
 
 export async function PUT(request: NextRequest, { params }: Params) {
