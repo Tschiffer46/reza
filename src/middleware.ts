@@ -24,6 +24,7 @@ const PUBLIC_PATHS = [
   '/api/auth',
   '/api/register',
   '/api/mobile/login',
+  '/api/mobile/apple',
   '/api/debug',
 ]
 
