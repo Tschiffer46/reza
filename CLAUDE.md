@@ -95,6 +95,15 @@ Native iOS-appen kan inte hantera NextAuth:s HTTP-only-cookie, så den autentise
 **Bearer-token** vid sidan av webbens cookie-session:
 - **`POST /api/mobile/login`** (publik) — `{ email, password }` → `{ token, user, families,
   activeFamilyId }`. Samma bcrypt-kontroll som Credentials-providern i `src/auth.ts`.
+- **`POST /api/mobile/apple`** (publik) — Sign in with Apple för native-appen. `{ identityToken,
+  fullName?, email? }`. Verifierar Apples identityToken med **`jose`** (`createRemoteJWKSet` mot
+  `appleid.apple.com/auth/keys` + `jwtVerify`): `iss=https://appleid.apple.com`, `aud=`appens
+  **bundle-id** (`APPLE_APP_BUNDLE_ID`, default `nu.vadskavi.laga` — native använder bundle-id som
+  `aud`, INTE webbens Apple-Services-ID), `exp`. **Find-or-create** speglar webbens Apple-provider
+  (`allowDangerousEmailAccountLinking`): Apple-`Account`(provider=`apple`, providerAccountId=`sub`)
+  → annars befintlig `User` med samma e-post (länkas) → annars nytt konto. Returnerar samma form som
+  login (`signMobileToken` + `getDefaultFamily` + `getUserFamilies`). Namn/e-post kommer bara vid
+  *första* inloggningen ⇒ appen skickar med dem då. "Dölj min e-post" ger relay-adress ⇒ nytt konto.
 - **`src/lib/mobile-auth.ts`** — `signMobileToken` / `verifyMobileToken` / `getBearerUserId`.
   HS256-JWT signerad med befintliga `AUTH_SECRET` via `node:crypto`. **Statslös** (ingen
   DB-tabell), **ingen ny dependency**, **ingen schemaändring**, ingen ny server-env.
@@ -102,9 +111,13 @@ Native iOS-appen kan inte hantera NextAuth:s HTTP-only-cookie, så den autentise
   cookie-sessionen ⇒ **alla** befintliga `/api/*`-routes funkar för appen utan per-route-ändring.
 - **`getDefaultFamily()`** läser `x-family-id`-header för val av aktiv gemenskap (saknas den
   används första aktiva gemenskapen, precis som webbens cookie-fallback).
-- **`src/middleware.ts`** — `/api/mobile/login` ligger i `PUBLIC_PATHS`; requests med
-  `Authorization: Bearer` släpps förbi auth-grinden men **endast för `/api/*`** (sidor som
-  `/laga`/`/admin` kan inte kringgås med en godtycklig header).
+- **`src/middleware.ts`** — `/api/mobile/login` **och `/api/mobile/apple`** ligger i `PUBLIC_PATHS`;
+  requests med `Authorization: Bearer` släpps förbi auth-grinden men **endast för `/api/*`** (sidor
+  som `/laga`/`/admin` kan inte kringgås med en godtycklig header).
+- **`jose`** är en explicit dependency (Apple-token-verifiering); var redan transitiv via next-auth.
+  Optional env `APPLE_APP_BUNDLE_ID` överstyr förväntat `aud` (default `nu.vadskavi.laga`).
+  Native Sign in with Apple kräver att capability:n är påslagen på App ID:t — det är ett **app-/EAS-
+  steg** (se `laga-app/CLAUDE.md`), inte en server-/reza-ändring.
 - **Bilder:** `/api/images/[filename]` kräver inloggning ⇒ appen skickar Bearer-token i
   `<Image>`-headern (`source={{ uri, headers }}`).
 
