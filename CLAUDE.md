@@ -163,6 +163,9 @@ npx prisma studio     # databas-GUI
   recept/månad (`FREE_MONTHLY_LIMIT` i `src/lib/plan.ts`). Premium-förmåner idag: obegränsat
   antal recept, byta gemenskapens omslagsbild, moderera medlemssnack.
   `Family.status='suspended'` blockerar åtkomst (admin stänger missbrukade gemenskaper).
+  **På gång — Purchasely-IAP (native-appen):** kommande premium-köp i `laga-app` sätter `User.plan`
+  via en entitlement-sync (Purchasely-webhook → ny reza-endpoint; `User.plan` finns redan ⇒ ingen
+  schemaändring väntas). Nuläge/design: `laga-app/docs/PURCHASELY-INTEGRATION-STATE.md`.
 - **Härledd data:** "lagad av" + aktivitetsflöde härleds ur `ChangeLog`; betygssnitt
   denormaliseras till `Entry.ratingAvg/ratingCount` (uppdatera vid ny Rating).
 - **Byggmiljö (Claude-session):** ingen Docker-daemon → verifiera med `npx tsc --noEmit` +
