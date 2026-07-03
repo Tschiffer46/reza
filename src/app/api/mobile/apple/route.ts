@@ -3,6 +3,7 @@ import { createRemoteJWKSet, jwtVerify } from 'jose'
 import { prisma } from '@/lib/db'
 import { signMobileToken } from '@/lib/mobile-auth'
 import { getDefaultFamily, getUserFamilies } from '@/lib/family'
+import { exchangeAndStoreAppleRefreshToken } from '@/lib/apple-revoke'
 
 /**
  * POST /api/mobile/apple — "Sign in with Apple" för mobil-appen.
@@ -23,7 +24,12 @@ const APPLE_AUDIENCE = process.env.APPLE_APP_BUNDLE_ID || 'nu.vadskavi.laga'
 const APPLE_JWKS = createRemoteJWKSet(new URL('https://appleid.apple.com/auth/keys'))
 
 export async function POST(request: NextRequest) {
-  let body: { identityToken?: unknown; fullName?: unknown; email?: unknown }
+  let body: {
+    identityToken?: unknown
+    fullName?: unknown
+    email?: unknown
+    authorizationCode?: unknown
+  }
   try {
     body = await request.json()
   } catch {
@@ -98,6 +104,14 @@ export async function POST(request: NextRequest) {
   } else if (name) {
     // Fyll i namnet om kontot saknar ett (Apple ger namn bara första gången).
     await prisma.user.updateMany({ where: { id: userId, name: null }, data: { name } })
+  }
+
+  // Byt authorizationCode → refresh_token (sparas på Account-raden) så att Apples
+  // tokens kan revokeras vid kontoradering. Env-gated best effort — se apple-revoke.ts.
+  const authorizationCode =
+    typeof body?.authorizationCode === 'string' ? body.authorizationCode : ''
+  if (authorizationCode) {
+    await exchangeAndStoreAppleRefreshToken(userId, authorizationCode)
   }
 
   const token = signMobileToken(userId)

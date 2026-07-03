@@ -15,6 +15,7 @@ const PUBLIC_PATHS = [
   '/om',
   '/kontakt',
   '/integritetspolicy',
+  '/anvandarvillkor',
   '/cookiepolicy',
   '/om-annonslankar',
   '/robots.txt',
@@ -25,6 +26,7 @@ const PUBLIC_PATHS = [
   '/api/register',
   '/api/mobile/login',
   '/api/mobile/apple',
+  '/api/purchasely/webhook',
   '/api/debug',
 ]
 

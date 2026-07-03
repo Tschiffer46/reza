@@ -47,6 +47,17 @@ export default function IntegritetspolicyPage() {
         </li>
       </ul>
 
+      <h2>Mobilappen VadSkaVi Laga</h2>
+      <p>
+        Policyn gäller även iOS-appen VadSkaVi Laga, som använder samma konto som webbplatsen.
+        Loggar du in med Apple (”Sign in with Apple”) får vi din e-postadress (eller Apples
+        reläadress om du väljer att dölja den) och ditt namn från Apple — inget mer. Foton du
+        själv väljer används endast för receptbilder och AI-extraktion av recept. Du kan radera
+        ditt konto direkt i appen under <strong>Konto → Radera konto</strong>; då tas
+        personuppgifter och inloggningsvägar bort och eventuella Apple-inloggningstokens
+        återkallas.
+      </p>
+
       <h2>Affiliate-länkar och tredjepartscookies</h2>
       <p>
         Vissa receptsidor innehåller annonslänkar (affiliate). När du klickar på en sådan länk –

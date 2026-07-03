@@ -4,6 +4,7 @@ import { CookieSettingsButton } from '@/components/CookieSettingsButton'
 
 const LEGAL = [
   { href: '/integritetspolicy', label: 'Integritetspolicy' },
+  { href: '/anvandarvillkor', label: 'Användarvillkor' },
   { href: '/cookiepolicy', label: 'Cookiepolicy' },
   { href: '/om-annonslankar', label: 'Om annonslänkar' },
   { href: '/kontakt', label: 'Kontakt' },

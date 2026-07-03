@@ -120,6 +120,21 @@ Native iOS-appen kan inte hantera NextAuth:s HTTP-only-cookie, så den autentise
   steg** (se `laga-app/CLAUDE.md`), inte en server-/reza-ändring.
 - **Bilder:** `/api/images/[filename]` kräver inloggning ⇒ appen skickar Bearer-token i
   `<Image>`-headern (`source={{ uri, headers }}`).
+- **Kontoradering (App Store-krav):** `DELETE /api/profile` **anonymiserar** användaren
+  (e-post → `raderad-<id>@borttagen.vadskavi.nu`, namn "Raderad användare", password/avatar/bio
+  null) + raderar Accounts/Sessions/Memberships/Posts/Notes. Recept/kommentarer/betyg behålls
+  attribuerade till den anonymiserade användaren. `requireUser()` spärrar kvarvarande statslösa
+  tokens vars konto raderats (kollar e-postdomänen). Apple-tokens revokeras best effort via
+  `src/lib/apple-revoke.ts` (env `APPLE_TEAM_ID`/`APPLE_KEY_ID`/`APPLE_PRIVATE_KEY`; utan env
+  no-op) — `/api/mobile/apple` tar optionalt `authorizationCode` och sparar `refresh_token` på
+  Apple-Account-raden för detta.
+- **Lämna gemenskap:** `POST /api/family/[id]/leave` (raderar callerns membership).
+- **Rapportera innehåll:** feedback-typen `report` (`POST /api/feedback`) — appens
+  "Rapportera"-åtgärder; hanteras i admin-feedbackvyn.
+- **Purchasely-webhook:** `POST /api/purchasely/webhook` (publik, kräver env
+  `PURCHASELY_WEBHOOK_SECRET`, annars 503) speglar prenumerationshändelser → `User.plan`.
+  Payload-mappning tolerant — stäm av mot Purchasely-doc vid konsolsetup.
+- **Webb:** `/anvandarvillkor` (användarvillkor, publik + i footer/sitemap).
 
 ## Kommandon
 ```bash
