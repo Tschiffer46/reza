@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { requireUser } from '@/lib/family'
 
-const TYPES = ['bug', 'idea', 'other', 'upgrade']
+// 'report' = anmält innehåll (App Store Guideline 1.2) — skickas från appens
+// "Rapportera"-åtgärder och hanteras i admin-feedbackvyn.
+const TYPES = ['bug', 'idea', 'other', 'upgrade', 'report']
 
 /** Användare skickar feedback — sparas i DB och visas i admin. */
 export async function POST(request: NextRequest) {

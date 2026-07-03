@@ -12,6 +12,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     '/om',
     '/kontakt',
     '/integritetspolicy',
+    '/anvandarvillkor',
     '/cookiepolicy',
     '/om-annonslankar',
   ]

@@ -7,6 +7,17 @@ import { DEFAULT_CATEGORIES } from '@/lib/categories'
 
 export const ACTIVE_FAMILY_COOKIE = 'vadskavi-active-family'
 
+/**
+ * Raderade (anonymiserade) konton får en deterministisk e-post på denna domän
+ * (se DELETE /api/profile). Används för att spärra kvarvarande statslösa
+ * tokens/sessioner — en JWT kan inte återkallas, så kontrollen sker i requireUser.
+ */
+export const DELETED_EMAIL_DOMAIN = 'borttagen.vadskavi.nu'
+
+export function deletedEmailFor(userId: string): string {
+  return `raderad-${userId}@${DELETED_EMAIL_DOMAIN}`
+}
+
 function generateInviteCode(): string {
   return randomBytes(4).toString('hex').toUpperCase() // 8 tecken
 }
@@ -99,12 +110,17 @@ export async function requireFamily(): Promise<{ userId: string; familyId: strin
 export async function requireUser(): Promise<string> {
   // Mobil-app: Bearer-token har företräde. Faller tillbaka på NextAuth-cookie (webben).
   const bearerUserId = await getBearerUserId()
-  if (bearerUserId) return bearerUserId
-  const session = await auth()
-  if (!session?.user?.id) {
+  const userId = bearerUserId ?? (await auth())?.user?.id
+  if (!userId) {
     throw new Error('UNAUTHORIZED')
   }
-  return session.user.id
+  // Både mobil-JWT och webbens JWT-session är statslösa och kan inte återkallas —
+  // spärra tokens vars konto har raderats (anonymiserats) sedan de utfärdades.
+  const u = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } })
+  if (!u || u.email.endsWith(`@${DELETED_EMAIL_DOMAIN}`)) {
+    throw new Error('UNAUTHORIZED')
+  }
+  return userId
 }
 
 /**
