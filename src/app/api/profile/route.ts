@@ -17,7 +17,17 @@ export async function GET() {
   })
   // Plan + månadsanvändning så appen kan visa kvot/uppgradering (gratis = max FREE_MONTHLY_LIMIT).
   const count = await monthlyEntryCount(userId)
-  return NextResponse.json({ ...user, usage: { count, limit: FREE_MONTHLY_LIMIT } })
+  // Enkel personlig statistik (Konto-fliken): recept tillagda totalt + antal
+  // "markera som lagad"-händelser (ChangeLog, kumulativt — inte unika recept).
+  const [recipesAdded, recipesCooked] = await Promise.all([
+    prisma.entry.count({ where: { creatorId: userId } }),
+    prisma.changeLog.count({ where: { userId, action: 'cooked' } }),
+  ])
+  return NextResponse.json({
+    ...user,
+    usage: { count, limit: FREE_MONTHLY_LIMIT },
+    stats: { recipesAdded, recipesCooked },
+  })
 }
 
 export async function PATCH(request: NextRequest) {
