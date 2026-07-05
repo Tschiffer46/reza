@@ -20,7 +20,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   const body = await request.json()
   const data: { name?: string; background?: string } = {}
-  if (typeof body.name === 'string' && body.name.trim()) data.name = body.name.trim()
+  if (typeof body.name === 'string' && body.name.trim()) {
+    // Byta namn på gemenskapen är en Premium-förmån (som omslagsbilden).
+    const me = await prisma.user.findUnique({ where: { id: userId }, select: { plan: true } })
+    if (me?.plan !== 'paid') {
+      return NextResponse.json({ error: 'Premium krävs för att byta namn' }, { status: 402 })
+    }
+    data.name = body.name.trim()
+  }
   if (typeof body.background === 'string') data.background = body.background
   if (Object.keys(data).length === 0) {
     return NextResponse.json({ error: 'Inget att uppdatera' }, { status: 400 })
