@@ -1,13 +1,14 @@
 import { extractFromText, normalizeEntry, type ExtractedEntry } from '@/lib/ai'
 
-/** Hämta ett recept från en URL: TikTok-oEmbed / JSON-LD Recipe / og-taggar / HTML→text→AI. */
+/** Hämta ett recept från en URL: TikTok-caption / JSON-LD Recipe / og-taggar / HTML→text→AI. */
 export async function extractFromUrl(url: string): Promise<ExtractedEntry> {
   const hostname = new URL(url).hostname.toLowerCase()
 
-  // TikTok: caption finns inte i HTML (bot-vägg) men i oEmbed
-  if (hostname.endsWith('tiktok.com')) {
-    const tt = await tiktokOEmbed(url)
-    if (tt) return tt
+  // TikTok hanteras separat: videosidan är en JS-skal-/bot-sida utan läsbar text, så det
+  // generella HTML-spåret nedan ger bara skräp ("TikTok - Make Your Day"). Misslyckas
+  // caption-hämtningen ska användaren få ett tydligt fel — inte ett påhittat recept.
+  if (hostname === 'tiktok.com' || hostname.endsWith('.tiktok.com')) {
+    return extractTikTok(url)
   }
 
   const response = await fetch(url, {
@@ -32,22 +33,99 @@ export async function extractFromUrl(url: string): Promise<ExtractedEntry> {
   return result
 }
 
-async function tiktokOEmbed(url: string): Promise<ExtractedEntry | null> {
+/** Webbläsar-lik User-Agent — TikTok svarar med 403/bot-vägg på uppenbara bot-UA:er. */
+const BROWSER_UA =
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
+
+interface TikTokCaption {
+  caption: string
+  author?: string
+}
+
+/**
+ * TikTok: receptet ligger i videons bildtext (caption). Den hämtas från två källor
+ * parallellt — oEmbed-API:ts `title` (kan vara trunkerad för långa captions) och
+ * videosidans inbäddade JSON (hela captionen när sidan inte bot-väggas) — och den
+ * längsta vinner. Kortlänkar (vm./vt.tiktok.com) följs via redirect av fetch.
+ */
+async function extractTikTok(url: string): Promise<ExtractedEntry> {
+  const [oembed, page] = await Promise.all([tiktokOEmbed(url), tiktokPageCaption(url)])
+  const caption =
+    (page?.caption.length ?? 0) > (oembed?.caption.length ?? 0) ? page?.caption : oembed?.caption
+  const author = oembed?.author || page?.author
+
+  if (!caption?.trim()) {
+    throw new Error(
+      'Kunde inte hämta TikTok-videons bildtext — TikTok blockerar ibland hämtning från servrar. ' +
+        'Öppna videon, kopiera bildtexten och klistra in den som text i stället.',
+    )
+  }
+
+  const result = await extractFromText(
+    author ? `${caption}\n\nKälla: TikTok (@${author})` : caption,
+  )
+  result.source = result.source || (author ? `TikTok (@${author})` : 'TikTok')
+  result.url = result.url || url
+  return result
+}
+
+async function tiktokOEmbed(url: string): Promise<TikTokCaption | null> {
   try {
     const r = await fetch(`https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; VadSkaVi/1.0)' },
+      headers: { 'User-Agent': BROWSER_UA },
     })
     if (!r.ok) return null
     const o = (await r.json()) as { title?: string; author_name?: string }
-    const text = [o.title, o.author_name].filter(Boolean).join('\n')
-    if (!text.trim()) return null
-    const result = await extractFromText(text)
-    result.source = result.source || (o.author_name ? `TikTok (@${o.author_name})` : 'TikTok')
-    result.url = result.url || url
-    return result
+    if (!o.title?.trim()) return null
+    return { caption: o.title.trim(), author: o.author_name }
   } catch {
     return null
   }
+}
+
+/** Läs captionen ur videosidans server-renderade JSON (__UNIVERSAL_DATA_FOR_REHYDRATION__,
+ *  äldre sidor: SIGI_STATE). Bot-vägg/captcha-sida saknar JSON:en ⇒ null. */
+async function tiktokPageCaption(url: string): Promise<TikTokCaption | null> {
+  try {
+    const r = await fetch(url, { headers: { 'User-Agent': BROWSER_UA, Accept: 'text/html' } })
+    if (!r.ok) return null
+    const html = await r.text()
+    for (const id of ['__UNIVERSAL_DATA_FOR_REHYDRATION__', 'SIGI_STATE']) {
+      const m = html.match(new RegExp(`<script[^>]+id=["']${id}["'][^>]*>([\\s\\S]*?)</script>`, 'i'))
+      if (!m) continue
+      try {
+        const item = findTikTokItem(JSON.parse(m[1]))
+        if (item) return item
+      } catch {
+        // ogiltig JSON — prova nästa källa
+      }
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+/** Leta upp video-objektet ({desc, author/nickname}) i TikTok:s state-träd, oavsett om det
+ *  ligger under webapp.video-detail.itemInfo.itemStruct eller ItemModule (strukturen byter
+ *  form mellan sidversioner — därför en tolerant djupsökning med djupgräns). */
+function findTikTokItem(data: unknown, depth = 0): TikTokCaption | null {
+  if (!data || typeof data !== 'object' || depth > 6) return null
+  const obj = data as Record<string, unknown>
+  if (typeof obj.desc === 'string' && obj.desc.trim() && ('author' in obj || 'nickname' in obj)) {
+    let author: string | undefined
+    if (typeof obj.nickname === 'string') author = obj.nickname
+    else if (obj.author && typeof obj.author === 'object') {
+      const n = (obj.author as Record<string, unknown>).nickname
+      if (typeof n === 'string') author = n
+    } else if (typeof obj.author === 'string') author = obj.author
+    return { caption: obj.desc.trim(), author }
+  }
+  for (const value of Object.values(obj)) {
+    const found = findTikTokItem(value, depth + 1)
+    if (found) return found
+  }
+  return null
 }
 
 function ogMeta(html: string): string {

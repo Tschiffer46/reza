@@ -1,24 +1,24 @@
 import Anthropic from '@anthropic-ai/sdk'
 
 /**
- * Anthropic-konfiguration för VadSkaVi (förberedd för senare sprintar).
+ * Anthropic-konfiguration för VadSkaVi.
  *
  * Token-optimering enligt spec:
- *  - Haiku för textextraktion (snabb/billig), Sonnet för bildextraktion (bättre vision)
- *  - max_tokens: 800
+ *  - Haiku för textextraktion (snabb/billig), Sonnet 5 för bildextraktion (bättre vision)
+ *  - max_tokens: 1500
  *  - Systemprompt på svenska
- *
- * Mönster portat från Reza (src/lib/claude.ts). Anropas ännu inte i Sprint 1.
  */
 
 export const AI_MODELS = {
   /** Textextraktion — snabb och billig. */
   text: 'claude-haiku-4-5-20251001',
-  /** Bildextraktion — bättre på vision. */
-  image: 'claude-sonnet-4-20250514',
+  /** Bildextraktion — bättre på vision. (Sonnet 4.0 är pensionerad — håll denna aktuell.) */
+  image: 'claude-sonnet-5',
 } as const
 
-export const AI_MAX_TOKENS = 800
+/** Tak för genererad JSON (betalas per genererad token, inte per tak). Sonnet 5:s tokenizer
+ *  ger ~30 % fler tokens än Sonnet 4 för samma text — 800 riskerade trunkerad JSON. */
+export const AI_MAX_TOKENS = 1500
 
 export const AI_SYSTEM_PROMPT = `Du är en receptextraherings-assistent för en svensk receptbok.
 Analysera inmatningen (text eller bild) och returnera strukturerad JSON.
@@ -160,6 +160,9 @@ export async function extractFromImage(
   const response = await getAnthropic().messages.create({
     model: AI_MODELS.image,
     max_tokens: AI_MAX_TOKENS,
+    // Sonnet 5 kör adaptive thinking som default när fältet utelämnas — för ren
+    // JSON-extraktion vill vi ha snabbt enpass-svar där hela token-budgeten går till JSON.
+    thinking: { type: 'disabled' },
     system: AI_SYSTEM_PROMPT,
     messages: [
       {
