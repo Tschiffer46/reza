@@ -21,7 +21,7 @@ Bearer-token — se **"Mobil-API"** nedan.
 - **PostgreSQL 16** + **Prisma 6** ORM
 - **Auth.js v5** (NextAuth) — JWT-sessioner + PrismaAdapter; Nodemailer magic link (SMTP/Mailcow)
   + Credentials (e-post + lösenord, bcryptjs)
-- **Anthropic SDK** — Haiku 4.5 (text) / Sonnet (bild) för receptextraktion
+- **Anthropic SDK** — Haiku 4.5 (text) / Sonnet 5 (bild) för receptextraktion
 - **Sharp** för bildresize (WebP), **Wake Lock API** för lägescookning
 - **Docker** (multi-stage, node:20-alpine) bakom **Nginx Proxy Manager**, **PWA** (manifest + SW)
 
