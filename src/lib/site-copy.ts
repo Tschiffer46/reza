@@ -7,6 +7,9 @@
  * varenda komponent. Skriv därför inte ny marknadsföringstext direkt i JSX.
  */
 import { Heart, Leaf, Lock, Sparkles, type LucideIcon } from 'lucide-react'
+import { siteConfig } from '@/lib/site-config'
+
+const { share, purpose } = siteConfig.pledge
 
 export interface Principle {
   icon: LucideIcon
@@ -55,11 +58,14 @@ export const principles: Principle[] = [
   },
   {
     icon: Heart,
-    title: '20 % till välgörande ändamål',
-    text: 'En femtedel av intäkterna, efter driftskostnader, går till välgörande ändamål inom mat, hälsa och barns uppväxt. Vilka mottagarna blir och hur mycket det handlar om redovisar vi öppet när det finns intäkter att dela.',
+    title: `${share} % till välgörande ändamål`,
+    text: `${share} % av intäkterna, efter driftskostnader, går till välgörande ändamål inom ${purpose}. Vilka mottagarna blir och hur mycket det handlar om redovisar vi öppet när det finns intäkter att dela.`,
   },
 ]
 
-/** Kort version av löftet — används i footern och på appsidorna. */
-export const pledgeLine =
-  '20 % av intäkterna, efter driftskostnader, går till välgörande ändamål.'
+/**
+ * Kort version av löftet — används i footern och på appsidorna. Andelen och
+ * ändamålet kommer från `siteConfig.pledge`, som är enda sanningskällan: en
+ * hårdkodad siffra här skulle hamna i otakt så fort löftet ändras.
+ */
+export const pledgeLine = `${share} % av intäkterna, efter driftskostnader, går till välgörande ändamål.`

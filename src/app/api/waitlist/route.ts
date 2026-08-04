@@ -41,6 +41,32 @@ function sweep() {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
+/**
+ * Anroparens IP, så gott det går bakom Nginx Proxy Manager.
+ *
+ * `x-real-ip` sätts av proxyn till den faktiska peer-adressen och skrivs över
+ * vid varje request ⇒ går inte att förfalska. `x-forwarded-for` däremot
+ * *appendas* till (`$proxy_add_x_forwarded_for`), så ett klientskickat värde
+ * hamnar först i listan medan vår proxys observation hamnar sist. Att läsa
+ * första värdet skulle därför göra takbegränsningen trivial att kringgå — en
+ * bot behöver bara rotera en påhittad header. Vi läser sista värdet.
+ */
+function clientIp(request: NextRequest): string {
+  const real = request.headers.get('x-real-ip')?.trim()
+  if (real) return real
+
+  const forwarded = request.headers.get('x-forwarded-for')
+  if (forwarded) {
+    const hops = forwarded
+      .split(',')
+      .map((p) => p.trim())
+      .filter(Boolean)
+    if (hops.length > 0) return hops[hops.length - 1]
+  }
+
+  return 'okänd'
+}
+
 export async function POST(request: NextRequest) {
   let body: { app?: string; email?: string; company?: string }
   try {
@@ -63,10 +89,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Skriv en giltig e-postadress' }, { status: 400 })
   }
 
-  const ip =
-    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    request.headers.get('x-real-ip') ||
-    'okänd'
+  const ip = clientIp(request)
   sweep()
   if (rateLimited(ip)) {
     return NextResponse.json(
@@ -75,8 +98,15 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  // Samma adress två gånger ska varken ge dubbelrader eller ett felmeddelande
-  // i ansiktet på någon som bara klickade en gång för mycket.
+  // Dedupe: samma adress två gånger ska inte ge en till rad, och framför allt
+  // inte ett felmeddelande i ansiktet på någon som klickade en gång för mycket.
+  //
+  // Medvetet best effort — kontrollen och insert:en är inte atomiska, så två
+  // exakt samtidiga POST:ar kan båda slinka förbi. Värsta utfallet är en
+  // dubblettrad i admin-listan, och formuläret spärrar redan knappen medan det
+  // skickar. En Serializable-transaktion med retry (eller ett partiellt unikt
+  // index, som Prisma inte kan uttrycka och som `db push` därför inte skulle
+  // sätta) kostar mer komplexitet än vad en kosmetisk dubblett är värd.
   const existing = await prisma.feedback.findFirst({
     where: { type: 'waitlist', email, message: app.name },
     select: { id: true },
