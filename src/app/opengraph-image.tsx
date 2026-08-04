@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og'
 
-export const alt = 'VadSkaVi — familjens receptbok'
+export const alt = 'VadSkaVi — enkla appar för vardagen'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
@@ -31,9 +31,11 @@ export default function Image() {
             textAlign: 'center',
           }}
         >
-          Recept som någon i din familj faktiskt lagat och gillat
+          Enkla appar för det du ändå gör varje vecka
         </div>
-        <div style={{ marginTop: 30, height: 8, width: 130, background: '#c75b39', borderRadius: 4 }} />
+        {/* Sage — husets accent. Terrakotta hör till Laga och skulle göra
+            delningsbilden till en appbild i stället för en varumärkesbild. */}
+        <div style={{ marginTop: 30, height: 8, width: 130, background: '#3f7d63', borderRadius: 4 }} />
       </div>
     ),
     { ...size },

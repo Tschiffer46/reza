@@ -8,8 +8,11 @@
 export const siteConfig = {
   /** Varumärket som granskas av annonsörer och indexeras av Google. */
   name: 'VadSkaVi',
-  /** Kort slogan/tagline. */
-  tagline: 'Recept som någon i din familj faktiskt lagat och gillat',
+  /**
+   * Kort slogan/tagline för paraplyet. OBS: gäller huset, inte en enskild app —
+   * Lagas egen tagline bor i `src/lib/apps.ts`.
+   */
+  tagline: 'Enkla appar för det du ändå gör varje vecka',
   /** Publik URL utan avslutande slash. Används som metadataBase + i sitemap/JSON-LD. */
   url: 'https://vadskavi.nu',
   domain: 'vadskavi.nu',
@@ -28,8 +31,17 @@ export const siteConfig = {
     website: 'https://www.agiletransition.se',
   },
 
+  /**
+   * Löftet om att dela med sig av intäkterna. Andelen används i copy på flera
+   * ställen — ändra här, inte i texterna.
+   */
+  pledge: {
+    share: 20,
+    purpose: 'mat, hälsa och barns uppväxt',
+  },
+
   /** Datum då de juridiska texterna senast setts över (YYYY-MM-DD). */
-  legalUpdated: '2026-06-19',
+  legalUpdated: '2026-08-04',
 } as const
 
 /** "Frejas väg 7, 245 65 Hjärup" — adress på en rad. */

@@ -5,9 +5,9 @@ import { siteConfig } from '@/lib/site-config'
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
-  title: 'VadSkaVi — familjens receptbok',
+  title: 'VadSkaVi — enkla appar för vardagen',
   description:
-    'Samla, dela och hitta familjens favoritrecept – recept som någon du känner faktiskt lagat och gillat.',
+    'Små, enkla appar för vardagen: Laga för familjens recept och Gymma för träningsloggen. Byggda i Sverige, driftade i Europa, utan spårning.',
   applicationName: siteConfig.name,
   manifest: '/manifest.json',
   appleWebApp: {
@@ -29,7 +29,9 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#1C3A2B',
+  // Matchar headerns bakgrund (--ink). Var tidigare en grön rest från en
+  // avvecklad palett och stämde inte med något på sajten.
+  themeColor: '#1a1a18',
 }
 
 export default function RootLayout({

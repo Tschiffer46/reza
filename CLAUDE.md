@@ -16,8 +16,10 @@ Bearer-token — se **"Mobil-API"** nedan.
 
 ## Stack
 - **Next.js 15** (App Router, `output: 'standalone'`), **React 19**, **TypeScript**
-- **Tailwind CSS 4** (`@theme`-tokens + CSS-variabler) + **shadcn/ui** (grönt "skandinaviskt"
-  tema: header `#1C3A2B`, accent `#4CAF7D`, Georgia)
+- **Tailwind CSS 4** (`@theme`-tokens + CSS-variabler) + **shadcn/ui**. Temat "Skandinaviskt
+  kök": bg `#f6f5f1`, ink `#1a1a18`, accent terrakotta `#c75b39`, sage `#3f7d63`, typsnitt
+  **Schibsted Grotesk** — speglar `laga-app/lib/theme.ts`. (Det gamla gröna temat med Georgia
+  är borta sedan länge; `viewport.themeColor` var sista resten och är rättad.)
 - **PostgreSQL 16** + **Prisma 6** ORM
 - **Auth.js v5** (NextAuth) — JWT-sessioner + PrismaAdapter; Nodemailer magic link (SMTP/Mailcow)
   + Credentials (e-post + lösenord, bcryptjs)
@@ -29,7 +31,13 @@ Bearer-token — se **"Mobil-API"** nedan.
 ```
 src/
 ├── app/
-│   ├── page.tsx                # Landningssida
+│   ├── page.tsx                # Startsida: hero + appkort + principer (paraplyet)
+│   ├── appar/                  # Marknadsföring per app (se "Publik yta" nedan)
+│   │   ├── page.tsx            # Index med båda appkorten
+│   │   └── [slug]/page.tsx     # EN mall för alla appar, SSG ur src/lib/apps.ts
+│   ├── recept/                 # Publik SSG-receptbank (SEO + Adtraction)
+│   ├── om/  kontakt/           # Om + principerna i löptext, kontaktuppgifter
+│   ├── integritetspolicy/  anvandarvillkor/  cookiepolicy/  om-annonslankar/
 │   ├── login/  register/  onboarding/   # Auth-flöde
 │   ├── admin/page.tsx          # Admin: statistik + stäng/öppna gemenskaper
 │   ├── laga/                   # Själva appen
@@ -48,6 +56,8 @@ src/
 │       └── admin/families/[id] # PATCH suspend/active
 ├── components/        # EntryForm, EntryCard, CookButton, ImageUploader …
 │   ├── laga/          # AppShell, Feed, RecipeView, CookMode, FamilyView, AdminFamilies …
+│   ├── marketing/     # AppCard, PrincipleCard, PhoneFrame, WaitlistForm
+│   ├── PublicShell.tsx  SiteHeader.tsx  SiteFooter.tsx  ContentPage.tsx  ConsentBanner.tsx
 │   └── ui/            # shadcn-primitiver (button, card, input)
 ├── lib/
 │   ├── auth-email.ts  # canonicalUrl() + Nodemailer magic-link-mejl
@@ -55,6 +65,9 @@ src/
 │   ├── mobile-auth.ts # Bearer-token (HS256, AUTH_SECRET) för native-appen
 │   ├── plan.ts        # FREE_MONTHLY_LIMIT, monthlyEntryCount
 │   ├── search.ts      # svensk tsvector-sök (raw SQL)
+│   ├── apps.ts        # APPREGISTRET — enda sanningskällan för vilka appar vi har
+│   ├── site-copy.ts   # all copy för startsida/principer/footer (i18n-redo)
+│   ├── site-config.ts # varumärke, företagsidentitet, 20 %-löftet, legalUpdated
 │   ├── ai.ts  url-extract.ts  images.ts  categories.ts  laga.ts  db.ts  types.ts  utils.ts
 ├── auth.ts            # NextAuth-config (providers, callbacks, JWT)
 └── middleware.ts      # auth-gate; PUBLIC_PATHS (/login,/register,/api/register,/api/mobile/login …) + Bearer-header för /api/*
@@ -89,6 +102,43 @@ scripts/setup-search.ts# idempotent: svensk tsvector-trigger + GIN-index + backf
   Docker-volym i prod).
 - shadcn-komponenter under `src/components/ui/`; appspecifik UI under `src/components/laga/`.
 - Tematokens i `src/app/globals.css` (`--ink`, `--muted`, `--accent`, `--card` …).
+
+## Publik yta (vadskavi.nu utanför inloggningen)
+Sajten bär **flera appar**, inte bara Laga. Startsidan är ett nav: hero → appkort →
+principer → avsändare. Varje app har en egen sida under `/appar/<slug>`.
+
+- **`src/lib/apps.ts` är enda sanningskällan.** Startsidan, `/appar`, `/appar/[slug]`,
+  footern och sitemap läser alla därifrån. **Att lägga till app nummer tre = EN post i
+  `apps`** — ingen ny route, ingen ny länklista. `/appar/[slug]` är en mall med
+  `generateStaticParams()`, så nya appar blir statiska sidor automatiskt.
+- **Copy hör hemma i `src/lib/site-copy.ts`**, inte i JSX. Sajten är svensk i dag men
+  principerna pekar mot en publik utanför Sverige; ligger texterna samlade blir en engelsk
+  version en syskonfil i stället för en jakt genom komponenterna.
+- **De fyra principerna** (enkelhet, integritet, EU-drift, 20 % till välgörenhet) står
+  kort på startsidan och i löptext på `/om`. **Håll dem kontrollerbara** — allt som påstås
+  ska gå att granska mot hur apparna faktiskt fungerar. Att AI-tolkningen i Laga går via
+  en amerikansk leverantör står uttryckligen på `/om` och på Laga-sidan; skriv inte bort
+  det när texten putsas.
+- **Receptbanken (`/recept`) är orörd** och länkas numera från Laga-sidan i stället för
+  toppnavet. URL:erna och sitemap-posterna får inte ändras — Adtraction-godkännandet
+  hänger på att innehållet ligger kvar.
+- **Intresseanmälan:** `POST /api/waitlist` (publik) `{ app, email, company? }`. Sparas som
+  en `Feedback`-rad utan `userId` (`type:'waitlist'`, `message` = appens namn) ⇒ **ingen
+  schemaändring**, syns direkt i `/admin`. `company` är en honeypot; endpointen har
+  e-postvalidering, dedupe per app+adress och en enkel takbegränsning i minnet.
+  Ligger i `PUBLIC_PATHS` — utan det blir POST:en 307→/login och svarar 405.
+
+### Färgsystem: huset vs apparna
+`:root` i `globals.css` är **Laga-appens** palett och delas med `/laga` — ändra den inte
+för marknadsföringens skull. Paraplyet har egna tokens (`--site-accent`, sage `#3f7d63`),
+och varje app har en klass (`.theme-laga` / `.theme-gymma`) som sätts på kort och appsidor.
+
+> **HÅRT LÄRT:** tema-klasserna måste sätta **`--color-app-*` direkt**, inte ett mellanled
+> som `@theme` pekar på. Custom properties substitueras där de *deklareras* — med
+> `--color-app-accent: var(--app-accent)` i `:root` låstes värdet till `:root`:s
+> `--app-accent` och ärvdes ned oförändrat, så **båda apparna ritades i husets gröna**.
+> `tsc`, `npm run build` och klass-genereringen var alla gröna; felet syntes först på en
+> skärmbild. Titta på sidorna innan du litar på en färgändring.
 
 ## Mobil-API (native-appen `laga-app`)
 Native iOS-appen kan inte hantera NextAuth:s HTTP-only-cookie, så den autentiserar med en

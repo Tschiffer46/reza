@@ -1,10 +1,13 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 
+// `compact: false` = döljs på små skärmar (navet får inte plats i en rad där).
+// De posterna når man i stället via footern, som listar allt.
 const NAV = [
-  { href: '/recept', label: 'Recept' },
-  { href: '/om', label: 'Om' },
-  { href: '/kontakt', label: 'Kontakt' },
+  { href: '/appar', label: 'Apparna', compact: true },
+  { href: '/#principer', label: 'Principer', compact: false },
+  { href: '/om', label: 'Om', compact: true },
+  { href: '/kontakt', label: 'Kontakt', compact: false },
 ]
 
 /** Publik marknadsföringsheader. Statisk (ingen auth) så sidorna kan byggas som SSG. */
@@ -20,7 +23,9 @@ export function SiteHeader() {
             <Link
               key={n.href}
               href={n.href}
-              className="rounded-md px-2 py-1.5 text-sm font-medium text-white/85 transition-colors hover:bg-white/10 hover:text-white"
+              className={`rounded-md px-2 py-1.5 text-sm font-medium text-white/85 transition-colors hover:bg-white/10 hover:text-white ${
+                n.compact ? '' : 'hidden sm:inline-block'
+              }`}
             >
               {n.label}
             </Link>

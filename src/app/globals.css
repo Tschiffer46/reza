@@ -23,6 +23,39 @@
   --thumb-empty: #eceae4;
   --radius: 15px;
   --sidebar-w: 248px;
+
+  /* --- Paraplybrandet (publika marknadsföringsytan) ---------------------------
+     Sajten bär flera appar. Lagas terrakotta och Gymmas orange är varma och
+     drar blicken; husets egen accent är därför sval (samma gröna som --sage)
+     så att appkorten får sticka ut mot ett neutralt underlag. Tokens ovanför
+     hör till Laga-appen under /laga och ska INTE ändras härifrån. */
+  --site-accent: #3f7d63;
+  --site-accent-dark: #33654f;
+  --site-accent-soft: #e6efe9;
+}
+
+/* --- Per app ---------------------------------------------------------------
+   Sätts som klass på appkort och appsidor (se src/lib/apps.ts → `theme`).
+   Värdena speglar apparnas egna designtokens: laga-app/lib/theme.ts och
+   gymma/lib/theme.ts. Håll dem i synk manuellt om apparna byter palett.
+
+   OBS: klasserna sätter `--color-app-*` DIREKT, inte ett mellanled som
+   @theme sedan pekar på. Custom properties substitueras nämligen där de
+   deklareras — hade `--color-app-accent: var(--app-accent)` stått i :root
+   skulle värdet låsas till :root:s `--app-accent` och ärvas ned oförändrat,
+   så att alla appar fick samma färg oavsett tema-klass. (Det hände: korten
+   ritades i husets gröna medan tsc, bygget och klass-genereringen var gröna.) */
+.theme-laga {
+  --color-app-accent: #c75b39;
+  --color-app-soft: #f6e7e1;
+  --color-app-surface: #f6f5f1;
+  --color-app-ink: #1a1a18;
+}
+.theme-gymma {
+  --color-app-accent: #f0603c;
+  --color-app-soft: #3a2019;
+  --color-app-surface: #131316;
+  --color-app-ink: #f2f1ee;
 }
 
 @theme {
@@ -38,6 +71,16 @@
   --color-brand-chip: var(--chip);
   --color-brand-line: var(--card-bd);
   --color-sage: var(--sage);
+
+  /* Paraplybrandet + per app (se blocket ovanför :root-tokens). */
+  --color-site-accent: var(--site-accent);
+  --color-site-accent-dark: var(--site-accent-dark);
+  --color-site-soft: var(--site-accent-soft);
+  /* Fallback när ingen tema-klass är satt — huset självt. */
+  --color-app-accent: var(--site-accent);
+  --color-app-soft: var(--site-accent-soft);
+  --color-app-surface: var(--bg);
+  --color-app-ink: var(--ink);
 
   --font-sans: 'Schibsted Grotesk', system-ui, sans-serif;
   --font-serif: 'Schibsted Grotesk', system-ui, sans-serif;
