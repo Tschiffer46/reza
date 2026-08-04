@@ -12,7 +12,15 @@ export interface AdminFeedbackItem {
   date: string
 }
 
-const TYPE_LABEL: Record<string, string> = { bug: 'Bugg', idea: 'Idé', other: 'Annat', upgrade: 'Vill uppgradera' }
+const TYPE_LABEL: Record<string, string> = {
+  bug: 'Bugg',
+  idea: 'Idé',
+  other: 'Annat',
+  upgrade: 'Vill uppgradera',
+  report: 'Anmält innehåll',
+  // Intresseanmälan från appsidorna på webben (/api/waitlist). `message` = appens namn.
+  waitlist: 'Intresseanmälan',
+}
 
 export function AdminFeedback({ items }: { items: AdminFeedbackItem[] }) {
   const router = useRouter()

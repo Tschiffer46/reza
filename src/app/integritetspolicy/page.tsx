@@ -42,10 +42,25 @@ export default function IntegritetspolicyPage() {
           innehålla IP-adress och webbläsarinformation.
         </li>
         <li>
+          <strong>Intresseanmälan:</strong> om du anmäler intresse för en app som ännu inte
+          släppts sparar vi den e-postadress du anger, tillsammans med vilken app det gäller.
+        </li>
+        <li>
           <strong>Analys:</strong> vi använder ingen analys i dagsläget. Om vi inför det sker det
           lättviktigt och först efter ditt samtycke.
         </li>
       </ul>
+
+      <h2>Intresseanmälan inför app-släpp</h2>
+      <p>
+        På våra appsidor kan du lämna din e-postadress för att få veta när en app släpps i App
+        Store. Adressen används <strong>enbart</strong> för det ena utskicket — vi skickar inget
+        nyhetsbrev, delar den inte med någon och använder den inte för marknadsföring av något
+        annat. Rättslig grund är ditt samtycke, och adressen raderas när appen har släppts eller
+        när du ber oss ta bort den. Skriv till{' '}
+        <a href={`mailto:${siteConfig.company.email}`}>{siteConfig.company.email}</a> så gör vi
+        det direkt.
+      </p>
 
       <h2>Mobilappen VadSkaVi Laga</h2>
       <p>
@@ -91,6 +106,10 @@ export default function IntegritetspolicyPage() {
         <li>Kontouppgifter lagras så länge du har ett konto och raderas när kontot avslutas.</li>
         <li>Samtyckesval lagras tills du ändrar dem eller rensar din webbläsare.</li>
         <li>Tekniska loggar lagras under en kort tid för drift och säkerhet.</li>
+        <li>
+          E-postadress från en intresseanmälan raderas när appen släppts, eller tidigare om du
+          ber om det.
+        </li>
       </ul>
 
       <h2>Dina rättigheter</h2>

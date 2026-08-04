@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next'
 import { getAllRecipes } from '@/lib/recipes'
+import { apps } from '@/lib/apps'
 import { siteConfig } from '@/lib/site-config'
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -8,6 +9,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const staticPaths = [
     '',
+    '/appar',
+    ...apps.map((a) => `/appar/${a.slug}`),
     '/recept',
     '/om',
     '/kontakt',

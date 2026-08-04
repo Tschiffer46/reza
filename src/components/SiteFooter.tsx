@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { siteConfig, formattedAddress } from '@/lib/site-config'
 import { CookieSettingsButton } from '@/components/CookieSettingsButton'
+import { apps } from '@/lib/apps'
+import { pledgeLine } from '@/lib/site-copy'
 
 const LEGAL = [
   { href: '/integritetspolicy', label: 'Integritetspolicy' },
@@ -15,7 +17,7 @@ export function SiteFooter() {
   const c = siteConfig.company
   return (
     <footer className="mt-20 border-t border-brand-line bg-brand-surface">
-      <div className="mx-auto grid max-w-5xl gap-8 px-4 py-12 sm:grid-cols-2">
+      <div className="mx-auto grid max-w-5xl gap-8 px-4 py-12 sm:grid-cols-3">
         <div className="space-y-2 text-sm text-brand-muted">
           <p className="text-base font-semibold text-brand-header">{siteConfig.name}</p>
           <p>{siteConfig.tagline}.</p>
@@ -30,6 +32,27 @@ export function SiteFooter() {
             </p>
           </div>
         </div>
+        <nav className="flex flex-col gap-2 text-sm">
+          <p className="font-medium text-brand-ink">Apparna</p>
+          {apps.map((a) => (
+            <Link
+              key={a.slug}
+              href={`/appar/${a.slug}`}
+              className="text-brand-muted transition-colors hover:text-brand-accent"
+            >
+              {a.name} — {a.tagline}
+            </Link>
+          ))}
+          <Link
+            href="/#principer"
+            className="text-brand-muted transition-colors hover:text-brand-accent"
+          >
+            Våra principer
+          </Link>
+          <Link href="/om" className="text-brand-muted transition-colors hover:text-brand-accent">
+            Om oss
+          </Link>
+        </nav>
         <nav className="flex flex-col gap-2 text-sm sm:items-end">
           {LEGAL.map((l) => (
             <Link
@@ -44,9 +67,12 @@ export function SiteFooter() {
         </nav>
       </div>
       <div className="border-t border-brand-line">
-        <p className="mx-auto max-w-5xl px-4 py-4 text-xs text-brand-muted">
-          © {new Date().getFullYear()} {c.legalName}. Innehållet kan innehålla annonslänkar.
-        </p>
+        <div className="mx-auto flex max-w-5xl flex-wrap justify-between gap-2 px-4 py-4 text-xs text-brand-muted">
+          <p>
+            © {new Date().getFullYear()} {c.legalName}. Innehållet kan innehålla annonslänkar.
+          </p>
+          <p>{pledgeLine}</p>
+        </div>
       </div>
     </footer>
   )
