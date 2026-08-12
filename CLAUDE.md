@@ -195,6 +195,7 @@ npm run start         # kör produktionsbygget
 npm run db:push       # prisma db push — synka schema mot DB (INGA migrations)
 npm run db:seed       # seeda standardkategorier
 npm run db:search     # scripts/setup-search.ts (svensk tsvector-sök)
+npm run test:url      # tester för länkextraktionen (rena funktioner, inget nät)
 npx prisma studio     # databas-GUI
 ```
 
@@ -231,6 +232,15 @@ npx prisma studio     # databas-GUI
   **På gång — Purchasely-IAP (native-appen):** kommande premium-köp i `laga-app` sätter `User.plan`
   via en entitlement-sync (Purchasely-webhook → ny reza-endpoint; `User.plan` finns redan ⇒ ingen
   schemaändring väntas). Nuläge/design: `laga-app/docs/PURCHASELY-INTEGRATION-STATE.md`.
+- **Länkextraktion (`src/lib/url-extract.ts`):** sociala plattformar har **egna spår** eftersom
+  inläggssidan är en inloggningsvägg/JS-skal för server-anrop — det generella HTML-spåret ger då
+  bara skräp. TikTok: oEmbed + sidans state-JSON. Instagram: den **publika embed-vyn**
+  `instagram.com/p/<shortcode>/embed/captioned/` (inläggssidan själv går inte att skrapa;
+  Instagrams oEmbed kräver Facebook-apptoken sedan 2020). Bärande princip: **misslyckad hämtning
+  ska ge ett tydligt fel, aldrig ett tomt eller påhittat recept** — `normalizeEntry()` har fallback
+  för varje fält, så utan `requireSubstance()` returneras ett välformat tomt recept som ser ut att
+  ha lyckats. Kör `npm run test:url` efter ändringar; og-parsningen har ett regressionstest för
+  apostrofer i attributvärden (ett `[^"']*` kapar bildtexten mitt i).
 - **Härledd data:** "lagad av" + aktivitetsflöde härleds ur `ChangeLog`; betygssnitt
   denormaliseras till `Entry.ratingAvg/ratingCount` (uppdatera vid ny Rating).
 - **Byggmiljö (Claude-session):** ingen Docker-daemon → verifiera med `npx tsc --noEmit` +
