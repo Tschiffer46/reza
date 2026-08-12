@@ -28,7 +28,7 @@ const PUBLIC_PATHS = [
   '/api/waitlist',
   '/api/mobile/login',
   '/api/mobile/apple',
-  '/api/purchasely/webhook',
+  '/api/revenuecat/webhook',
   '/api/debug',
 ]
 

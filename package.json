@@ -13,6 +13,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:search": "tsx scripts/setup-search.ts",
     "test:url": "tsx scripts/test-url-extract.ts",
+    "test:webhook": "tsx scripts/test-revenuecat-webhook.ts",
     "apple-secret": "node scripts/apple-secret.mjs"
   },
   "prisma": {
