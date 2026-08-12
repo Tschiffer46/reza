@@ -67,10 +67,44 @@ export default function IntegritetspolicyPage() {
         Policyn gäller även iOS-appen VadSkaVi Laga, som använder samma konto som webbplatsen.
         Loggar du in med Apple (”Sign in with Apple”) får vi din e-postadress (eller Apples
         reläadress om du väljer att dölja den) och ditt namn från Apple — inget mer. Foton du
-        själv väljer används endast för receptbilder och AI-extraktion av recept. Du kan radera
-        ditt konto direkt i appen under <strong>Konto → Radera konto</strong>; då tas
+        själv väljer används endast för receptbilder och AI-extraktion av recept — se
+        <a href="#bitraden"> Personuppgiftsbiträden</a> nedan för vem som utför tolkningen. Du kan
+        radera ditt konto direkt i appen under <strong>Konto → Radera konto</strong>; då tas
         personuppgifter och inloggningsvägar bort och eventuella Apple-inloggningstokens
         återkallas.
+      </p>
+
+      {/*
+        Håll listan komplett och aktuell — GDPR art. 13 kräver att mottagare och överföringar
+        till tredjeland framgår. Lägger du till ett biträde: uppdatera även stycket "Byggt och
+        driftat i Europa" på /om, som räknar upp vad som lämnar EU.
+      */}
+      <h2 id="bitraden">Personuppgiftsbiträden</h2>
+      <p>
+        Vi anlitar följande leverantörer för att kunna leverera tjänsten. De behandlar uppgifter
+        endast på våra instruktioner och får inte använda dem för egna ändamål.
+      </p>
+      <ul>
+        <li>
+          <strong>Hetzner</strong> (Tyskland) — drift och lagring. Här ligger konton, recept,
+          bilder och gemenskaper.
+        </li>
+        <li>
+          <strong>Anthropic</strong> (USA) — AI-tolkning av den text, länk eller bild du skickar
+          in för att skapa ett recept. Det du skickar in behandlas för att generera receptet och
+          används inte för att träna modeller.
+        </li>
+        <li>
+          <strong>RevenueCat</strong> (USA) — hantering av prenumerationer i mobilappen. Ser ditt
+          användar-id och dina köphändelser, men inte ditt innehåll.
+        </li>
+        <li>
+          <strong>Adtraction</strong> — affiliate-nätverk för annonslänkar, se avsnittet nedan.
+        </li>
+      </ul>
+      <p>
+        Överföring till USA sker med stöd av EU-kommissionens standardavtalsklausuler. De delar av
+        tjänsten som lämnar EU beskriver vi också i löptext på sidan <a href="/om">Om oss</a>.
       </p>
 
       <h2>Affiliate-länkar och tredjepartscookies</h2>
