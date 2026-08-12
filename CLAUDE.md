@@ -181,9 +181,17 @@ Native iOS-appen kan inte hantera NextAuth:s HTTP-only-cookie, så den autentise
 - **Lämna gemenskap:** `POST /api/family/[id]/leave` (raderar callerns membership).
 - **Rapportera innehåll:** feedback-typen `report` (`POST /api/feedback`) — appens
   "Rapportera"-åtgärder; hanteras i admin-feedbackvyn.
-- **Purchasely-webhook:** `POST /api/purchasely/webhook` (publik, kräver env
-  `PURCHASELY_WEBHOOK_SECRET`, annars 503) speglar prenumerationshändelser → `User.plan`.
-  Payload-mappning tolerant — stäm av mot Purchasely-doc vid konsolsetup.
+- **RevenueCat-webhook:** `POST /api/revenuecat/webhook` (publik, kräver env
+  `REVENUECAT_WEBHOOK_SECRET`, annars 503) speglar prenumerationshändelser → `User.plan`.
+  Hemligheten skickas av RevenueCat som `Authorization`-header. Payloaden är **nästlad**
+  (`{ api_version, event: { type, app_user_id, … } }`) och `app_user_id` ÄR vårt `User.id`
+  (appen anropar `Purchases.logIn(user.id)`).
+  **HÅRT LÄRT — rör inte revoke-listan:** bara `EXPIRATION` sätter `free`. `CANCELLATION`
+  betyder i RevenueCat att autoförnyelsen stängts av, inte att access upphört — kunden har kvar
+  sin betalda period. Samma för `BILLING_ISSUE` (Apple försöker igen) och `SUBSCRIPTION_PAUSED`
+  (pausen börjar vid periodslut). Lägger man dem bland revoke-händelserna stängs betalande
+  kunder av i förtid. Mappningen är utbruten som ren funktion (`mapWebhookEvent`) och täckt av
+  `npm run test:webhook` — testet failar om regeln bryts.
 - **Webb:** `/anvandarvillkor` (användarvillkor, publik + i footer/sitemap).
 
 ## Kommandon
@@ -229,9 +237,10 @@ npx prisma studio     # databas-GUI
   recept/månad (`FREE_MONTHLY_LIMIT` i `src/lib/plan.ts`). Premium-förmåner idag: obegränsat
   antal recept, byta gemenskapens omslagsbild, moderera medlemssnack.
   `Family.status='suspended'` blockerar åtkomst (admin stänger missbrukade gemenskaper).
-  **På gång — Purchasely-IAP (native-appen):** kommande premium-köp i `laga-app` sätter `User.plan`
-  via en entitlement-sync (Purchasely-webhook → ny reza-endpoint; `User.plan` finns redan ⇒ ingen
-  schemaändring väntas). Nuläge/design: `laga-app/docs/PURCHASELY-INTEGRATION-STATE.md`.
+  **På gång — RevenueCat-IAP (native-appen):** premium-köp i `laga-app` sätter `User.plan` via
+  entitlement-sync (RevenueCat-webhook → `/api/revenuecat/webhook`, se ovan). `User.plan` fanns
+  redan ⇒ ingen schemaändring. Serversidan är klar; appen väntar på SDK-inkoppling.
+  Nuläge/design: `laga-app/docs/REVENUECAT-INTEGRATION-STATE.md`.
 - **Länkextraktion (`src/lib/url-extract.ts`):** sociala plattformar har **egna spår** eftersom
   inläggssidan är en inloggningsvägg/JS-skal för server-anrop — det generella HTML-spåret ger då
   bara skräp. TikTok: oEmbed + sidans state-JSON. Instagram: den **publika embed-vyn**
