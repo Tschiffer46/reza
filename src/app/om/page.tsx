@@ -66,13 +66,31 @@ export default function OmPage() {
         europeiska regler. Det är ett aktivt val: vi vill att både vi och våra användare ska
         ha rättigheter som går att hävda på riktigt.
       </p>
+      {/*
+        HÅLL DEN HÄR LISTAN SANN. Två delar lämnar EU i dag — står det "den enda" här igen så
+        fort en tredje leverantör tillkommer blir sidan osann, och hela poängen med principerna
+        är att de ska gå att granska. Lägger du till ett biträde: uppdatera både det här stycket
+        och avsnittet "Personuppgiftsbiträden" i /integritetspolicy.
+
+        TODO vid betalningslansering: ta bort den avslutande parentesen om manuell aktivering.
+      */}
       <p>
-        Vi säger också rakt ut var vi ännu inte är framme. När du i Laga klistrar in en text,
-        en länk eller ett foto och får tillbaka ett strukturerat recept sker den tolkningen
-        i dag hos en amerikansk AI-leverantör. Det är den enda delen av tjänsten som lämnar
-        EU, den sparas inte hos oss längre än det tar att skapa receptet, och vi arbetar för
-        att flytta även den till en europeisk leverantör. Vi tycker det är bättre att skriva
-        det här än att avrunda uppåt.
+        Vi säger också rakt ut var vi ännu inte är framme. Två delar av tjänsten lämnar EU.
+      </p>
+      <p>
+        Den första är AI-tolkningen. När du i Laga klistrar in en text, en länk eller ett foto och
+        får tillbaka ett strukturerat recept sker den tolkningen i dag hos en amerikansk
+        AI-leverantör (Anthropic). Det du skickar in sparas inte hos dem längre än det tar att
+        skapa receptet, och vi arbetar för att flytta tolkningen till en europeisk leverantör.
+      </p>
+      <p>
+        Den andra är betalningarna. Prenumerationerna i appen hanteras av RevenueCat i USA, som ser
+        ditt användar-id och dina köphändelser — men aldrig dina recept, bilder eller vad du lagar.
+        (Betalfunktionen rullas ut just nu; fram tills dess aktiverar vi Premium manuellt.)
+      </p>
+      <p>
+        Allt annat — era konton, recept, bilder och gemenskaper — ligger kvar på servrar i Europa.
+        Vi tycker det är bättre att skriva det här än att avrunda uppåt.
       </p>
 
       <h2>{share} % till välgörande ändamål</h2>
