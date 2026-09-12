@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { requireUser, userFamilyIds } from '@/lib/family'
+import { requireUser } from '@/lib/family'
+import { findVisibleEntry } from '@/lib/entry-access'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -14,9 +15,7 @@ export async function POST(request: NextRequest, { params }: Params) {
   }
   const { id } = await params
 
-  const entry = await prisma.entry.findUnique({ where: { id } })
-  const ids = await userFamilyIds(userId)
-  if (!entry || !ids.includes(entry.familyId)) {
+  if (!(await findVisibleEntry(id, userId))) {
     return NextResponse.json({ error: 'Hittades inte' }, { status: 404 })
   }
 

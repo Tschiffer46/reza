@@ -10,6 +10,9 @@ const TYPES = [
   { value: 'recipe', label: 'Recept' },
   { value: 'tip', label: 'Tips' },
 ]
+/** Pseudo-id för flödesfiltret "bara mina privata recept" (speglar reza src/lib/entry-access.ts). */
+const PRIVATE_SCOPE = 'private'
+
 const SORTS = [
   { value: 'createdAt', label: 'Senaste' },
   { value: 'rating', label: 'Högst betyg' },
@@ -87,6 +90,12 @@ function RecipeCard({ entry }: { entry: EntryDTO }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
           <Tag>{entry.category}</Tag>
           {entry.type === 'tip' && <Tag tone="accent">Tips</Tag>}
+          {/* Privat = syns bara för dig. Delat till flera gemenskaper = visa hur många. */}
+          {entry.visibility === 'private' ? (
+            <Tag>🔒 Bara jag</Tag>
+          ) : (entry.families?.length ?? 0) > 1 ? (
+            <Tag>{entry.families!.length} gemenskaper</Tag>
+          ) : null}
           {!!entry.ratingCount && entry.ratingAvg != null && (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 12.5, fontWeight: 600, color: 'var(--accent)' }}>
               ★ {entry.ratingAvg.toFixed(1)}
@@ -143,7 +152,11 @@ export function Feed({
   const greeting = useMemo(greetingNow, [])
 
   const currentFamilyName =
-    family === '' ? 'Alla gemenskaper' : families.find((f) => f.id === family)?.name || familyName
+    family === ''
+      ? 'Alla gemenskaper'
+      : family === PRIVATE_SCOPE
+        ? 'Bara jag'
+        : families.find((f) => f.id === family)?.name || familyName
 
   // Tom-läget skiljer på "inga recept än" (framhäv Lägg till) och "inga sökträffar".
   const hasActiveFilter = !!q || !!type || !!cat
@@ -151,7 +164,7 @@ export function Feed({
   function selectFamily(id: string) {
     setFamily(id)
     setFamilyMenuOpen(false)
-    if (id) {
+    if (id && id !== PRIVATE_SCOPE) {
       // Persistera valet som standardgemenskap (cookie) — bäst-effort.
       fetch('/api/family/switch', {
         method: 'POST',
@@ -199,7 +212,7 @@ export function Feed({
       <div style={{ marginBottom: 20 }}>
         {/* gemenskaps-väljare */}
         <div style={{ position: 'relative', display: 'inline-block', marginBottom: 4 }}>
-          {families.length > 1 ? (
+          {families.length >= 1 ? (
             <button
               onClick={() => setFamilyMenuOpen((o) => !o)}
               style={{
@@ -217,7 +230,7 @@ export function Feed({
                 color: 'var(--accent)',
               }}
             >
-              Gemenskap: {currentFamilyName}
+              Visar: {currentFamilyName}
               <Icon name="sort" size={13} color="var(--accent)" />
             </button>
           ) : (
@@ -226,13 +239,13 @@ export function Feed({
             </div>
           )}
 
-          {familyMenuOpen && families.length > 1 && (
+          {familyMenuOpen && (
             <div
               onClick={() => setFamilyMenuOpen(false)}
               style={{ position: 'fixed', inset: 0, zIndex: 15 }}
             />
           )}
-          {familyMenuOpen && families.length > 1 && (
+          {familyMenuOpen && (
             <div
               style={{
                 position: 'absolute',
@@ -248,7 +261,11 @@ export function Feed({
                 padding: 4,
               }}
             >
-              {[{ id: '', name: 'Alla gemenskaper' }, ...families].map((f) => (
+              {[
+                { id: '', name: 'Alla gemenskaper' },
+                ...families,
+                { id: PRIVATE_SCOPE, name: '🔒 Bara jag (privat)' },
+              ].map((f) => (
                 <button
                   key={f.id || 'all'}
                   onClick={() => selectFamily(f.id)}

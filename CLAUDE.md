@@ -85,7 +85,10 @@ scripts/setup-search.ts# idempotent: svensk tsvector-trigger + GIN-index + backf
 - **Entry** — recept/tips: `type`, `title`, `category`, `blurb?`, `time?`, `servings?`,
   `ingredients[]`, `instructions?`, `content?`, `drinks?`, `source?`, `url?`, `imageUrls[]`,
   `searchVector Unsupported("tsvector")?`, `timesCooked`, **`ratingAvg?`/`ratingCount`**
-  (denormaliserat betygssnitt), `lastCooked?`, `familyId`, `creatorId`.
+  (denormaliserat betygssnitt), `lastCooked?`, **`visibility`** (`family`/`private`),
+  `familyId` (primär-/ursprungsgemenskap), `creatorId`.
+- **EntryShare** — `@@unique([entryId, familyId])`. Ett recept syns i `Entry.familyId`
+  **plus** alla EntryShare-rader, så länge `visibility = 'family'`. Se **"Synlighet"** nedan.
 - **Rating** — `score` (1–6), `@@unique([entryId, userId])` (en röst/person, snittet skrivs
   tillbaka till Entry).
 - **Note**, **Comment** — fritext per recept. **Reaction** — `@@unique([entryId, userId])`.
@@ -95,6 +98,28 @@ scripts/setup-search.ts# idempotent: svensk tsvector-trigger + GIN-index + backf
   Inlägg göms/rensas efter 7 dagar (`SNACK_TTL_DAYS` i `src/lib/snack.ts`); betalande
   medlemmar kan ta bort andras inlägg/svar, alla sina egna.
 - Auth.js: **Account**, **Session**, **VerificationToken**.
+
+### Synlighet: privat vs en eller flera gemenskaper
+Ett recept kan vara **privat** (bara skaparen) eller synas i **en eller flera** gemenskaper.
+
+- **`src/lib/entry-access.ts` är enda sanningskällan för åtkomst.** Flödet, sökningen,
+  detaljvyn och underrouterna (kommentarer/anteckningar/betyg/hjärtan) går alla genom
+  `feedEntryWhere` / `feedEntrySql` / `canSeeEntry` / `canEditEntry` / `findVisibleEntry`.
+  Skriv ALDRIG en ny `familyIds.includes(entry.familyId)`-kontroll — en bortglömd kopia
+  är en läcka, och med delade recept är den dessutom fel (den missar EntryShare).
+- **Varför primärgemenskapen finns kvar** i stället för en ren many-to-many: vi kör
+  `prisma db push` utan migrations. Med `familyId` kvar + `visibility` default `family`
+  beter sig alla befintliga rader exakt som förut ⇒ **ingen datamigrering**.
+- **API:** `POST/PUT /api/entries[/id]` tar `{ visibility?: 'family'|'private',
+  familyIds?: string[] }`. Första id:t blir primär, resten blir EntryShare-rader. Den gamla
+  enkelformen `{ familyId }` funkar fortfarande (webbens äldre klienter, app-bygge 27).
+  Utelämnas alla tre rör PUT inte synligheten alls.
+- **Flödesfilter:** `GET /api/entries?family=private` ger användarens privata recept;
+  `?family=<id>` en enskild gemenskap; utan parameter allt användaren får se.
+- **DTO:** `visibility` + `families[]` (alla gemenskaper receptet syns i, primär först —
+  **tom lista = privat**). `family` finns kvar som primärgemenskap för bakåtkompatibilitet.
+- Privata recept räknas mot samma månadskvot — kostnaden sitter i AI-tolkningen, inte i
+  delningen. Ett privat recept kan bara raderas/redigeras av skaparen (ingen admin-väg in).
 
 ## Konventioner
 - Språk i UI: **Svenska**. API-routes returnerar JSON.

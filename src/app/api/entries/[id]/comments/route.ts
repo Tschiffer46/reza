@@ -1,15 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { requireUser, userFamilyIds } from '@/lib/family'
+import { requireUser } from '@/lib/family'
+import { findVisibleEntry } from '@/lib/entry-access'
 
 type Params = { params: Promise<{ id: string }> }
-
-async function entryForMember(entryId: string, userId: string) {
-  const entry = await prisma.entry.findUnique({ where: { id: entryId } })
-  if (!entry) return null
-  const familyIds = await userFamilyIds(userId)
-  return familyIds.includes(entry.familyId) ? entry : null
-}
 
 export async function GET(_request: NextRequest, { params }: Params) {
   let userId
@@ -19,7 +13,7 @@ export async function GET(_request: NextRequest, { params }: Params) {
     return NextResponse.json({ error: 'Ej inloggad' }, { status: 401 })
   }
   const { id } = await params
-  if (!(await entryForMember(id, userId))) {
+  if (!(await findVisibleEntry(id, userId))) {
     return NextResponse.json({ error: 'Hittades inte' }, { status: 404 })
   }
   const comments = await prisma.comment.findMany({
@@ -38,7 +32,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     return NextResponse.json({ error: 'Ej inloggad' }, { status: 401 })
   }
   const { id } = await params
-  if (!(await entryForMember(id, userId))) {
+  if (!(await findVisibleEntry(id, userId))) {
     return NextResponse.json({ error: 'Hittades inte' }, { status: 404 })
   }
   const { text } = await request.json()

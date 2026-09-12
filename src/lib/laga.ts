@@ -1,4 +1,5 @@
 import type { EntryDTO } from '@/lib/types'
+import { entryFamilies, normalizeVisibility } from '@/lib/entry-access'
 
 type UserRef = { name: string | null; email: string | null }
 
@@ -42,7 +43,9 @@ export type EntryWithMeta = {
   ratingCount: number
   lastCooked: Date | null
   createdAt: Date
+  visibility?: string | null
   family?: { id: string; name: string } | null
+  shares?: { family: { id: string; name: string } }[]
   changes?: { action: string; user: UserRef }[]
   _count?: { comments: number; reactions: number }
 }
@@ -50,6 +53,8 @@ export type EntryWithMeta = {
 /** Inkludering som ger all meta för flödeskorten. */
 export const ENTRY_META_INCLUDE = {
   family: { select: { id: true, name: true } },
+  // Delningar behövs både för DTO:n ("syns i X och Y") och för åtkomstkontrollen.
+  shares: { select: { family: { select: { id: true, name: true } } } },
   changes: { where: { action: 'cooked' }, select: { action: true, user: { select: { name: true, email: true } } } },
   _count: { select: { comments: true, reactions: true } },
 } as const
@@ -75,7 +80,10 @@ export function toEntryDTO(e: EntryWithMeta): EntryDTO {
     ratingCount: e.ratingCount,
     lastCooked: e.lastCooked ? e.lastCooked.toISOString() : null,
     createdAt: e.createdAt.toISOString(),
+    visibility: normalizeVisibility(e.visibility),
     family: e.family ? { id: e.family.id, name: e.family.name } : undefined,
+    // Alla gemenskaper receptet syns i (tom lista = privat) — klienten slipper räkna ut det.
+    families: entryFamilies(e),
     cookedBy: aggregateCooked(e.changes || []),
     heartCount: e._count?.reactions ?? 0,
     commentCount: e._count?.comments ?? 0,

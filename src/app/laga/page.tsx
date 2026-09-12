@@ -20,7 +20,7 @@ export default async function LagaHomePage() {
   const familyName = families.find((f) => f.id === defaultId)?.name || 'Receptboken'
 
   const [rows, rawCategories] = await Promise.all([
-    searchEntries({ familyIds, family: defaultId }),
+    searchEntries({ userId, familyIds, family: defaultId }),
     prisma.category.findMany({ where: { familyId: { in: familyIds } }, orderBy: { name: 'asc' } }),
   ])
 
