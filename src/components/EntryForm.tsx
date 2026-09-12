@@ -21,7 +21,12 @@ export interface EntryFormData {
   source: string | null
   url: string | null
   imageUrls: string[]
+  /** Primär-/ursprungsgemenskap (bakåtkompatibel enkelform). */
   familyId?: string
+  /** Alla gemenskaper receptet ska synas i. Tom när det är privat. */
+  familyIds?: string[]
+  /** "private" = bara jag, "family" = gemenskaperna i familyIds. */
+  visibility?: 'family' | 'private'
 }
 
 const inputClass =
@@ -42,7 +47,17 @@ export function EntryForm({ initialData }: { initialData?: Partial<EntryFormData
   const [source, setSource] = useState(initialData?.source || '')
   const [url, setUrl] = useState(initialData?.url || '')
   const [imageUrls, setImageUrls] = useState<string[]>(initialData?.imageUrls || [])
-  const [familyId, setFamilyId] = useState(initialData?.familyId || '')
+  // Synlighet: privat (bara jag) eller en/flera gemenskaper. `familyIds` är tom vid privat.
+  const [visibility, setVisibility] = useState<'family' | 'private'>(
+    initialData?.visibility === 'private' ? 'private' : 'family',
+  )
+  const [familyIds, setFamilyIds] = useState<string[]>(
+    initialData?.familyIds?.length
+      ? initialData.familyIds
+      : initialData?.familyId
+        ? [initialData.familyId]
+        : [],
+  )
   const [families, setFamilies] = useState<{ id: string; name: string }[]>([])
   const [categories, setCategories] = useState<CategoryDTO[]>([])
   const [saving, setSaving] = useState(false)
@@ -54,21 +69,33 @@ export function EntryForm({ initialData }: { initialData?: Partial<EntryFormData
       .then((r) => r.json())
       .then((d) => {
         setFamilies(d.families || [])
-        if (!initialData?.familyId && d.activeId) setFamilyId(d.activeId)
+        // Förvälj standardgemenskapen bara när inget redan är valt (nytt recept).
+        setFamilyIds((prev) => (prev.length === 0 && d.activeId ? [d.activeId] : prev))
       })
       .catch(() => {})
-  }, [initialData?.familyId])
+  }, [])
 
+  // Kategorier hämtas från den första valda gemenskapen; privata recept får hela
+  // användarens kategorilista (de hör inte hemma i någon enskild gemenskap).
+  const categoryFamily = visibility === 'private' ? '' : familyIds[0] || ''
   useEffect(() => {
-    const fam = familyId ? `&family=${familyId}` : ''
+    const fam = categoryFamily ? `&family=${categoryFamily}` : ''
     fetch(`/api/categories?type=${type}${fam}`)
       .then((r) => r.json())
       .then((d) => setCategories(Array.isArray(d) ? d : []))
       .catch(() => setCategories([]))
-  }, [type, familyId])
+  }, [type, categoryFamily])
+
+  function toggleFamily(id: string) {
+    setFamilyIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (visibility === 'family' && familyIds.length === 0) {
+      setError('Välj minst en gemenskap — eller spara receptet som privat.')
+      return
+    }
     setSaving(true)
     setError('')
     const data = {
@@ -86,7 +113,8 @@ export function EntryForm({ initialData }: { initialData?: Partial<EntryFormData
       source: source || null,
       url: url || null,
       imageUrls,
-      familyId: familyId || undefined,
+      visibility,
+      familyIds: visibility === 'private' ? [] : familyIds,
     }
 
     const isEdit = !!initialData?.id
@@ -127,22 +155,67 @@ export function EntryForm({ initialData }: { initialData?: Partial<EntryFormData
         ))}
       </div>
 
-      {families.length > 1 && (
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium text-brand-header">Gemenskap</label>
-          <select
-            className={inputClass}
-            value={familyId}
-            onChange={(e) => setFamilyId(e.target.value)}
-          >
-            {families.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.name}
-              </option>
-            ))}
-          </select>
+      {/* Var receptet ska synas. Privat = bara jag; annars en eller flera gemenskaper. */}
+      <div className="space-y-2 rounded-xl border border-brand-accent/20 bg-white p-3">
+        <div className="text-sm font-medium text-brand-header">Var ska det synas?</div>
+        <div className="flex gap-2">
+          {(
+            [
+              ['family', 'I gemenskap'],
+              ['private', 'Bara jag'],
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setVisibility(value)}
+              aria-pressed={visibility === value}
+              className={`flex-1 rounded-lg py-2 text-sm font-medium transition-colors ${
+                visibility === value
+                  ? 'bg-brand-accent text-white'
+                  : 'bg-brand-accent/10 text-brand-accent-dark hover:bg-brand-accent/20'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
-      )}
+
+        {visibility === 'private' ? (
+          <p className="text-sm text-brand-muted">
+            Bara du ser receptet. Du kan dela det till en gemenskap när du vill.
+          </p>
+        ) : (
+          <>
+            <div className="flex flex-wrap gap-2">
+              {families.map((f) => {
+                const on = familyIds.includes(f.id)
+                return (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => toggleFamily(f.id)}
+                    aria-pressed={on}
+                    className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                      on
+                        ? 'border-brand-accent bg-brand-accent/15 font-medium text-brand-accent-dark'
+                        : 'border-brand-accent/30 bg-white text-brand-muted hover:border-brand-accent/60'
+                    }`}
+                  >
+                    {on ? '✓ ' : ''}
+                    {f.name}
+                  </button>
+                )
+              })}
+            </div>
+            {families.length > 1 && (
+              <p className="text-sm text-brand-muted">
+                Välj en eller flera — receptet syns i alla du markerar.
+              </p>
+            )}
+          </>
+        )}
+      </div>
 
       <div className="space-y-1.5">
         <label className="text-sm font-medium text-brand-header">Titel</label>

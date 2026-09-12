@@ -24,6 +24,8 @@ export interface RecipeDTO {
   url: string | null
   imageUrls: string[]
   family?: { id: string; name: string }
+  /** Alla gemenskaper receptet syns i. Tom lista = privat (bara skaparen ser det). */
+  families?: { id: string; name: string }[]
   cookedBy: { name: string; n: number }[]
   hearted: boolean
   heartCount: number
@@ -200,8 +202,15 @@ export function RecipeView({ recipe, meName, canDelete = false }: { recipe: Reci
               {recipe.time}
             </span>
           )}
-          {recipe.family && (
-            <span style={{ fontSize: 12.5, color: 'var(--muted)' }}>· {recipe.family.name}</span>
+          {/* Synlighet: privat, eller namnen på alla gemenskaper receptet delats till. */}
+          {recipe.families?.length === 0 ? (
+            <Tag>🔒 Bara jag</Tag>
+          ) : (
+            <span style={{ fontSize: 12.5, color: 'var(--muted)' }}>
+              · {(recipe.families?.length ? recipe.families : recipe.family ? [recipe.family] : [])
+                .map((f) => f.name)
+                .join(' · ')}
+            </span>
           )}
         </div>
 

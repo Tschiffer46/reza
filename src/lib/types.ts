@@ -18,7 +18,12 @@ export interface EntryDTO {
   ratingCount?: number
   lastCooked: string | null
   createdAt: string
+  /** "family" = syns i gemenskaperna nedan, "private" = bara för skaparen. */
+  visibility?: 'family' | 'private'
+  /** Primär-/ursprungsgemenskap. */
   family?: { id: string; name: string }
+  /** Alla gemenskaper receptet syns i (tom lista = privat). */
+  families?: { id: string; name: string }[]
   cookedBy?: { name: string; n: number }[]
   heartCount?: number
   commentCount?: number

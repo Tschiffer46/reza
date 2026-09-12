@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db'
 import { userFamilyIds } from '@/lib/family'
+import { canEditEntry, normalizeVisibility } from '@/lib/entry-access'
 import { AppShell } from '@/components/laga/AppShell'
 import { EntryForm } from '@/components/EntryForm'
 import { DeleteEntryButton } from '@/components/laga/DeleteEntryButton'
@@ -15,47 +16,58 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
   const userId = session.user.id
   const { id } = await params
 
-  const entry = await prisma.entry.findUnique({ where: { id } })
+  const entry = await prisma.entry.findUnique({
+    where: { id },
+    include: { shares: { select: { familyId: true } } },
+  })
   const familyIds = await userFamilyIds(userId)
-  if (!entry || !familyIds.includes(entry.familyId)) {
+  if (!canEditEntry(entry, userId, familyIds)) {
     notFound()
   }
 
   // Skapare får alltid radera egna; annars krävs betald + gemenskaps-admin, eller global admin.
   const [me, membership] = await Promise.all([
     prisma.user.findUnique({ where: { id: userId }, select: { plan: true, isAdmin: true } }),
-    prisma.membership.findUnique({ where: { userId_familyId: { userId, familyId: entry.familyId } } }),
+    prisma.membership.findUnique({ where: { userId_familyId: { userId, familyId: entry!.familyId } } }),
   ])
+  const visibility = normalizeVisibility(entry!.visibility)
   const canDelete =
-    entry.creatorId === userId || (me?.plan === 'paid' && membership?.role === 'admin') || !!me?.isAdmin
+    entry!.creatorId === userId ||
+    (visibility !== 'private' &&
+      ((me?.plan === 'paid' && membership?.role === 'admin') || !!me?.isAdmin))
 
   return (
     <AppShell>
       <div className="mx-auto max-w-2xl">
-        <Link href={`/laga/entry/${entry.id}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--muted)', fontSize: 14, fontWeight: 600, marginBottom: 16 }}>
+        <Link href={`/laga/entry/${entry!.id}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--muted)', fontSize: 14, fontWeight: 600, marginBottom: 16 }}>
           ← Tillbaka
         </Link>
         <h1 className="mb-4 text-xl font-semibold text-brand-header">Redigera</h1>
         <EntryForm
           initialData={{
-            id: entry.id,
-            type: entry.type,
-            title: entry.title,
-            category: entry.category,
-            blurb: entry.blurb,
-            time: entry.time,
-            servings: entry.servings,
-            ingredients: entry.ingredients,
-            instructions: entry.instructions,
-            content: entry.content,
-            drinks: entry.drinks,
-            source: entry.source,
-            url: entry.url,
-            imageUrls: entry.imageUrls,
-            familyId: entry.familyId,
+            id: entry!.id,
+            type: entry!.type,
+            title: entry!.title,
+            category: entry!.category,
+            blurb: entry!.blurb,
+            time: entry!.time,
+            servings: entry!.servings,
+            ingredients: entry!.ingredients,
+            instructions: entry!.instructions,
+            content: entry!.content,
+            drinks: entry!.drinks,
+            source: entry!.source,
+            url: entry!.url,
+            imageUrls: entry!.imageUrls,
+            visibility,
+            // Primärgemenskapen först — formuläret behandlar listan som "syns i dessa".
+            familyIds:
+              visibility === 'private'
+                ? []
+                : [entry!.familyId, ...entry!.shares.map((sh) => sh.familyId)],
           }}
         />
-        {canDelete && <DeleteEntryButton entryId={entry.id} />}
+        {canDelete && <DeleteEntryButton entryId={entry!.id} />}
       </div>
     </AppShell>
   )

@@ -91,6 +91,7 @@ model Family {
   createdById String
   members     Membership[]
   entries     Entry[]
+  entryShares EntryShare[]
   categories  Category[]
   posts       Post[]
 }
@@ -128,15 +129,39 @@ model Entry {
   ratingCount  Int         @default(0)
   lastCooked   DateTime?
   createdAt    DateTime    @default(now())
+  // Synlighet: "family" = syns i gemenskaperna nedan, "private" = bara för skaparen.
+  // Default "family" ⇒ befintliga rader beter sig exakt som förut (ingen datamigrering).
+  visibility   String      @default("family")
+  // Ursprungs-/primärgemenskap. Behålls som NOT NULL även för privata recept (den
+  // registrerar var receptet skapades och ger kategorikontext) — men den ger INGEN
+  // åtkomst när visibility = "private". Se src/lib/entry-access.ts.
   familyId     String
   creatorId    String
   family       Family      @relation(fields: [familyId], references: [id])
   creator      User        @relation("Creator", fields: [creatorId], references: [id])
+  // Ytterligare gemenskaper receptet delats till (utöver familyId).
+  shares       EntryShare[]
   comments     Comment[]
   notes        Note[]
   reactions    Reaction[]
   ratings      Rating[]
   changes      ChangeLog[]
+}
+
+/**
+ * Delning av ett recept till en YTTERLIGARE gemenskap (utöver Entry.familyId).
+ * Ett recept syns alltså i `familyId` + alla rader här — så länge visibility = "family".
+ */
+model EntryShare {
+  id        String   @id @default(cuid())
+  entryId   String
+  familyId  String
+  createdAt DateTime @default(now())
+  entry     Entry    @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  family    Family   @relation(fields: [familyId], references: [id])
+
+  @@unique([entryId, familyId])
+  @@index([familyId])
 }
 
 model Rating {
