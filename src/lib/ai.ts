@@ -4,16 +4,16 @@ import Anthropic from '@anthropic-ai/sdk'
  * Anthropic-konfiguration för VadSkaVi.
  *
  * Token-optimering enligt spec:
- *  - Haiku för textextraktion (snabb/billig), Sonnet 5 för bildextraktion (bättre vision)
+ *  - Haiku för textextraktion (snabb/billig), Sonnet 5.5 för bildextraktion (bättre vision)
  *  - max_tokens: 1500
  *  - Systemprompt på svenska
  */
 
 export const AI_MODELS = {
   /** Textextraktion — snabb och billig. */
-  text: 'claude-haiku-4-5-20251001',
+  text: 'claude-haiku-5-5',
   /** Bildextraktion — bättre på vision. (Sonnet 4.0 är pensionerad — håll denna aktuell.) */
-  image: 'claude-sonnet-5',
+  image: 'claude-sonnet-5-5',
 } as const
 
 /** Tak för genererad JSON (betalas per genererad token, inte per tak). Sonnet 5:s tokenizer
