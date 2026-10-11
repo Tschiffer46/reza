@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { CategoryDTO } from '@/lib/types'
 import { Button } from '@/components/ui/button'
+import { PROTEINS } from '@/lib/protein'
 import { PhotoUploader } from '@/components/PhotoUploader'
 
 export interface EntryFormData {
@@ -21,6 +22,8 @@ export interface EntryFormData {
   source: string | null
   url: string | null
   imageUrls: string[]
+  /** Huvudprotein-nyckel, null/utelämnad = okänt. */
+  protein?: string | null
   /** Primär-/ursprungsgemenskap (bakåtkompatibel enkelform). */
   familyId?: string
   /** Alla gemenskaper receptet ska synas i. Tom när det är privat. */
@@ -46,6 +49,7 @@ export function EntryForm({ initialData }: { initialData?: Partial<EntryFormData
   const [drinks, setDrinks] = useState(initialData?.drinks || '')
   const [source, setSource] = useState(initialData?.source || '')
   const [url, setUrl] = useState(initialData?.url || '')
+  const [protein, setProtein] = useState(initialData?.protein || '')
   const [imageUrls, setImageUrls] = useState<string[]>(initialData?.imageUrls || [])
   // Synlighet: privat (bara jag) eller en/flera gemenskaper. `familyIds` är tom vid privat.
   const [visibility, setVisibility] = useState<'family' | 'private'>(
@@ -113,6 +117,8 @@ export function EntryForm({ initialData }: { initialData?: Partial<EntryFormData
       source: source || null,
       url: url || null,
       imageUrls,
+      // Alltid med (null = rensa) så att ett medvetet "Okänt" sparas; tips har inget protein.
+      protein: type === 'recipe' ? protein || null : null,
       visibility,
       familyIds: visibility === 'private' ? [] : familyIds,
     }
@@ -244,6 +250,20 @@ export function EntryForm({ initialData }: { initialData?: Partial<EntryFormData
           ))}
         </select>
       </div>
+
+      {type === 'recipe' && (
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-brand-header">Huvudprotein</label>
+          <select className={inputClass} value={protein} onChange={(e) => setProtein(e.target.value)}>
+            <option value="">Okänt</option>
+            {PROTEINS.map((p) => (
+              <option key={p.key} value={p.key}>
+                {p.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="space-y-1.5">
         <label className="text-sm font-medium text-brand-header">Kort beskrivning (valfritt)</label>

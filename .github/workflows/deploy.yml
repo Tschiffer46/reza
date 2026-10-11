@@ -52,4 +52,7 @@ jobs:
             docker compose exec -T vadskavi node node_modules/prisma/build/index.js db push
             # Sätt upp svensk fulltext-sök (trigger + GIN-index + backfill, idempotent)
             docker compose exec -T vadskavi node node_modules/tsx/dist/cli.mjs scripts/setup-search.ts
+            # Fyll i huvudprotein på recept som saknar det (idempotent, max 300/körning). Avslutar alltid
+            # med 0 i sig själv; `|| true` så en deploy aldrig fälls av ett AI-fel.
+            docker compose exec -T vadskavi node node_modules/tsx/dist/cli.mjs scripts/backfill-protein.ts || true
             docker image prune -f

@@ -1,3 +1,4 @@
+import { normalizeProtein } from '@/lib/protein'
 import type { EntryDTO } from '@/lib/types'
 import { entryFamilies, normalizeVisibility } from '@/lib/entry-access'
 
@@ -38,6 +39,7 @@ export type EntryWithMeta = {
   source: string | null
   url: string | null
   imageUrls: string[]
+  protein?: string | null
   timesCooked: number
   ratingAvg: number | null
   ratingCount: number
@@ -75,6 +77,7 @@ export function toEntryDTO(e: EntryWithMeta): EntryDTO {
     source: e.source,
     url: e.url,
     imageUrls: e.imageUrls,
+    protein: normalizeProtein(e.protein),
     timesCooked: e.timesCooked,
     ratingAvg: e.ratingAvg,
     ratingCount: e.ratingCount,

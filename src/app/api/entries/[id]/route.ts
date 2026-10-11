@@ -10,6 +10,7 @@ import {
   resolveEntryTargets,
   syncEntryShares,
 } from '@/lib/entry-access'
+import { normalizeProtein } from '@/lib/protein'
 import { deleteImage } from '@/lib/images'
 
 type Params = { params: Promise<{ id: string }> }
@@ -57,6 +58,7 @@ export async function GET(_request: NextRequest, { params }: Params) {
   return NextResponse.json({
     ...rest,
     visibility: normalizeVisibility(entry!.visibility),
+    protein: normalizeProtein(entry!.protein),
     // Alla gemenskaper receptet syns i, primär först (tom lista = privat).
     families: entryFamilies({ visibility: entry!.visibility, family: entry!.family, shares: shareRows }),
     heartCount: _count.reactions,
@@ -138,6 +140,9 @@ export async function PUT(request: NextRequest, { params }: Params) {
         source: source ?? null,
         url: url ?? null,
         imageUrls: Array.isArray(imageUrls) ? imageUrls : existing!.imageUrls,
+        // Utelämnad nyckel ⇒ rör inte (äldre appbyggen skickar den inte och ska inte nolla
+        // den). null eller ogiltigt värde ⇒ rensa. `undefined` hoppas över av Prisma.
+        protein: body.protein === undefined ? undefined : normalizeProtein(body.protein),
         visibility: targets.visibility,
         familyId: targets.familyId,
       },

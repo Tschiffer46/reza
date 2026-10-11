@@ -59,6 +59,7 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
             source: entry!.source,
             url: entry!.url,
             imageUrls: entry!.imageUrls,
+            protein: entry!.protein,
             visibility,
             // Primärgemenskapen först — formuläret behandlar listan som "syns i dessa".
             familyIds:

@@ -84,7 +84,8 @@ scripts/setup-search.ts# idempotent: svensk tsvector-trigger + GIN-index + backf
 - **Membership** — kopplar User↔Family, `role` (`member`/…), `@@unique([userId, familyId])`.
 - **Entry** — recept/tips: `type`, `title`, `category`, `blurb?`, `time?`, `servings?`,
   `ingredients[]`, `instructions?`, `content?`, `drinks?`, `source?`, `url?`, `imageUrls[]`,
-  `searchVector Unsupported("tsvector")?`, `timesCooked`, **`ratingAvg?`/`ratingCount`**
+  **`protein?`** (huvudprotein: `beef`/`pork`/`chicken`/`fish`/`vegetarian`/`vegan`/`other`, null = okänt;
+  nycklar + etiketter i `src/lib/protein.ts`), `searchVector Unsupported("tsvector")?`, `timesCooked`, **`ratingAvg?`/`ratingCount`**
   (denormaliserat betygssnitt), `lastCooked?`, **`visibility`** (`family`/`private`),
   `familyId` (primär-/ursprungsgemenskap), `creatorId`.
 - **EntryShare** — `@@unique([entryId, familyId])`. Ett recept syns i `Entry.familyId`
@@ -118,6 +119,16 @@ Ett recept kan vara **privat** (bara skaparen) eller synas i **en eller flera** 
   `?family=<id>` en enskild gemenskap; utan parameter allt användaren får se.
 - **DTO:** `visibility` + `families[]` (alla gemenskaper receptet syns i, primär först —
   **tom lista = privat**). `family` finns kvar som primärgemenskap för bakåtkompatibilitet.
+### Huvudprotein (`Entry.protein`)
+- **Nycklarna är kontrakt mot laga-app** — byt aldrig namn, lägg bara till. Lamm/vilt ⇒ `other`.
+- `POST /api/entries` / `PUT /api/entries/[id]`: giltig nyckel sätter, `null` rensar, **ogiltig sträng
+  behandlas som null** (ingen 400 — ett valfritt fält ska inte fälla hela sparandet). **Utelämnad nyckel på
+  PUT rör inte fältet** (äldre appbyggen skickar den inte). DTO:n har alltid `protein: string | null`.
+- `GET /api/entries?protein=<key>` filtrerar i både sök- och listgrenen (`src/lib/search.ts`, bunden parameter).
+- AI-extraktionen returnerar `protein` (`normalizeEntry` → `normalizeProtein`), även `/api/extract[/batch]`.
+- **Backfill:** `scripts/backfill-protein.ts` körs i deploy efter `setup-search.ts`; recept med `protein IS NULL`,
+  max 300/körning, Haiku, ~20 per anrop. Avslutar alltid med exit 0 och är no-op utan `ANTHROPIC_API_KEY`.
+  Självbärande med flit: runtime-imagen har `scripts/` men inte `src/`. Kör `npm run test:protein` efter ändringar.
 - Privata recept räknas mot samma månadskvot — kostnaden sitter i AI-tolkningen, inte i
   delningen. Ett privat recept kan bara raderas/redigeras av skaparen (ingen admin-väg in).
 
