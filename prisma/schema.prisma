@@ -124,6 +124,9 @@ model Entry {
   url          String?
   imageUrls    String[]    @default([])
   searchVector Unsupported("tsvector")?
+  // Huvudprotein (nyckel ur src/lib/protein.ts). null = okänt/ej satt — ingen datamigrering;
+  // gamla recept fylls på av scripts/backfill-protein.ts.
+  protein      String?
   timesCooked  Int         @default(0)
   ratingAvg    Float?
   ratingCount  Int         @default(0)

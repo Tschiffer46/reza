@@ -14,6 +14,7 @@
     "db:search": "tsx scripts/setup-search.ts",
     "test:url": "tsx scripts/test-url-extract.ts",
     "test:search": "tsx scripts/test-search-terms.ts",
+    "test:protein": "tsx scripts/test-protein.ts",
     "test:webhook": "tsx scripts/test-revenuecat-webhook.ts",
     "apple-secret": "node scripts/apple-secret.mjs"
   },

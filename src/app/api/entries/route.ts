@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db'
 import { requireUser, getDefaultFamily, userFamilyIds } from '@/lib/family'
 import { resolveEntryTargets } from '@/lib/entry-access'
 import { searchEntries } from '@/lib/search'
+import { normalizeProtein } from '@/lib/protein'
 import { toEntryDTO } from '@/lib/laga'
 import { FREE_MONTHLY_LIMIT, monthlyEntryCount } from '@/lib/plan'
 
@@ -22,6 +23,7 @@ export async function GET(request: NextRequest) {
     q: sp.get('q'),
     type: sp.get('type'),
     category: sp.get('category'),
+    protein: sp.get('protein'),
     // "private" = bara mina privata recept; annars ett gemenskaps-id eller inget alls.
     family: sp.get('family'),
     sort: sp.get('sort'),
@@ -86,6 +88,9 @@ export async function POST(request: NextRequest) {
       source: source || null,
       url: url || null,
       imageUrls: Array.isArray(imageUrls) ? imageUrls : [],
+      // Ogiltigt/saknat värde ⇒ null (okänt) i stället för 400, så en äldre eller slarvig
+      // klient aldrig förlorar ett helt recept på grund av ett valfritt fält.
+      protein: normalizeProtein(body.protein),
       visibility: targets.visibility,
       familyId: targets.familyId,
       creatorId: userId,

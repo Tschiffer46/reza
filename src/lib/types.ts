@@ -13,6 +13,8 @@ export interface EntryDTO {
   source: string | null
   url: string | null
   imageUrls: string[]
+  /** Huvudprotein-nyckel (se src/lib/protein.ts), null = okänt. */
+  protein: string | null
   timesCooked: number
   ratingAvg?: number | null
   ratingCount?: number

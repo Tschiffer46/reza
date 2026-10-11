@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
+import { PROTEIN_PROMPT_LIST, normalizeProtein, type Protein } from '@/lib/protein'
 
 /**
  * Anthropic-konfiguration för VadSkaVi.
@@ -33,11 +34,17 @@ Returnera EXAKT detta JSON-format, inget annat:
   "content": "innehåll, bara för tips, null för recept",
   "drinks": "förslag på dryck som passar, annars null",
   "source": "källa om den framgår, annars null",
-  "url": "URL om den syns i texten eller bilden, annars null"
+  "url": "URL om den syns i texten eller bilden, annars null",
+  "protein": "huvudprotein, en av nycklarna nedan, eller null"
 }
 
 Kategorier för recept: Huvudrätt, Förrätt, Efterrätt, Bakning, Sallad, Soppa, Frukost, Snacks, Dryck
 Kategorier för tips: Matlagning, Förvaring, Kryddor, Redskap, Övrigt
+
+Huvudprotein ("protein"): ${PROTEIN_PROMPT_LIST}.
+- Ange det dominerande proteinet i huvudrätten. Lamm och vilt ⇒ "other".
+- "vegetarian" = inget kött eller fisk, men mejeri/ägg kan finnas. "vegan" = inga animaliska produkter alls.
+- Tips och sådant som inte är recept ⇒ null. Är du osäker ⇒ null.
 
 Regler:
 - Svara BARA med giltig JSON, ingen annan text.
@@ -68,6 +75,7 @@ export interface ExtractedEntry {
   drinks: string | null
   source: string | null
   url: string | null
+  protein: Protein | null
 }
 
 /**
@@ -104,6 +112,7 @@ export function normalizeEntry(parsed: Record<string, unknown>): ExtractedEntry 
     drinks: (parsed.drinks as string) || null,
     source: (parsed.source as string) || null,
     url: (parsed.url as string) || null,
+    protein: normalizeProtein(parsed.protein),
   }
 }
 

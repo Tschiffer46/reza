@@ -17,6 +17,8 @@ export interface EntryQuery {
   family?: string | null
   type?: string | null
   category?: string | null
+  /** Huvudprotein-nyckel; ogiltigt värde ger tom lista snarare än ett ofiltrerat flöde. */
+  protein?: string | null
   sort?: string | null
 }
 
@@ -34,6 +36,7 @@ export async function searchEntries({
   q,
   type,
   category,
+  protein,
   family,
   sort,
 }: EntryQuery) {
@@ -70,6 +73,7 @@ export async function searchEntries({
         )
         ${type ? Prisma.sql`AND type = ${type}` : Prisma.empty}
         ${category ? Prisma.sql`AND category = ${category}` : Prisma.empty}
+        ${protein ? Prisma.sql`AND protein = ${protein}` : Prisma.empty}
       ORDER BY
         -- Träff i titeln först
         (
@@ -90,6 +94,7 @@ export async function searchEntries({
   const where: Prisma.EntryWhereInput = { ...feedEntryWhere(userId, familyIds, family) }
   if (type) where.type = type
   if (category) where.category = category
+  if (protein) where.protein = protein
 
   const orderBy: Prisma.EntryOrderByWithRelationInput =
     sort === 'timesCooked'
