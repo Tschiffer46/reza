@@ -70,6 +70,8 @@ export default function NewEntryPage() {
             <h1 className="text-xl font-semibold text-brand-header">Lägg till recept eller tips</h1>
             <p className="text-sm text-brand-muted">
               Har du sett något gott? AI:n läser av det åt dig — du behöver inte skriva av något.
+              Den kan missa eller misstolka saker, så läs igenom ingredienser och steg innan du
+              sparar.
             </p>
             <ChooseButton icon={FileText} title="Klistra in text" desc="Recept du kopierat från valfri källa" onClick={() => setMode('text')} />
             <ChooseButton icon={Camera} title="Ta foto / välj bild" desc="Fota en kokbok, en skärmdump eller en maträtt" onClick={() => setMode('image')} />
