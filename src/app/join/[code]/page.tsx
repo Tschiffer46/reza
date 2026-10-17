@@ -22,9 +22,14 @@ export default async function JoinPage({ params }: { params: Promise<{ code: str
         include: { user: { select: { name: true, email: true } } },
         orderBy: { joinedAt: 'asc' },
       },
-      _count: { select: { entries: true } },
     },
   })
+  // Den som skapade gemenskapen får stå som avsändare — billigaste härledningen av "vem bjöd in".
+  const creator = family
+    ? family.members.find((m) => m.userId === family.createdById)?.user ?? null
+    : null
+  // Bara riktigt namn — aldrig e-postprefixet, sidan är publik. Raderade konton räknas inte.
+  const inviter = creator?.name && creator.name !== 'Raderad användare' ? creator.name : null
 
   const session = await auth()
   if (session?.user?.id && family) {
@@ -72,15 +77,11 @@ export default async function JoinPage({ params }: { params: Promise<{ code: str
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14 }}>
               <AvatarStack people={family.members.map((m) => ({ name: displayName(m.user) }))} size={38} max={5} />
             </div>
-            <div style={{ fontSize: 12.5, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--accent)' }}>
-              Du är inbjuden till
-            </div>
-            <h1 style={{ fontWeight: 700, fontSize: 26, letterSpacing: '-0.025em', color: 'var(--ink)', margin: '6px 0 8px' }}>
-              {family.name}
+            <h1 style={{ fontWeight: 700, fontSize: 24, letterSpacing: '-0.025em', color: 'var(--ink)', margin: '6px 0 8px', lineHeight: 1.2 }}>
+              {inviter ? `${inviter} har bjudit in dig till ${family.name}` : `Du är inbjuden till ${family.name}`}
             </h1>
             <p style={{ fontSize: 14.5, color: 'var(--muted)', lineHeight: 1.5 }}>
-              {family.members.length} {family.members.length === 1 ? 'medlem' : 'medlemmar'} · {family._count.entries} recept.
-              Logga in eller skapa ett konto så hamnar du direkt i gemenskapens receptbok.
+              Här samlar ni recepten ni faktiskt lagar.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 22 }}>
               <Link

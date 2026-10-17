@@ -132,12 +132,16 @@ export function Feed({
   families = [],
   familyName,
   activeFamilyId = '',
+  inviteCode = '',
+  myEntryCount = 0,
 }: {
   initialEntries: EntryDTO[]
   categories: CategoryDTO[]
   families?: { id: string; name: string }[]
   familyName: string
   activeFamilyId?: string
+  inviteCode?: string
+  myEntryCount?: number
 }) {
   const [entries, setEntries] = useState(initialEntries)
   const [searchInput, setSearchInput] = useState('')
@@ -160,6 +164,34 @@ export function Feed({
 
   // Tom-läget skiljer på "inga recept än" (framhäv Lägg till) och "inga sökträffar".
   const hasActiveFilter = !!q || !!type || !!cat
+  // Sök och filter är brus i en tom bok — dölj dem tills det finns något att filtrera.
+  const isEmpty = entries.length === 0 && !hasActiveFilter && !loading
+
+  // Första-receptet-kortet: stängs en gång för alla (bara per webbläsare, därför try/catch).
+  const [firstDismissed, setFirstDismissed] = useState(true)
+  const [copied, setCopied] = useState(false)
+  useEffect(() => {
+    try {
+      setFirstDismissed(localStorage.getItem('vsv-first-recipe-dismissed') === '1')
+    } catch {
+      setFirstDismissed(false)
+    }
+  }, [])
+  const showFirstCard = myEntryCount === 1 && entries.length > 0 && !firstDismissed && !!inviteCode
+  function dismissFirst() {
+    setFirstDismissed(true)
+    try {
+      localStorage.setItem('vsv-first-recipe-dismissed', '1')
+    } catch {}
+  }
+  async function copyInvite() {
+    try {
+      await navigator.clipboard.writeText(`https://vadskavi.nu/join/${inviteCode}`)
+      setCopied(true)
+    } catch {
+      window.prompt('Kopiera länken', `https://vadskavi.nu/join/${inviteCode}`)
+    }
+  }
 
   function selectFamily(id: string) {
     setFamily(id)
@@ -294,6 +326,8 @@ export function Feed({
         </h1>
       </div>
 
+      {!isEmpty && (
+        <>
       {/* sök */}
       <div style={{ position: 'relative', marginBottom: 16 }}>
         <span style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }}>
@@ -384,6 +418,30 @@ export function Feed({
           )
         })}
       </div>
+        </>
+      )}
+
+      {showFirstCard && (
+        <div style={{ border: '1px solid var(--accent)', background: 'var(--accent-soft)', borderRadius: 13, padding: '14px 16px', marginBottom: 14, position: 'relative' }}>
+          <button
+            onClick={dismissFirst}
+            aria-label="Stäng"
+            style={{ position: 'absolute', top: 8, right: 10, background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 18, lineHeight: 1 }}
+          >
+            ×
+          </button>
+          <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--ink)', paddingRight: 24 }}>Första receptet i boken!</div>
+          <p style={{ fontSize: 14.5, color: 'var(--muted)', margin: '4px 0 12px', lineHeight: 1.45 }}>
+            Bjud in familjen så fyller ni den tillsammans.
+          </p>
+          <button
+            onClick={copyInvite}
+            style={{ background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer', borderRadius: 10, padding: '9px 16px', fontSize: 14.5, fontWeight: 600 }}
+          >
+            {copied ? 'Kopierat!' : 'Kopiera inbjudningslänk'}
+          </button>
+        </div>
+      )}
 
       {/* grid */}
       {loading ? (
@@ -395,26 +453,38 @@ export function Feed({
             <p style={{ marginTop: 12, fontSize: 15 }}>Inga träffar. Prova ett annat ord.</p>
           </div>
         ) : (
-          <div style={{ textAlign: 'center', padding: '52px 22px' }}>
+          <div style={{ border: '1px solid var(--card-bd)', background: 'var(--card)', borderRadius: 'var(--radius)', padding: '28px 22px', textAlign: 'center' }}>
             <span style={{ display: 'inline-flex', width: 64, height: 64, borderRadius: 18, background: 'var(--accent-soft)', alignItems: 'center', justifyContent: 'center' }}>
               <Icon name="chefhat" size={32} color="var(--accent)" />
             </span>
             <h2 style={{ fontWeight: 700, fontSize: 21, letterSpacing: '-0.02em', color: 'var(--ink)', margin: '16px 0 6px' }}>
-              Här var det tomt!
+              Din receptbok är tom – än så länge
             </h2>
-            <p style={{ fontSize: 15, color: 'var(--muted)', maxWidth: '34ch', margin: '0 auto 20px', lineHeight: 1.5 }}>
-              Börja med att lägga till ert första recept eller tips — klistra in text, en länk eller ett foto.
+            <p style={{ fontSize: 15, color: 'var(--muted)', maxWidth: '36ch', margin: '0 auto 20px', lineHeight: 1.5 }}>
+              Lägg in det första receptet, så har du något att laga i helgen.
             </p>
-            <Link
-              href="/laga/entry/new"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'var(--accent)', color: '#fff', borderRadius: 12, padding: '13px 22px', fontSize: 15.5, fontWeight: 600 }}
-            >
-              <Icon name="plus" size={19} color="#fff" /> Lägg till recept
-            </Link>
-            <div style={{ marginTop: 14 }}>
-              <Link href="/laga/family" style={{ fontSize: 14, fontWeight: 600, color: 'var(--accent)' }}>
-                Bjud in fler till gemenskapen →
-              </Link>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 340, margin: '0 auto' }}>
+              {[
+                { href: '/laga/entry/new?mode=url', label: 'Klistra in en länk', primary: true },
+                { href: '/laga/entry/new?mode=image', label: 'Fota ett receptkort eller en skärmdump', primary: false },
+                { href: '/laga/entry/new?mode=sample', label: 'Prova med ett exempel', primary: false },
+              ].map((d) => (
+                <Link
+                  key={d.href}
+                  href={d.href}
+                  style={{
+                    borderRadius: 12,
+                    padding: '13px 18px',
+                    fontSize: 15,
+                    fontWeight: 600,
+                    background: d.primary ? 'var(--accent)' : 'var(--card)',
+                    color: d.primary ? '#fff' : 'var(--ink)',
+                    border: '1px solid ' + (d.primary ? 'var(--accent)' : 'var(--card-bd)'),
+                  }}
+                >
+                  {d.label}
+                </Link>
+              ))}
             </div>
           </div>
         )

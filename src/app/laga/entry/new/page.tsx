@@ -1,16 +1,27 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { FileText, Camera, PencilLine, Link2 } from 'lucide-react'
 import { AppShell } from '@/components/laga/AppShell'
 import { EntryForm, type EntryFormData } from '@/components/EntryForm'
 import { ImageUploader } from '@/components/ImageUploader'
 import { Button } from '@/components/ui/button'
+import { SAMPLE_RECIPE } from '@/lib/sample-recipe'
 
 type Mode = 'choose' | 'text' | 'image' | 'url' | 'form'
 
 export default function NewEntryPage() {
+  return (
+    <Suspense fallback={null}>
+      <NewEntry />
+    </Suspense>
+  )
+}
+
+function NewEntry() {
+  const params = useSearchParams()
   const [mode, setMode] = useState<Mode>('choose')
   const [text, setText] = useState('')
   const [url, setUrl] = useState('')
@@ -18,6 +29,19 @@ export default function NewEntryPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [extracted, setExtracted] = useState<Partial<EntryFormData> | undefined>()
+  const [isSample, setIsSample] = useState(false)
+
+  // Startdörrarna i det tomma flödet länkar hit med ?mode=. "sample" förifyller formuläret
+  // med exempelreceptet — användaren granskar och sparar själv.
+  useEffect(() => {
+    const m = params.get('mode')
+    if (m === 'url' || m === 'image' || m === 'text') setMode(m)
+    else if (m === 'sample') {
+      setExtracted(SAMPLE_RECIPE)
+      setIsSample(true)
+      setMode('form')
+    }
+  }, [params])
 
   async function runExtract(send: () => Promise<Response>) {
     setLoading(true)
@@ -135,7 +159,9 @@ export default function NewEntryPage() {
           <div className="space-y-3">
             {extracted && (
               <div className="rounded-lg bg-brand-accent/10 p-3 text-sm text-brand-accent-dark">
-                AI har fyllt i fälten — granska och justera innan du sparar.
+                {isSample
+                  ? 'Ett exempelrecept att prova med — ändra vad du vill, och radera det när du har egna.'
+                  : 'AI har fyllt i fälten — granska och justera innan du sparar.'}
               </div>
             )}
             <EntryForm initialData={extracted} />

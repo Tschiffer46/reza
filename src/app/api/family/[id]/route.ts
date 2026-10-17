@@ -21,11 +21,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const body = await request.json()
   const data: { name?: string; background?: string } = {}
   if (typeof body.name === 'string' && body.name.trim()) {
-    // Byta namn på gemenskapen är en Premium-förmån (som omslagsbilden).
-    const me = await prisma.user.findUnique({ where: { id: userId }, select: { plan: true } })
-    if (me?.plan !== 'paid') {
-      return NextResponse.json({ error: 'Premium krävs för att byta namn' }, { status: 402 })
-    }
+    // Alla medlemmar får byta namn — bara omslagsbilden är Premium. Namnet är det första
+    // man ser efter registrering, och en betalvägg där tog bort det enda man bad om.
     data.name = body.name.trim()
   }
   if (typeof body.background === 'string') data.background = body.background
