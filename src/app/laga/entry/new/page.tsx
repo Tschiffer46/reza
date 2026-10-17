@@ -1,16 +1,27 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { FileText, Camera, PencilLine, Link2 } from 'lucide-react'
 import { AppShell } from '@/components/laga/AppShell'
 import { EntryForm, type EntryFormData } from '@/components/EntryForm'
 import { ImageUploader } from '@/components/ImageUploader'
 import { Button } from '@/components/ui/button'
+import { SAMPLE_RECIPE } from '@/lib/sample-recipe'
 
 type Mode = 'choose' | 'text' | 'image' | 'url' | 'form'
 
 export default function NewEntryPage() {
+  return (
+    <Suspense fallback={null}>
+      <NewEntry />
+    </Suspense>
+  )
+}
+
+function NewEntry() {
+  const params = useSearchParams()
   const [mode, setMode] = useState<Mode>('choose')
   const [text, setText] = useState('')
   const [url, setUrl] = useState('')
@@ -18,6 +29,17 @@ export default function NewEntryPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [extracted, setExtracted] = useState<Partial<EntryFormData> | undefined>()
+
+  // Startdörrarna i det tomma flödet länkar hit med ?mode=. "sample" förifyller formuläret
+  // med exempelreceptet — användaren granskar och sparar själv.
+  useEffect(() => {
+    const m = params.get('mode')
+    if (m === 'url' || m === 'image' || m === 'text') setMode(m)
+    else if (m === 'sample') {
+      setExtracted(SAMPLE_RECIPE)
+      setMode('form')
+    }
+  }, [params])
 
   async function runExtract(send: () => Promise<Response>) {
     setLoading(true)

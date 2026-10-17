@@ -138,6 +138,14 @@ Ett recept kan vara **privat** (bara skaparen) eller synas i **en eller flera** 
   varning och fallbacken returnerar tomt (ingen 500). Tröskeln är mätt mot en liten testmängd — justera vid brus.
   Kör `npm run test:search` efter ändringar i `search-terms.ts`.
 
+## Onboarding (webb)
+- `/onboarding` är EN skärm: "Vad heter er receptbok?" (förifyllt "Familjen <efternamn>" om namnet har ett)
+  + "Har du en kod? Gå med" som fälls ut. Samma `/api/onboarding` som förut; sätter `onboardedAt`. Inga infoslides.
+- Tomt flöde i `Feed.tsx` visar tre startdörrar (länk, foto, exempel) via `/laga/entry/new?mode=url|image|sample`;
+  exemplet (`src/lib/sample-recipe.ts`, speglar `laga-app/lib/onboarding/sample.ts`) förifyller formuläret och
+  sparas aldrig automatiskt. Första-receptet-kortet (kopiera inbjudningslänk) stängs via localStorage.
+- `/join/[code]` visar "<skapare> har bjudit in dig till <gemenskap>" (skaparen = `Family.createdById`).
+
 ## Konventioner
 - Språk i UI: **Svenska**. API-routes returnerar JSON.
 - Prisma client singleton i `src/lib/db.ts`. Bilder som WebP i `data/uploads/` (gitignored;
@@ -277,7 +285,8 @@ npx prisma studio     # databas-GUI
   `ADMIN_EMAILS=epost1,epost2` i `.env.vadskavi` — `requireAdmin` (`src/lib/family.ts`)
   släpper in dessa och befordrar dem till riktig DB-admin första gången. Gratis = max 3
   recept/månad (`FREE_MONTHLY_LIMIT` i `src/lib/plan.ts`). Premium-förmåner idag: obegränsat
-  antal recept, byta gemenskapens omslagsbild, moderera medlemssnack.
+  antal recept, byta gemenskapens omslagsbild, moderera medlemssnack. Att döpa om en gemenskap är
+  gratis för alla medlemmar (`PATCH /api/family/[id]`).
   `Family.status='suspended'` blockerar åtkomst (admin stänger missbrukade gemenskaper).
   **På gång — RevenueCat-IAP (native-appen):** premium-köp i `laga-app` sätter `User.plan` via
   entitlement-sync (RevenueCat-webhook → `/api/revenuecat/webhook`, se ovan). `User.plan` fanns

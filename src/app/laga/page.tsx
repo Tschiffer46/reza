@@ -19,9 +19,11 @@ export default async function LagaHomePage() {
   const defaultId = await getDefaultFamily(userId)
   const familyName = families.find((f) => f.id === defaultId)?.name || 'Receptboken'
 
-  const [rows, rawCategories] = await Promise.all([
+  const [rows, rawCategories, myEntryCount, activeFamily] = await Promise.all([
     searchEntries({ userId, familyIds, family: defaultId }),
     prisma.category.findMany({ where: { familyId: { in: familyIds } }, orderBy: { name: 'asc' } }),
+    prisma.entry.count({ where: { creatorId: userId } }),
+    prisma.family.findUnique({ where: { id: defaultId }, select: { inviteCode: true } }),
   ])
 
   const entries = rows.map(toEntryDTO)
@@ -44,6 +46,8 @@ export default async function LagaHomePage() {
         families={families.map((f) => ({ id: f.id, name: f.name }))}
         familyName={familyName}
         activeFamilyId={defaultId}
+        inviteCode={activeFamily?.inviteCode ?? ''}
+        myEntryCount={myEntryCount}
       />
     </AppShell>
   )

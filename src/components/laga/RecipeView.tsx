@@ -308,7 +308,7 @@ export function RecipeView({ recipe, meName, canDelete = false }: { recipe: Reci
           ) : (
             recipe.type !== 'tip' && (
               <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 13.5, color: 'var(--muted)' }}>Sätt betyg när du har lagat rätten.</span>
+                <span style={{ fontSize: 13.5, color: 'var(--muted)' }}>Sätt betyg när du har lagat rätten. Mormors köttbullar förtjänar en 6:a.</span>
                 {ratingCount > 0 && ratingAvg != null && (
                   <span style={{ fontSize: 13.5, color: 'var(--accent)', fontWeight: 600 }}>
                     ★ {ratingAvg.toFixed(1)} <span style={{ color: 'var(--muted)', fontWeight: 400 }}>({ratingCount})</span>
