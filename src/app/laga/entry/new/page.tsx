@@ -29,6 +29,7 @@ function NewEntry() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [extracted, setExtracted] = useState<Partial<EntryFormData> | undefined>()
+  const [isSample, setIsSample] = useState(false)
 
   // Startdörrarna i det tomma flödet länkar hit med ?mode=. "sample" förifyller formuläret
   // med exempelreceptet — användaren granskar och sparar själv.
@@ -37,6 +38,7 @@ function NewEntry() {
     if (m === 'url' || m === 'image' || m === 'text') setMode(m)
     else if (m === 'sample') {
       setExtracted(SAMPLE_RECIPE)
+      setIsSample(true)
       setMode('form')
     }
   }, [params])
@@ -157,7 +159,9 @@ function NewEntry() {
           <div className="space-y-3">
             {extracted && (
               <div className="rounded-lg bg-brand-accent/10 p-3 text-sm text-brand-accent-dark">
-                AI har fyllt i fälten — granska och justera innan du sparar.
+                {isSample
+                  ? 'Ett exempelrecept att prova med — ändra vad du vill, och radera det när du har egna.'
+                  : 'AI har fyllt i fälten — granska och justera innan du sparar.'}
               </div>
             )}
             <EntryForm initialData={extracted} />
