@@ -50,3 +50,29 @@ export function escapeLike(s: string): string {
 export function containsPattern(s: string): string {
   return `%${escapeLike(s)}%`
 }
+
+/** Kortaste sökord som får stavningstoleransen (trigram). Kortare ord ger bara slumpträffar. */
+export const MIN_FUZZY_LENGTH = 4
+
+/** Så många träffar från ordinarie sökning räcker; färre ⇒ prova stavningstolerans. */
+export const FUZZY_TRIGGER_HITS = 3
+
+/**
+ * Lägsta word_similarity (0–1) för att ett sökord ska räknas som "stavat fel men menar det".
+ * Uppmätt mot riktig pg_trgm (PG16): pankakor→pannkakor 0.8, lasange→lasagne 0.5, kycling→kycklinggryta 0.45
+ * (sammansättningar straffas), kottbular→köttbullar 0.42. Orelaterade ord (blomkål, pizza, tomatsoppa …)
+ * hamnade ≤ 0.35 mot testdatan. 0.4 släpper in fallen ovan; höj om riktig data ger brus.
+ */
+export const FUZZY_THRESHOLD = 0.4
+
+/** Ord som får användas i stavningstoleransen. Alla måste vara tillräckligt långa, annars ingen fuzzy alls. */
+export function fuzzyTokens(tokens: string[]): string[] {
+  if (tokens.length === 0 || tokens.some((t) => [...t].length < MIN_FUZZY_LENGTH)) return []
+  return tokens
+}
+
+/** Ordinarie träffar först (deras ordning orörd), därefter fuzzy-träffar utan dubbletter. */
+export function mergeIds(primary: string[], fuzzy: string[]): string[] {
+  const seen = new Set(primary)
+  return [...primary, ...fuzzy.filter((id) => !seen.has(id))]
+}
