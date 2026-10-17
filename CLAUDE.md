@@ -64,7 +64,7 @@ src/
 │   ├── family.ts      # gemenskaps-helpers (se nedan) + requireUser/requireAdmin
 │   ├── mobile-auth.ts # Bearer-token (HS256, AUTH_SECRET) för native-appen
 │   ├── plan.ts        # FREE_MONTHLY_LIMIT, monthlyEntryCount
-│   ├── search.ts      # svensk tsvector-sök (raw SQL)
+│   ├── search.ts      # svensk tsvector-sök (raw SQL) + pg_trgm-fallback för stavfel
 │   ├── apps.ts        # APPREGISTRET — enda sanningskällan för vilka appar vi har
 │   ├── site-copy.ts   # all copy för startsida/principer/footer (i18n-redo)
 │   ├── site-config.ts # varumärke, företagsidentitet, 20 %-löftet, legalUpdated
@@ -72,7 +72,7 @@ src/
 ├── auth.ts            # NextAuth-config (providers, callbacks, JWT)
 └── middleware.ts      # auth-gate; PUBLIC_PATHS (/login,/register,/api/register,/api/mobile/login …) + Bearer-header för /api/*
 prisma/schema.prisma   # datamodell (nedan)
-scripts/setup-search.ts# idempotent: svensk tsvector-trigger + GIN-index + backfill
+scripts/setup-search.ts# idempotent: svensk tsvector-trigger + GIN-index + backfill + pg_trgm (får inte fälla deploy)
 ```
 
 ## Datamodell (Prisma)
@@ -131,6 +131,12 @@ Ett recept kan vara **privat** (bara skaparen) eller synas i **en eller flera** 
   Självbärande med flit: runtime-imagen har `scripts/` men inte `src/`. Kör `npm run test:protein` efter ändringar.
 - Privata recept räknas mot samma månadskvot — kostnaden sitter i AI-tolkningen, inte i
   delningen. Ett privat recept kan bara raderas/redigeras av skaparen (ingen admin-väg in).
+
+- **Stavningstolerant sök (`pg_trgm`):** när ordinarie sökning ger <3 träffar kör `fuzzyIds` i `src/lib/search.ts`
+  `word_similarity` (≥ `FUZZY_THRESHOLD` 0.4, ord ≥4 tecken) mot rubrik/ingredienser — "pankakor" → Pannkakor.
+  Går genom `feedEntrySql` som övrig sök. `setup-search.ts` skapar tillägget i try/catch; saknas det loggas en
+  varning och fallbacken returnerar tomt (ingen 500). Tröskeln är mätt mot en liten testmängd — justera vid brus.
+  Kör `npm run test:search` efter ändringar i `search-terms.ts`.
 
 ## Konventioner
 - Språk i UI: **Svenska**. API-routes returnerar JSON.

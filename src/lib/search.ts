@@ -1,7 +1,16 @@
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/db'
 import { ENTRY_META_INCLUDE } from '@/lib/laga'
-import { MIN_COMPACT_LENGTH, containsPattern, toPrefixTsQuery, tokenizeQuery } from '@/lib/search-terms'
+import {
+  FUZZY_THRESHOLD,
+  FUZZY_TRIGGER_HITS,
+  MIN_COMPACT_LENGTH,
+  containsPattern,
+  fuzzyTokens,
+  mergeIds,
+  toPrefixTsQuery,
+  tokenizeQuery,
+} from '@/lib/search-terms'
 import { feedEntrySql, feedEntryWhere } from '@/lib/entry-access'
 
 export interface EntryQuery {
@@ -20,6 +29,53 @@ export interface EntryQuery {
   /** Huvudprotein-nyckel; ogiltigt värde ger tom lista snarare än ett ofiltrerat flöde. */
   protein?: string | null
   sort?: string | null
+}
+
+let fuzzyWarned = false
+
+/**
+ * Stavningstolerant reservväg: "pankakor" → "pannkakor". Körs bara när ordinarie sökning gav
+ * få träffar. Varje sökord måste likna något ord i rubriken eller ingredienserna
+ * (`word_similarity` ≥ FUZZY_THRESHOLD); rangordnas på snittlikhet, rubrik väger tyngst.
+ *
+ * Får ALDRIG fälla sökningen: saknas pg_trgm (CREATE EXTENSION nekades vid deploy) kastar
+ * Postgres "function word_similarity does not exist" — då loggar vi en gång och returnerar
+ * tomt, så sökningen beter sig exakt som innan. Åtkomst går som vanligt genom feedEntrySql.
+ */
+async function fuzzyIds(p: {
+  userId: string
+  familyIds: string[]
+  family?: string | null
+  type?: string | null
+  category?: string | null
+  protein?: string | null
+  tokens: string[]
+}): Promise<string[]> {
+  if (p.tokens.length === 0) return []
+  const title = Prisma.sql`lower("Entry".title)`
+  const ingr = Prisma.sql`lower(array_to_string("Entry".ingredients, ' '))`
+  // Per ord: bästa av rubrik (full vikt) och ingredienser (0,8× — en ingrediens är svagare signal).
+  const score = (t: string) =>
+    Prisma.sql`GREATEST(word_similarity(${t}, ${title}), 0.8 * word_similarity(${t}, ${ingr}))`
+  try {
+    const rows = await prisma.$queryRaw<{ id: string }[]>`
+      SELECT id FROM "Entry"
+      WHERE ${feedEntrySql(p.userId, p.familyIds, p.family)}
+        AND ${Prisma.join(p.tokens.map((t) => Prisma.sql`${score(t)} >= ${FUZZY_THRESHOLD}`), ' AND ')}
+        ${p.type ? Prisma.sql`AND type = ${p.type}` : Prisma.empty}
+        ${p.category ? Prisma.sql`AND category = ${p.category}` : Prisma.empty}
+        ${p.protein ? Prisma.sql`AND protein = ${p.protein}` : Prisma.empty}
+      ORDER BY (${Prisma.join(p.tokens.map(score), ' + ')}) DESC, "createdAt" DESC
+      LIMIT 50
+    `
+    return rows.map((r) => r.id)
+  } catch (e) {
+    if (!fuzzyWarned) {
+      fuzzyWarned = true
+      console.warn('Stavningstolerant sökning avstängd (pg_trgm saknas?):', e instanceof Error ? e.message : e)
+    }
+    return []
+  }
 }
 
 /**
@@ -61,7 +117,8 @@ export async function searchEntries({
     //      t.ex. "gryta" i "Kycklinggryta".
     //  (c) hopskrivet: "kyckling gryta" mot "Kycklinggryta" och, åt andra hållet,
     //      "kycklinggryta" mot "Kyckling gryta" (särskrivning).
-    // Ingen pg_trgm: den kräver CREATE EXTENSION, och datamängden är liten nog för seq scan.
+    // Få träffar ⇒ stavningstolerans via pg_trgm längre ned (fuzzyIds). Själva huvudfrågan
+    // använder inte pg_trgm och fungerar alltså även om tillägget saknas.
     // tsQuery byggs bara av sanerade ord och går som bunden parameter, aldrig interpolerad.
     const rows = await prisma.$queryRaw<{ id: string }[]>`
       SELECT id FROM "Entry"
@@ -84,7 +141,11 @@ export async function searchEntries({
         "createdAt" DESC
       LIMIT 100
     `
-    const ids = rows.map((r) => r.id)
+    let ids = rows.map((r) => r.id)
+    if (ids.length < FUZZY_TRIGGER_HITS) {
+      const extra = await fuzzyIds({ userId, familyIds, family, type, category, protein, tokens: fuzzyTokens(tokens) })
+      ids = mergeIds(ids, extra)
+    }
     if (ids.length === 0) return []
     const found = await prisma.entry.findMany({ where: { id: { in: ids } }, include: ENTRY_META_INCLUDE })
     const order = new Map(ids.map((id, i) => [id, i] as const))

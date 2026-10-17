@@ -6,7 +6,10 @@
 import {
   MAX_SEARCH_TOKENS,
   containsPattern,
+  FUZZY_THRESHOLD,
   escapeLike,
+  fuzzyTokens,
+  mergeIds,
   toPrefixTsQuery,
   tokenizeQuery,
 } from '../src/lib/search-terms'
@@ -56,6 +59,15 @@ check('LIKE: mönster', containsPattern('gryta'), '%gryta%')
 check('LIKE: mönster med joker', containsPattern('a%b'), '%a\\%b%')
 
 /* ------------------------------------------------------------------ slut */
+
+/* ------------------------------------------------------- stavningstolerans */
+
+check('fuzzy: långa ord släpps igenom', fuzzyTokens(['pankakor']), ['pankakor'])
+check('fuzzy: ett kort ord stänger av hela fuzzy', fuzzyTokens(['pankakor', 'ost']), [])
+check('fuzzy: tom sökning', fuzzyTokens([]), [])
+check('fuzzy: tröskel mellan 0 och 1', FUZZY_THRESHOLD > 0 && FUZZY_THRESHOLD < 1, true)
+check('mergeIds: ordinarie först, utan dubbletter', mergeIds(['a', 'b'], ['b', 'c']), ['a', 'b', 'c'])
+check('mergeIds: bara fuzzy', mergeIds([], ['c']), ['c'])
 
 if (failed > 0) {
   console.error(`\n${failed} test misslyckades.`)
