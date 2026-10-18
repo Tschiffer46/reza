@@ -292,6 +292,8 @@ npx prisma studio     # databas-GUI
 - **Registrering skapar BARA nya konton (`/api/register` + `/api/mobile/register`).** Finns
   adressen ⇒ 409, även om kontot saknar lösenord. Den som saknar lösenord loggar in med e-postlänk,
   Apple eller Google och väljer lösenord inloggad (`PATCH /api/profile/password`).
+  Webbens `/register` visar vid 409 knappen "Logga in med e-postlänk" (`signIn('nodemailer')`)
+  — utan den kom en Apple-/magic link-användare inte vidare från sidan.
   > **HÅRT LÄRT (2026-10-18) — kontokapning via registreringen:** webbens `/api/register` satte
   > förut lösenord på befintliga konton utan lösenord ("magic link-användare → sätt lösenord").
   > Apple- och magic link-konton saknar lösenord, så vem som helst som kände till en adress kunde
