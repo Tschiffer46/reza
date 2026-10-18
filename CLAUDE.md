@@ -195,14 +195,6 @@ Native iOS-appen kan inte hantera NextAuth:s HTTP-only-cookie, så den autentise
 **Bearer-token** vid sidan av webbens cookie-session:
 - **`POST /api/mobile/login`** (publik) — `{ email, password }` → `{ token, user, families,
   activeFamilyId }`. Samma bcrypt-kontroll som Credentials-providern i `src/auth.ts`.
-  **Därför får ingen anonym route sätta lösenord på ett befintligt konto.** Webbens
-  `/api/register` gjorde det tidigare när kontot saknade lösenord — och Apple-, Google- och
-  magic link-konton saknar lösenord, så vem som helst som kände till adressen kunde välja ett
-  lösenord och logga in här (och via Credentials) som användaren. Nu svarar `/api/register` 409
-  för **varje** befintlig adress och ändrar aldrig ett konto; `/register` visar då "Logga in med
-  e-postlänk" (`signIn('nodemailer')`) och hänvisar till Apple/Google. Lösenord på ett befintligt
-  konto sätts inloggad via `PATCH /api/profile/password`. Samma regel gäller
-  `/api/mobile/register` och alla framtida kontoskapande routes.
 - **`POST /api/mobile/apple`** (publik) — Sign in with Apple för native-appen. `{ identityToken,
   fullName?, email? }`. Verifierar Apples identityToken med **`jose`** (`createRemoteJWKSet` mot
   `appleid.apple.com/auth/keys` + `jwtVerify`): `iss=https://appleid.apple.com`, `aud=`appens
@@ -212,6 +204,11 @@ Native iOS-appen kan inte hantera NextAuth:s HTTP-only-cookie, så den autentise
   → annars befintlig `User` med samma e-post (länkas) → annars nytt konto. Returnerar samma form som
   login (`signMobileToken` + `getDefaultFamily` + `getUserFamilies`). Namn/e-post kommer bara vid
   *första* inloggningen ⇒ appen skickar med dem då. "Dölj min e-post" ger relay-adress ⇒ nytt konto.
+- **`POST /api/mobile/register`** (publik) — kontoskapande med e-post i appen. `{ name, email,
+  password }` → samma svar som login (201). Validering i `src/lib/registration.ts` (namn krävs,
+  lösenord ≥ 8, `npm run test:registration`). Skapar gemenskapen "Familjen <efternamn>" och sätter
+  `onboardedAt`. Takbegränsning i minnet: 5 försök / 15 min / IP (`src/lib/rate-limit.ts`).
+  Finns adressen redan ⇒ 409, även om kontot saknar lösenord — se **"Registrering"** under gotchas.
 - **`src/lib/mobile-auth.ts`** — `signMobileToken` / `verifyMobileToken` / `getBearerUserId`.
   HS256-JWT signerad med befintliga `AUTH_SECRET` via `node:crypto`. **Statslös** (ingen
   DB-tabell), **ingen ny dependency**, **ingen schemaändring**, ingen ny server-env.
@@ -219,7 +216,7 @@ Native iOS-appen kan inte hantera NextAuth:s HTTP-only-cookie, så den autentise
   cookie-sessionen ⇒ **alla** befintliga `/api/*`-routes funkar för appen utan per-route-ändring.
 - **`getDefaultFamily()`** läser `x-family-id`-header för val av aktiv gemenskap (saknas den
   används första aktiva gemenskapen, precis som webbens cookie-fallback).
-- **`src/middleware.ts`** — `/api/mobile/login` **och `/api/mobile/apple`** ligger i `PUBLIC_PATHS`;
+- **`src/middleware.ts`** — `/api/mobile/login`, **`/api/mobile/apple` och `/api/mobile/register`** ligger i `PUBLIC_PATHS`;
   requests med `Authorization: Bearer` släpps förbi auth-grinden men **endast för `/api/*`** (sidor
   som `/laga`/`/admin` kan inte kringgås med en godtycklig header).
 - **`jose`** är en explicit dependency (Apple-token-verifiering); var redan transitiv via next-auth.
@@ -262,6 +259,10 @@ npm run db:push       # prisma db push — synka schema mot DB (INGA migrations)
 npm run db:seed       # seeda standardkategorier
 npm run db:search     # scripts/setup-search.ts (svensk tsvector-sök)
 npm run test:url      # tester för länkextraktionen (rena funktioner, inget nät)
+npm run test:search   # sök-termerna (search-terms.ts)
+npm run test:protein  # huvudprotein + backfill-parsern
+npm run test:webhook  # RevenueCat-mappningen (revoke-listan)
+npm run test:registration  # registreringsvalidering, takbegränsning, IP-läsning
 npx prisma studio     # databas-GUI
 ```
 
@@ -288,6 +289,26 @@ npx prisma studio     # databas-GUI
   `src/auth.ts`, annars genererar Auth.js `0.0.0.0`-länkar bakom NPM. Servern måste ha
   `AUTH_URL=https://vadskavi.nu` i `.env.vadskavi`. Native-appen autentiserar i stället med
   **Bearer-token** (se **"Mobil-API"** ovan) — `requireUser()` hanterar båda vägarna.
+- **Registrering skapar BARA nya konton (`/api/register` + `/api/mobile/register`).** Finns
+  adressen ⇒ 409, även om kontot saknar lösenord. Den som saknar lösenord loggar in med e-postlänk,
+  Apple eller Google och väljer lösenord inloggad (`PATCH /api/profile/password`).
+  Webbens `/register` visar vid 409 knappen "Logga in med e-postlänk" (`signIn('nodemailer')`)
+  — utan den kom en Apple-/magic link-användare inte vidare från sidan.
+  > **HÅRT LÄRT (2026-10-18) — kontokapning via registreringen:** webbens `/api/register` satte
+  > förut lösenord på befintliga konton utan lösenord ("magic link-användare → sätt lösenord").
+  > Apple- och magic link-konton saknar lösenord, så vem som helst som kände till en adress kunde
+  > välja lösenord åt den personen och logga in som hen. Hittades när mobilregistreringen byggdes
+  > och den gamla routen användes som mall. Läs varje "hjälpsam" gren i auth-kod som en angripare:
+  > *vem bevisar här att de äger adressen?* Om svaret är ingen — gör det inte.
+  > **Kvarvarande risk (ej åtgärdad):** e-postadresser verifieras inte vid registrering, och
+  > Apple/Google/magic link länkar till ett befintligt konto med samma adress
+  > (`allowDangerousEmailAccountLinking`). Någon kan alltså registrera en annans adress *före*
+  > personen själv, och behålla lösenordsåtkomst när personen sedan loggar in med Apple
+  > ("pre-hijacking"). Riktig åtgärd: verifiera e-post innan lösenordskontot blir aktivt, eller
+  > nollställ lösenordet när ett overifierat konto länkas till Apple/Google/e-postlänk.
+  `src/lib/rate-limit.ts` (`createRateLimiter`, `clientIp`) delas av registreringsroutarna;
+  `/api/waitlist` har en egen, äldre kopia. `PATCH /api/profile/password` kräver inte nuvarande
+  lösenord — en stulen session kan alltså byta det. Känt, inte åtgärdat.
 - **Roller (manuellt, ingen Stripe än):** `User.plan` = `free`/`paid` och `User.isAdmin`
   sätts via SQL eller i `/admin`-vyn. **Första admin utan SQL:** sätt
   `ADMIN_EMAILS=epost1,epost2` i `.env.vadskavi` — `requireAdmin` (`src/lib/family.ts`)
