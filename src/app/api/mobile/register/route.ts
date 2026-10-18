@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db'
 import { signMobileToken } from '@/lib/mobile-auth'
 import { createFamilyForUser, getDefaultFamily, getUserFamilies } from '@/lib/family'
 import { defaultFamilyName, validateRegistration } from '@/lib/registration'
+import { clientIp, createRateLimiter } from '@/lib/rate-limit'
 
 /**
  * POST /api/mobile/register — skapa konto med e-post + lösenord i mobil-appen.
@@ -13,40 +14,13 @@ import { defaultFamilyName, validateRegistration } from '@/lib/registration'
  * (`{ token, user, families, activeFamilyId }`), så appen loggas in direkt.
  * Publik route (PUBLIC_PATHS i src/middleware.ts).
  *
- * Skiljer sig MEDVETET från webbens /api/register på en punkt: finns e-postadressen
- * redan svarar vi 409 även om kontot saknar lösenord. Webben sätter då lösenordet på det
- * befintliga kontot — men konton från Apple-inloggning och magic link saknar lösenord,
- * så vem som helst som känner till adressen skulle kunna ta över kontot den vägen.
+ * Finns e-postadressen redan svarar vi 409 — även om kontot saknar lösenord. Konton från
+ * Apple-inloggning och magic link saknar lösenord; att anonymt sätta ett på dem vore att
+ * lämna över kontot till vem som helst som känner till adressen (se /api/register).
  */
 
-// Enkel takbegränsning i minnet per IP (en container bakom NPM, samma resonemang som
-// /api/waitlist). Skyddar mot massregistrering och mot att sondera vilka adresser som finns.
-const MAX_PER_WINDOW = 5
-const WINDOW_MS = 15 * 60 * 1000
-const hits = new Map<string, { count: number; resetAt: number }>()
-
-function rateLimited(ip: string): boolean {
-  const now = Date.now()
-  for (const [key, entry] of hits) if (now > entry.resetAt) hits.delete(key)
-  const entry = hits.get(ip)
-  if (!entry) {
-    hits.set(ip, { count: 1, resetAt: now + WINDOW_MS })
-    return false
-  }
-  entry.count += 1
-  return entry.count > MAX_PER_WINDOW
-}
-
-/** Proxyns x-real-ip, annars SISTA x-forwarded-for-hoppet (se /api/waitlist för varför). */
-function clientIp(request: NextRequest): string {
-  const real = request.headers.get('x-real-ip')?.trim()
-  if (real) return real
-  const hops = (request.headers.get('x-forwarded-for') ?? '')
-    .split(',')
-    .map((p) => p.trim())
-    .filter(Boolean)
-  return hops.length ? hops[hops.length - 1] : 'okänd'
-}
+// Skyddar mot massregistrering och mot att sondera vilka adresser som har konto.
+const rateLimited = createRateLimiter(5, 15 * 60 * 1000)
 
 const EXISTS =
   'Det finns redan ett konto med den e-postadressen. Logga in, eller välj Fortsätt med Apple om du skapade kontot så.'

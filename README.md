@@ -16,8 +16,9 @@ PostgreSQL via Prisma, inloggning med magic link (Auth.js v5 över SMTP).
 - **Auth.js v5** (NextAuth) — magic link via **Nodemailer/SMTP** (Mailcow)
 - **Anthropic SDK** — förberett för AI-extraktion i senare sprintar
 - **Docker** (multi-stage) bakom **Nginx Proxy Manager**
-- **Mobil-API:** native iOS-app (repo `laga-app`) loggar in via `POST /api/mobile/login`
-  (Bearer-token, återanvänder `AUTH_SECRET` — ingen ny env). Se [`CLAUDE.md`](./CLAUDE.md) → Mobil-API.
+- **Mobil-API:** native iOS-app (repo `laga-app`) loggar in via `POST /api/mobile/login`,
+  `POST /api/mobile/apple` eller skapar konto via `POST /api/mobile/register` (Bearer-token,
+  återanvänder `AUTH_SECRET` — ingen ny env). Se [`CLAUDE.md`](./CLAUDE.md) → Mobil-API.
 
 ## Miljövariabler
 Se [`.env.example`](./.env.example). Kopiera till `.env` och fyll i.
@@ -51,6 +52,8 @@ npm run build      # prisma generate + next build (standalone)
 npm run start      # kör produktionsbygget
 npm run db:push    # prisma db push (synka schema mot DB)
 npm run db:seed    # seeda standardkategorier
+npm run test:url && npm run test:search && npm run test:protein \
+  && npm run test:webhook && npm run test:registration   # rena tester, ingen DB
 ```
 
 ## Deploy & uppdatering

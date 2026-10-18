@@ -1,8 +1,10 @@
 /**
- * Rena tester för src/lib/registration.ts. Körs med `npm run test:registration`.
+ * Rena tester för src/lib/registration.ts och src/lib/rate-limit.ts. Körs med `npm run test:registration`.
  * Ingen DB, inget nät.
  */
+import { NextRequest } from 'next/server'
 import { defaultFamilyName, validateRegistration } from '../src/lib/registration'
+import { clientIp, createRateLimiter } from '../src/lib/rate-limit'
 
 let failed = 0
 function check(name: string, actual: unknown, expected: unknown) {
@@ -34,6 +36,16 @@ check('null-kropp ⇒ fel, ingen krasch', validateRegistration(null).ok, false)
 check('familjenamn av efternamn', defaultFamilyName('Thomas Schiffer'), 'Familjen Schiffer')
 check('familjenamn med mellannamn', defaultFamilyName('Anna Maria Ek'), 'Familjen Ek')
 check('ett ord ⇒ standardnamn', defaultFamilyName('Thomas'), 'Min gemenskap')
+
+const limited = createRateLimiter(2, 60_000)
+check('takbegränsning: två släpps, tredje stoppas', [limited('a'), limited('a'), limited('a')], [false, false, true])
+check('takbegränsning: per nyckel', limited('b'), false)
+
+const req = (h: Record<string, string>) => new NextRequest('https://vadskavi.nu/api/register', { headers: h })
+check('ip: x-real-ip vinner', clientIp(req({ 'x-real-ip': '1.1.1.1', 'x-forwarded-for': '9.9.9.9' })), '1.1.1.1')
+// En bot kan skicka egen x-forwarded-for; proxyn lägger till sin observation SIST.
+check('ip: sista x-forwarded-for-hoppet, inte det förfalskbara första', clientIp(req({ 'x-forwarded-for': '6.6.6.6, 2.2.2.2' })), '2.2.2.2')
+check('ip: inga headers', clientIp(req({})), 'okänd')
 
 if (failed) {
   console.error(`\n${failed} test(er) misslyckades`)
