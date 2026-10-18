@@ -204,6 +204,13 @@ Native iOS-appen kan inte hantera NextAuth:s HTTP-only-cookie, så den autentise
   → annars befintlig `User` med samma e-post (länkas) → annars nytt konto. Returnerar samma form som
   login (`signMobileToken` + `getDefaultFamily` + `getUserFamilies`). Namn/e-post kommer bara vid
   *första* inloggningen ⇒ appen skickar med dem då. "Dölj min e-post" ger relay-adress ⇒ nytt konto.
+- **`POST /api/mobile/register`** (publik) — kontoskapande med e-post i appen. `{ name, email,
+  password }` → samma svar som login (201). Validering i `src/lib/registration.ts` (namn krävs,
+  lösenord ≥ 8, `npm run test:registration`). Skapar gemenskapen "Familjen <efternamn>" och sätter
+  `onboardedAt`. Takbegränsning i minnet: 5 försök / 15 min / IP.
+  **Finns adressen redan ⇒ 409, ÄVEN om kontot saknar lösenord.** Webbens `/api/register` sätter i
+  det läget lösenordet på det befintliga kontot — men Apple- och magic link-konton saknar lösenord,
+  så vem som helst som känner till adressen kan ta över kontot den vägen. Kopiera inte det beteendet.
 - **`src/lib/mobile-auth.ts`** — `signMobileToken` / `verifyMobileToken` / `getBearerUserId`.
   HS256-JWT signerad med befintliga `AUTH_SECRET` via `node:crypto`. **Statslös** (ingen
   DB-tabell), **ingen ny dependency**, **ingen schemaändring**, ingen ny server-env.
@@ -211,7 +218,7 @@ Native iOS-appen kan inte hantera NextAuth:s HTTP-only-cookie, så den autentise
   cookie-sessionen ⇒ **alla** befintliga `/api/*`-routes funkar för appen utan per-route-ändring.
 - **`getDefaultFamily()`** läser `x-family-id`-header för val av aktiv gemenskap (saknas den
   används första aktiva gemenskapen, precis som webbens cookie-fallback).
-- **`src/middleware.ts`** — `/api/mobile/login` **och `/api/mobile/apple`** ligger i `PUBLIC_PATHS`;
+- **`src/middleware.ts`** — `/api/mobile/login`, **`/api/mobile/apple` och `/api/mobile/register`** ligger i `PUBLIC_PATHS`;
   requests med `Authorization: Bearer` släpps förbi auth-grinden men **endast för `/api/*`** (sidor
   som `/laga`/`/admin` kan inte kringgås med en godtycklig header).
 - **`jose`** är en explicit dependency (Apple-token-verifiering); var redan transitiv via next-auth.
