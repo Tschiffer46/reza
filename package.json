@@ -16,6 +16,7 @@
     "test:search": "tsx scripts/test-search-terms.ts",
     "test:protein": "tsx scripts/test-protein.ts",
     "test:webhook": "tsx scripts/test-revenuecat-webhook.ts",
+    "test:registration": "tsx scripts/test-registration.ts",
     "apple-secret": "node scripts/apple-secret.mjs"
   },
   "prisma": {
