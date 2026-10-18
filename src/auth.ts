@@ -8,6 +8,7 @@ import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/db'
 import { sendVerificationRequest, canonicalUrl, PUBLIC_BASE_URL } from '@/lib/auth-email'
 import { recordAuthError } from '@/lib/auth-debug'
+import { markEmailProven } from '@/lib/email-ownership'
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -63,6 +64,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
+    // Körs innan Auth.js länkar/skapar kontot. En e-postlänk, Apple eller en Google-adress
+    // som Google verifierat bevisar att personen äger adressen ⇒ ett lösenord som någon satte
+    // innan dess räknas inte längre (se src/lib/email-ownership.ts). Måste ske HÄR och inte i
+    // events.signIn: för e-postlänken sätter Auth.js emailVerified innan eventet körs, och då
+    // går det inte längre att se att adressen var overifierad.
+    async signIn({ user, account, profile, email }) {
+      // Första anropet för e-postlänk sker när länken BESTÄLLS — inget är bevisat än.
+      if (email?.verificationRequest) return true
+      const provider = account?.provider
+      if (provider === 'nodemailer') await markEmailProven(user.email)
+      else if (provider === 'apple') await markEmailProven(profile?.email)
+      else if (provider === 'google' && profile?.email_verified === true) {
+        await markEmailProven(profile.email)
+      }
+      return true
+    },
     // Tvinga omdirigeringar till den publika adressen (annars kan 0.0.0.0:3000
     // läcka in bakom proxyn). Relativa url:er får basen; absoluta normaliseras.
     redirect({ url }) {

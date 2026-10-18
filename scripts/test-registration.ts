@@ -5,6 +5,7 @@
 import { NextRequest } from 'next/server'
 import { defaultFamilyName, validateRegistration } from '../src/lib/registration'
 import { clientIp, createRateLimiter } from '../src/lib/rate-limit'
+import { ownershipUpdate } from '../src/lib/email-ownership'
 
 let failed = 0
 function check(name: string, actual: unknown, expected: unknown) {
@@ -36,6 +37,12 @@ check('null-kropp ⇒ fel, ingen krasch', validateRegistration(null).ok, false)
 check('familjenamn av efternamn', defaultFamilyName('Thomas Schiffer'), 'Familjen Schiffer')
 check('familjenamn med mellannamn', defaultFamilyName('Anna Maria Ek'), 'Familjen Ek')
 check('ett ord ⇒ standardnamn', defaultFamilyName('Thomas'), 'Min gemenskap')
+
+// Pre-hijacking: ett lösenord satt innan adressen bevisats ska bort när ägaren loggar in.
+const hijacked = ownershipUpdate({ emailVerified: null, password: 'angriparens-hash' })
+check('overifierat konto: lösenordet nollställs', hijacked?.password, null)
+check('overifierat konto: markeras verifierat', hijacked?.emailVerified instanceof Date, true)
+check('verifierat konto: lösenordet rörs inte', ownershipUpdate({ emailVerified: new Date(), password: 'hash' }), null)
 
 const limited = createRateLimiter(2, 60_000)
 check('takbegränsning: två släpps, tredje stoppas', [limited('a'), limited('a'), limited('a')], [false, false, true])

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getApp } from '@/lib/apps'
+import { clientIp, createRateLimiter } from '@/lib/rate-limit'
 
 /**
  * Intresseanmälan inför App Store-släpp. PUBLIK endpoint — måste ligga i
@@ -12,60 +13,11 @@ import { getApp } from '@/lib/apps'
  * admin-vyn tillsammans med övrig inkommande post.
  */
 
-const MAX_PER_WINDOW = 5
-const WINDOW_MS = 10 * 60 * 1000
-
-/**
- * Enkel takbegränsning per IP. Sajten körs som en enda container bakom Nginx
- * Proxy Manager, så en Map i minnet räcker — ingen Redis, inget nytt beroende.
- * Nollställs vid omdeploy, vilket är helt acceptabelt för det här ändamålet.
- */
-const hits = new Map<string, { count: number; resetAt: number }>()
-
-function rateLimited(ip: string): boolean {
-  const now = Date.now()
-  const entry = hits.get(ip)
-  if (!entry || now > entry.resetAt) {
-    hits.set(ip, { count: 1, resetAt: now + WINDOW_MS })
-    return false
-  }
-  entry.count += 1
-  return entry.count > MAX_PER_WINDOW
-}
-
-/** Städar bort utgångna poster så att Map:en inte växer i all oändlighet. */
-function sweep() {
-  const now = Date.now()
-  for (const [ip, entry] of hits) if (now > entry.resetAt) hits.delete(ip)
-}
+// 5 anmälningar per 10 minuter och IP. Delad implementation med registreringen — se
+// src/lib/rate-limit.ts för varför vi läser SISTA x-forwarded-for-hoppet.
+const rateLimited = createRateLimiter(5, 10 * 60 * 1000)
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
-
-/**
- * Anroparens IP, så gott det går bakom Nginx Proxy Manager.
- *
- * `x-real-ip` sätts av proxyn till den faktiska peer-adressen och skrivs över
- * vid varje request ⇒ går inte att förfalska. `x-forwarded-for` däremot
- * *appendas* till (`$proxy_add_x_forwarded_for`), så ett klientskickat värde
- * hamnar först i listan medan vår proxys observation hamnar sist. Att läsa
- * första värdet skulle därför göra takbegränsningen trivial att kringgå — en
- * bot behöver bara rotera en påhittad header. Vi läser sista värdet.
- */
-function clientIp(request: NextRequest): string {
-  const real = request.headers.get('x-real-ip')?.trim()
-  if (real) return real
-
-  const forwarded = request.headers.get('x-forwarded-for')
-  if (forwarded) {
-    const hops = forwarded
-      .split(',')
-      .map((p) => p.trim())
-      .filter(Boolean)
-    if (hops.length > 0) return hops[hops.length - 1]
-  }
-
-  return 'okänd'
-}
 
 export async function POST(request: NextRequest) {
   let body: { app?: string; email?: string; company?: string }
@@ -89,9 +41,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Skriv en giltig e-postadress' }, { status: 400 })
   }
 
-  const ip = clientIp(request)
-  sweep()
-  if (rateLimited(ip)) {
+  if (rateLimited(clientIp(request))) {
     return NextResponse.json(
       { error: 'För många försök. Vänta en stund och prova igen.' },
       { status: 429 },
