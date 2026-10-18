@@ -195,6 +195,14 @@ Native iOS-appen kan inte hantera NextAuth:s HTTP-only-cookie, så den autentise
 **Bearer-token** vid sidan av webbens cookie-session:
 - **`POST /api/mobile/login`** (publik) — `{ email, password }` → `{ token, user, families,
   activeFamilyId }`. Samma bcrypt-kontroll som Credentials-providern i `src/auth.ts`.
+  **Därför får ingen anonym route sätta lösenord på ett befintligt konto.** Webbens
+  `/api/register` gjorde det tidigare när kontot saknade lösenord — och Apple-, Google- och
+  magic link-konton saknar lösenord, så vem som helst som kände till adressen kunde välja ett
+  lösenord och logga in här (och via Credentials) som användaren. Nu svarar `/api/register` 409
+  för **varje** befintlig adress och ändrar aldrig ett konto; `/register` visar då "Logga in med
+  e-postlänk" (`signIn('nodemailer')`) och hänvisar till Apple/Google. Lösenord på ett befintligt
+  konto sätts inloggad via `PATCH /api/profile/password`. Samma regel gäller
+  `/api/mobile/register` och alla framtida kontoskapande routes.
 - **`POST /api/mobile/apple`** (publik) — Sign in with Apple för native-appen. `{ identityToken,
   fullName?, email? }`. Verifierar Apples identityToken med **`jose`** (`createRemoteJWKSet` mot
   `appleid.apple.com/auth/keys` + `jwtVerify`): `iss=https://appleid.apple.com`, `aud=`appens

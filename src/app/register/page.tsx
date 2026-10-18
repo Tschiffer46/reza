@@ -22,16 +22,33 @@ function RegisterInner() {
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  // 409: adressen har redan ett konto. Det kan vara skapat med Apple, Google eller e-postlänk
+  // och sakna lösenord — då är e-postlänken enda vägen in utan att gå via Apple/Google.
+  const [exists, setExists] = useState(false)
+  const [linkState, setLinkState] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle')
+
+  async function sendLink() {
+    setLinkState('sending')
+    const res = await signIn('nodemailer', { email, callbackUrl: next, redirect: false })
+    setLinkState(res?.error ? 'failed' : 'sent')
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setBusy(true)
     setError('')
+    setExists(false)
+    setLinkState('idle')
     const res = await fetch('/api/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, email, password }),
     })
+    if (res.status === 409) {
+      setExists(true)
+      setBusy(false)
+      return
+    }
     if (!res.ok) {
       const data = await res.json().catch(() => ({}))
       setError(data.error || 'Kunde inte skapa konto')
@@ -82,6 +99,30 @@ function RegisterInner() {
                 required
               />
               {error && <p className="text-sm text-red-600">{error}</p>}
+              {exists && (
+                <div className="space-y-2 rounded-lg border border-brand-accent/30 p-3 text-sm">
+                  <p>
+                    Det finns redan ett konto med <strong>{email}</strong>. Logga in i stället — med
+                    lösenord, med en e-postlänk, eller med Apple eller Google om du skapade kontot så.
+                  </p>
+                  {linkState === 'sent' ? (
+                    <p className="text-brand-accent-dark">Vi har skickat en inloggningslänk till {email}.</p>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={sendLink}
+                      disabled={linkState === 'sending'}
+                    >
+                      {linkState === 'sending' ? 'Skickar…' : 'Logga in med e-postlänk'}
+                    </Button>
+                  )}
+                  {linkState === 'failed' && (
+                    <p className="text-red-600">Kunde inte skicka länken. Försök igen om en stund.</p>
+                  )}
+                </div>
+              )}
               <Button type="submit" className="w-full" disabled={busy}>
                 {busy ? 'Skapar…' : 'Skapa konto'}
               </Button>
