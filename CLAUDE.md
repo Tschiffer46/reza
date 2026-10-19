@@ -300,15 +300,24 @@ npx prisma studio     # databas-GUI
   > välja lösenord åt den personen och logga in som hen. Hittades när mobilregistreringen byggdes
   > och den gamla routen användes som mall. Läs varje "hjälpsam" gren i auth-kod som en angripare:
   > *vem bevisar här att de äger adressen?* Om svaret är ingen — gör det inte.
-  > **Kvarvarande risk (ej åtgärdad):** e-postadresser verifieras inte vid registrering, och
-  > Apple/Google/magic link länkar till ett befintligt konto med samma adress
-  > (`allowDangerousEmailAccountLinking`). Någon kan alltså registrera en annans adress *före*
-  > personen själv, och behålla lösenordsåtkomst när personen sedan loggar in med Apple
-  > ("pre-hijacking"). Riktig åtgärd: verifiera e-post innan lösenordskontot blir aktivt, eller
-  > nollställ lösenordet när ett overifierat konto länkas till Apple/Google/e-postlänk.
-  `src/lib/rate-limit.ts` (`createRateLimiter`, `clientIp`) delas av registreringsroutarna;
-  `/api/waitlist` har en egen, äldre kopia. `PATCH /api/profile/password` kräver inte nuvarande
-  lösenord — en stulen session kan alltså byta det. Känt, inte åtgärdat.
+  > **Pre-hijacking — åtgärdat 2026-10-18:** registreringen verifierar inte adressen, så någon
+  > kunde registrera en annans adress *före* personen själv och behålla lösenordsåtkomsten när
+  > personen sedan loggade in med Apple/Google/e-postlänk (som länkar till samma konto).
+  > `markEmailProven()` (`src/lib/email-ownership.ts`) körs i Auth.js `callbacks.signIn` och i
+  > `/api/mobile/apple`: är kontot overifierat nollställs lösenordet och kontot markeras
+  > verifierat. Det måste ligga i `callbacks.signIn` — för e-postlänken sätter Auth.js
+  > `emailVerified` *innan* `events.signIn` körs. Bieffekt: den som registrerat sig med lösenord
+  > och loggar in med Apple/e-postlänk första gången får välja nytt lösenord (en gång).
+  > **Kvar:** angriparens redan utfärdade sessioner (webb-JWT, 90-dagars mobiltoken) lever
+  > vidare — vi har ingen tokenspärr per användare.
+  > `/api/mobile/apple` länkar bara på adressen i Apples **signerade** token; `body.email` får
+  > aldrig koppla in någon på ett befintligt konto (då kunde vem som helst med ett Apple-ID
+  > logga in som en annan användare).
+  `src/lib/rate-limit.ts` (`createRateLimiter`, `clientIp`) delas av registreringsroutarna
+  och `/api/waitlist`. `PATCH /api/profile/password` kräver inte nuvarande
+  lösenord — en stulen session kan alltså byta det. Känt, inte åtgärdat: appen saknar
+  "Glömt lösenord", så den som glömt sitt lösenord har bara vägen via e-postlänk på webben →
+  välja nytt i profilen. Kräv nuvarande lösenord först när det finns ett återställningsflöde.
 - **Roller (manuellt, ingen Stripe än):** `User.plan` = `free`/`paid` och `User.isAdmin`
   sätts via SQL eller i `/admin`-vyn. **Första admin utan SQL:** sätt
   `ADMIN_EMAILS=epost1,epost2` i `.env.vadskavi` — `requireAdmin` (`src/lib/family.ts`)

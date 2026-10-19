@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db'
 import { signMobileToken } from '@/lib/mobile-auth'
 import { getDefaultFamily, getUserFamilies } from '@/lib/family'
 import { exchangeAndStoreAppleRefreshToken } from '@/lib/apple-revoke'
+import { markEmailProven } from '@/lib/email-ownership'
 
 /**
  * POST /api/mobile/apple — "Sign in with Apple" för mobil-appen.
@@ -62,6 +63,11 @@ export async function POST(request: NextRequest) {
   const name =
     typeof body?.fullName === 'string' && body.fullName.trim() ? body.fullName.trim() : null
 
+  // Bara adressen i Apples SIGNERADE token är bevisad. `body.email` skickas av klienten och
+  // kan vara vad som helst — den får aldrig koppla in någon på ett befintligt konto, då kunde
+  // vem som helst med ett Apple-ID logga in som en annan användare genom att skicka dennes adress.
+  if (tokenEmail) await markEmailProven(tokenEmail)
+
   let userId: string | null = null
 
   // 1) Finns redan ett Apple-konto med detta sub?
@@ -72,8 +78,14 @@ export async function POST(request: NextRequest) {
   if (account) {
     userId = account.userId
   } else if (email) {
-    // 2) Länka in på befintlig användare med samma (verifierade) e-post.
+    // 2) Länka in på befintlig användare med samma e-post — men bara om Apple intygar adressen.
     const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } })
+    if (existing && !tokenEmail) {
+      return NextResponse.json(
+        { error: 'Det finns redan ett konto med den adressen. Logga in med e-post och lösenord.' },
+        { status: 409 },
+      )
+    }
     if (existing) {
       userId = existing.id
       await prisma.account.create({
@@ -94,7 +106,7 @@ export async function POST(request: NextRequest) {
       data: {
         email,
         name,
-        emailVerified: new Date(),
+        emailVerified: tokenEmail ? new Date() : null,
         onboardedAt: new Date(),
         accounts: { create: { type: 'oidc', provider: 'apple', providerAccountId: sub } },
       },
