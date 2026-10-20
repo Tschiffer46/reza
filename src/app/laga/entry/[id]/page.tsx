@@ -31,7 +31,7 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
       ...ENTRY_SHARES_INCLUDE,
       comments: { include: { author: { select: { name: true, email: true } } }, orderBy: { createdAt: 'asc' } },
       notes: { include: { author: { select: { name: true, email: true } } }, orderBy: { createdAt: 'asc' } },
-      changes: { where: { action: 'cooked' }, select: { action: true, user: { select: { name: true, email: true } } } },
+      changes: { where: { action: 'cooked' }, select: { action: true, user: { select: { id: true, name: true, email: true } } } },
       reactions: { select: { userId: true } },
       ratings: { where: { userId }, select: { score: true } },
     },

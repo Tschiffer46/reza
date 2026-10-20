@@ -26,7 +26,7 @@ export interface EntryDTO {
   family?: { id: string; name: string }
   /** Alla gemenskaper receptet syns i (tom lista = privat). */
   families?: { id: string; name: string }[]
-  cookedBy?: { name: string; n: number }[]
+  cookedBy?: { id: string; name: string; n: number }[]
   heartCount?: number
   commentCount?: number
 }

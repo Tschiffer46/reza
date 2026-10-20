@@ -72,6 +72,8 @@ export async function GET() {
   const data = posts.map((p) => ({
     id: p.id,
     author: displayName(p.author),
+    // Id:t driver familjefärgen i appen (colorFor(userId)) — samma färg som på alla andra skärmar.
+    authorId: p.authorId,
     avatar: p.author.avatar,
     text: p.text,
     createdAt: p.createdAt.toISOString(),
@@ -80,6 +82,7 @@ export async function GET() {
     replies: p.replies.map((r) => ({
       id: r.id,
       author: displayName(r.author),
+      authorId: r.authorId,
       avatar: r.author.avatar,
       text: r.text,
       createdAt: r.createdAt.toISOString(),

@@ -26,7 +26,7 @@ export async function GET() {
       where: { id: activeId },
       include: {
         members: {
-          include: { user: { select: { name: true, email: true } } },
+          include: { user: { select: { id: true, name: true, email: true } } },
           orderBy: { joinedAt: 'asc' },
         },
       },
@@ -43,6 +43,7 @@ export async function GET() {
       background: active.background,
       coverImage: active.coverImage,
       members: active.members.map((m) => ({
+        id: m.user.id,
         name: m.user.name,
         email: m.user.email,
         role: m.role,
