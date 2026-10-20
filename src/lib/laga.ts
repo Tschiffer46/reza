@@ -3,6 +3,7 @@ import type { EntryDTO } from '@/lib/types'
 import { entryFamilies, normalizeVisibility } from '@/lib/entry-access'
 
 type UserRef = { name: string | null; email: string | null }
+type UserWithId = UserRef & { id: string }
 
 /** Visningsnamn för en användare (namn, annars del före @ i e-post). */
 export function displayName(u: UserRef | null | undefined): string {
@@ -13,14 +14,21 @@ export function displayName(u: UserRef | null | undefined): string {
 }
 
 /** Aggregera "lagad av" per användare ur ChangeLog-poster (action = cooked). */
-export function aggregateCooked(changes: { action: string; user: UserRef }[]): { name: string; n: number }[] {
-  const map = new Map<string, number>()
+/**
+ * "Lagad av": en rad per person, flest gånger först. Grupperas på användar-id (två personer med
+ * samma namn blev förut en), och id:t följer med så att appen kan ge personen hens familjefärg.
+ */
+export function aggregateCooked(
+  changes: { action: string; user: UserWithId }[],
+): { id: string; name: string; n: number }[] {
+  const map = new Map<string, { id: string; name: string; n: number }>()
   for (const c of changes) {
     if (c.action !== 'cooked') continue
-    const name = displayName(c.user)
-    map.set(name, (map.get(name) || 0) + 1)
+    const row = map.get(c.user.id) ?? { id: c.user.id, name: displayName(c.user), n: 0 }
+    row.n += 1
+    map.set(c.user.id, row)
   }
-  return [...map.entries()].map(([name, n]) => ({ name, n })).sort((a, b) => b.n - a.n)
+  return [...map.values()].sort((a, b) => b.n - a.n)
 }
 
 /** Form av Entry som searchEntries/queries returnerar (med includes). */
@@ -48,7 +56,7 @@ export type EntryWithMeta = {
   visibility?: string | null
   family?: { id: string; name: string } | null
   shares?: { family: { id: string; name: string } }[]
-  changes?: { action: string; user: UserRef }[]
+  changes?: { action: string; user: UserWithId }[]
   _count?: { comments: number; reactions: number }
 }
 
@@ -57,7 +65,7 @@ export const ENTRY_META_INCLUDE = {
   family: { select: { id: true, name: true } },
   // Delningar behövs både för DTO:n ("syns i X och Y") och för åtkomstkontrollen.
   shares: { select: { family: { select: { id: true, name: true } } } },
-  changes: { where: { action: 'cooked' }, select: { action: true, user: { select: { name: true, email: true } } } },
+  changes: { where: { action: 'cooked' }, select: { action: true, user: { select: { id: true, name: true, email: true } } } },
   _count: { select: { comments: true, reactions: true } },
 } as const
 
