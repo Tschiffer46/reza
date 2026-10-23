@@ -25,7 +25,7 @@ Bearer-token — se **"Mobil-API"** nedan.
   + Credentials (e-post + lösenord, bcryptjs)
 - **Anthropic SDK** — Haiku 5.5 (text) / Sonnet 5.5 (bild) för receptextraktion
 - **Sharp** för bildresize (WebP), **Wake Lock API** för lägescookning
-- **Docker** (multi-stage, node:20-alpine) bakom **Nginx Proxy Manager**, **PWA** (manifest + SW)
+- **Docker** (multi-stage, node:22-alpine) bakom **Nginx Proxy Manager**, **PWA** (manifest + SW)
 
 ## Filstruktur
 ```
