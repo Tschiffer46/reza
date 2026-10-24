@@ -339,6 +339,12 @@ npx prisma studio     # databas-GUI
   för varje fält, så utan `requireSubstance()` returneras ett välformat tomt recept som ser ut att
   ha lyckats. Kör `npm run test:url` efter ändringar; og-parsningen har ett regressionstest för
   apostrofer i attributvärden (ett `[^"']*` kapar bildtexten mitt i).
+- **AI-svar: ta ALDRIG `content[0]`.** 5.5-modellerna tänker som standard och lägger ett (tomt)
+  thinking-block först. Efter modellbytet (#45) gav det "Oväntat svar från Claude" på all text-/länktolkning
+  och "0 av 55" i protein-backfillen. Använd `responseText()` (`src/lib/ai.ts`) / `firstText()` (scripts).
+  Haiku 5.5 tar `thinking: {type:'disabled'}` (vid effort ≤ high); **Sonnet 5.5 avvisar `disabled` med 400**
+  — där körs tänkandet på `output_config.effort: 'low'` med större `max_tokens`. SDK:n (0.68) saknar typer
+  för `output_config`; den skickas ändå. Nästa modellbyte: läs migreringsguiden för modellen först.
 - **Härledd data:** "lagad av" + aktivitetsflöde härleds ur `ChangeLog`; betygssnitt
   denormaliseras till `Entry.ratingAvg/ratingCount` (uppdatera vid ny Rating).
 - **Byggmiljö (Claude-session):** ingen Docker-daemon → verifiera med `npx tsc --noEmit` +

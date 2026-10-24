@@ -3,8 +3,8 @@
  * Ingen DB, inget nät.
  */
 import { PROTEINS, isProtein, normalizeProtein } from '../src/lib/protein'
-import { normalizeEntry, AI_MODELS } from '../src/lib/ai'
-import { BACKFILL_KEYS, BACKFILL_MODEL, parseBackfillResponse } from './backfill-protein-parse'
+import { normalizeEntry, AI_MODELS, responseText } from '../src/lib/ai'
+import { BACKFILL_KEYS, BACKFILL_MODEL, firstText, parseBackfillResponse } from './backfill-protein-parse'
 
 let failed = 0
 function check(name: string, actual: unknown, expected: unknown) {
@@ -14,6 +14,20 @@ function check(name: string, actual: unknown, expected: unknown) {
     console.error(`✗ ${name}\n    förväntat: ${JSON.stringify(expected)}\n    fick:      ${JSON.stringify(actual)}`)
   } else console.log(`✓ ${name}`)
 }
+
+// Regression: 5.5-modellerna lägger ett (tomt) thinking-block FÖRE texten. content[0] gav då
+// "Oväntat svar från Claude" i receptolkningen och "0 av 55" i backfillen.
+const withThinking: { type: string; text?: string }[] = [{ type: 'thinking' }, { type: 'text', text: '{"a":"fish"}' }]
+check('firstText hoppar över thinking-block', firstText(withThinking), '{"a":"fish"}')
+check('firstText utan textblock ⇒ null', firstText([{ type: 'thinking' }]), null)
+check('responseText hoppar över thinking-block', responseText({ content: withThinking, stop_reason: 'end_turn' }), '{"a":"fish"}')
+function throws(fn: () => unknown): string {
+  try { fn(); return 'kastade inte' } catch (e) { return (e as Error).message }
+}
+check('responseText vägran', throws(() => responseText({ content: [], stop_reason: 'refusal' })), 'Claude avböjde att tolka innehållet')
+check('responseText avklippt', throws(() => responseText({ content: withThinking, stop_reason: 'max_tokens' })), 'Svaret från Claude blev avklippt')
+check('responseText bara thinking', throws(() => responseText({ content: [{ type: 'thinking' }], stop_reason: 'end_turn' })), 'Oväntat svar från Claude')
+check('backfill tål text runt JSON', [...parseBackfillResponse('Här är svaret:\n{"a":"fish"}\nKlart.', ['a'])], [['a', 'fish']])
 
 check('kontraktets nycklar', PROTEINS.map((p) => p.key), ['beef', 'pork', 'chicken', 'fish', 'vegetarian', 'vegan', 'other'])
 check('svenska etiketter', PROTEINS.map((p) => p.label), ['Nötkött', 'Fläsk', 'Kyckling', 'Fisk & skaldjur', 'Vegetariskt', 'Veganskt', 'Övrigt'])

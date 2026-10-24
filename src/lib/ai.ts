@@ -117,6 +117,23 @@ export function normalizeEntry(parsed: Record<string, unknown>): ExtractedEntry 
 }
 
 /** Parsa Claudes JSON-svar till ett ExtractedEntry. */
+/**
+ * Texten ur ett svar. Ta ALDRIG `content[0]`: 5.5-modellerna tänker som standard och lägger då ett
+ * (tomt) thinking-block först. Det var exakt så receptolkningen gick sönder efter modellbytet —
+ * varje svar började med ett thinking-block och gav "Oväntat svar från Claude".
+ */
+export function responseText(response: {
+  content: ReadonlyArray<{ type: string; text?: string }>
+  stop_reason?: string | null
+}): string {
+  if (response.stop_reason === 'refusal') throw new Error('Claude avböjde att tolka innehållet')
+  const block = response.content.find((b) => b.type === 'text' && typeof b.text === 'string')
+  if (!block?.text) throw new Error('Oväntat svar från Claude')
+  // Avklippt JSON går inte att tolka; säg varför i stället för ett obegripligt parse-fel.
+  if (response.stop_reason === 'max_tokens') throw new Error('Svaret från Claude blev avklippt')
+  return block.text
+}
+
 function parseResponse(text: string): ExtractedEntry {
   return normalizeEntry(JSON.parse(stripFences(text)))
 }
@@ -130,12 +147,13 @@ export async function extractBatchFromText(text: string): Promise<ExtractedEntry
   const response = await getAnthropic().messages.create({
     model: AI_MODELS.text,
     max_tokens: 4000,
+    // Haiku 5.5 tänker som standard; för ren extraktion vill vi hela budgeten till JSON.
+    // `disabled` godtas på Haiku 5.5 vid effort high eller lägre (standard är medium).
+    thinking: { type: 'disabled' },
     system: BATCH_SYSTEM_PROMPT,
     messages: [{ role: 'user', content: text }],
   })
-  const block = response.content[0]
-  if (block.type !== 'text') throw new Error('Oväntat svar från Claude')
-  const parsed = JSON.parse(stripFences(block.text))
+  const parsed = JSON.parse(stripFences(responseText(response)))
   const arr = Array.isArray(parsed) ? parsed : [parsed]
   return arr.map(normalizeEntry)
 }
@@ -145,12 +163,11 @@ export async function extractFromText(text: string): Promise<ExtractedEntry> {
   const response = await getAnthropic().messages.create({
     model: AI_MODELS.text,
     max_tokens: AI_MAX_TOKENS,
+    thinking: { type: 'disabled' }, // se extractBatchFromText
     system: AI_SYSTEM_PROMPT,
     messages: [{ role: 'user', content: text }],
   })
-  const block = response.content[0]
-  if (block.type !== 'text') throw new Error('Oväntat svar från Claude')
-  return parseResponse(block.text)
+  return parseResponse(responseText(response))
 }
 
 /** Bildextraktion — Sonnet (bättre vision). Bilder som base64 (input-only). */
@@ -168,10 +185,12 @@ export async function extractFromImage(
 
   const response = await getAnthropic().messages.create({
     model: AI_MODELS.image,
-    max_tokens: AI_MAX_TOKENS,
-    // Sonnet 5 kör adaptive thinking som default när fältet utelämnas — för ren
-    // JSON-extraktion vill vi ha snabbt enpass-svar där hela token-budgeten går till JSON.
-    thinking: { type: 'disabled' },
+    // Sonnet 5.5 avvisar `thinking: disabled` med 400 (det gjorde Sonnet 5 inte) — fotoimporten
+    // föll på det efter modellbytet. Tänkandet går inte att stänga av här, så låt det vara på
+    // men på låg nivå, och ge plats för både tänkande och JSON (tänkandet räknas mot max_tokens).
+    // `output_config.effort` saknas i SDK-versionens typer men skickas med som det är.
+    max_tokens: 4000,
+    ...({ output_config: { effort: 'low' } } as object),
     system: AI_SYSTEM_PROMPT,
     messages: [
       {
@@ -183,7 +202,5 @@ export async function extractFromImage(
       },
     ],
   })
-  const block = response.content[0]
-  if (block.type !== 'text') throw new Error('Oväntat svar från Claude')
-  return parseResponse(block.text)
+  return parseResponse(responseText(response))
 }
