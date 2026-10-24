@@ -11,7 +11,7 @@
  */
 import { PrismaClient } from '@prisma/client'
 import Anthropic from '@anthropic-ai/sdk'
-import { BACKFILL_MODEL, BACKFILL_SYSTEM_PROMPT, parseBackfillResponse } from './backfill-protein-parse'
+import { BACKFILL_MODEL, BACKFILL_SYSTEM_PROMPT, firstText, parseBackfillResponse } from './backfill-protein-parse'
 
 const MAX_PER_RUN = 300
 const BATCH_SIZE = 20
@@ -41,6 +41,9 @@ async function main() {
         const response = await client.messages.create({
           model: BACKFILL_MODEL,
           max_tokens: 1500,
+          // Haiku 5.5 tänker som standard och lägger då ett thinking-block FÖRST i svaret. Det
+          // var därför första körningen gav "0 av 55": content[0] var aldrig text.
+          thinking: { type: 'disabled' },
           system: BACKFILL_SYSTEM_PROMPT,
           messages: [
             {
@@ -51,9 +54,15 @@ async function main() {
             },
           ],
         })
-        const block = response.content[0]
-        if (!block || block.type !== 'text') continue
-        const result = parseBackfillResponse(block.text, batch.map((r) => r.id))
+        const text = firstText(response.content)
+        const result = parseBackfillResponse(text ?? '', batch.map((r) => r.id))
+        if (result.size === 0) {
+          // Aldrig tyst igen: ett svar vi inte kan tolka ska synas i deploy-loggen.
+          console.error(
+            `backfill-protein: batch ${i / BATCH_SIZE + 1} gav inget tolkbart (stop_reason=${response.stop_reason}):`,
+            (text ?? '(inget textblock)').slice(0, 200),
+          )
+        }
         for (const [id, protein] of result) {
           // protein: null i where ⇒ skriver aldrig över något som under tiden satts för hand.
           const r = await prisma.entry.updateMany({ where: { id, protein: null }, data: { protein } })
